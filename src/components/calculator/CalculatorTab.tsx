@@ -1,7 +1,7 @@
 // src/components/calculator/CalculatorTab.tsx
 'use client'
 import { useState } from 'react'
-import { Plus, Copy, Trash2, Play, Save, AlertTriangle, Lock, ChevronDown, ChevronUp, Clock, Printer, TableProperties } from 'lucide-react'
+import { Plus, Copy, Trash2, Play, Save, AlertTriangle, Lock, ChevronDown, ChevronUp, Clock, Printer, TableProperties, PanelRightOpen, PanelRightClose, BookOpen, X } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import type { MtoSystem, GlobalTag, Run, Segment, WorkScheduleSummary, WorkScheduleResult, ActivityPhase, JobLastResults } from '@/types'
 import type { Plan } from '@prisma/client'
@@ -11,6 +11,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
 import { computeWorkSchedule, computeBracketQtys, computeAllBracketBOM } from '@/lib/engine/work'
+import SystemOverviewPanel from './SystemOverviewPanel'
 
 interface Props {
   sys:        MtoSystem
@@ -882,6 +883,37 @@ function CalcStep({ n, children }: { n: number; children: React.ReactNode }) {
   )
 }
 
+// ─── Field Guide for Calculator ──────────────────────────────────────────────
+const CALC_GUIDE_ITEMS = [
+  { label: 'Runs', desc: 'Each run represents a separate location or area. Enter dimensions, toggle conditions, and select variants for each.' },
+  { label: 'Qty multiplier', desc: 'The ×N on each run multiplies all material quantities — use for identical repeated locations.' },
+  { label: 'Conditions', desc: 'Toggle criteria gates ON/OFF per run. Materials gated by a condition are excluded when it\'s OFF.' },
+  { label: 'Variants', desc: 'Select the variant leaf for each run. Material rules can target specific variant paths.' },
+  { label: 'Stock optimisation', desc: 'Min waste = fewest offcuts. Min sections = fewest total pieces. Only applies to stock-length dims.' },
+  { label: 'Results table', desc: 'Shows per-run quantities (unit × qty) and grand totals. Prices come from material unit costs set in Setup.' },
+  { label: 'Calculation breakdown', desc: 'Expand to see the exact formula, rule type, and raw → rounded values for every material in every run.' },
+]
+
+function CalcFieldGuide({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="card overflow-hidden border-primary/20 border animate-fade-in">
+      <div className="px-4 py-3 bg-primary/5 border-b border-primary/10 flex items-center gap-2">
+        <BookOpen className="w-4 h-4 text-primary" />
+        <span className="text-xs font-bold text-ink flex-1">Calculator Field Guide</span>
+        <button onClick={onClose} className="text-ink-faint hover:text-ink"><X className="w-3.5 h-3.5" /></button>
+      </div>
+      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+        {CALC_GUIDE_ITEMS.map(item => (
+          <div key={item.label}>
+            <div className="text-xs font-semibold text-ink mb-0.5">{item.label}</div>
+            <div className="text-[10px] text-ink-faint italic leading-snug">{item.desc}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 'FREE' }: Props) {
   const router  = useRouter()
   const calc    = useCalcStore()
@@ -893,6 +925,8 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
   const [showBreakdown,  setShowBreakdown] = useState(false)
   const [collapsedRuns, setCollapsedRuns] = useState<Set<string>>(new Set())
   const toggleRunCollapse = (id: string) => setCollapsedRuns(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const [showOverview, setShowOverview] = useState(false)
+  const [showFieldGuide, setShowFieldGuide] = useState(false)
 
   const runsAtLimit  = limits.maxRuns !== -1 && calc.runs.length >= limits.maxRuns
   const spacingDims  = (sys.customDims ?? []).filter(cd => cd.derivType === 'spacing' && cd.spacingMode === 'user')
@@ -990,8 +1024,8 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     : []
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 items-start">
-      <div className="w-full lg:w-80 flex-shrink-0 space-y-5">
+    <div className="flex flex-col lg:flex-row gap-6 items-start relative">
+      <div className={`w-full flex-shrink-0 space-y-5 transition-all ${showOverview ? 'lg:w-72' : 'lg:w-80'}`}>
 
         <CalcStep n={1}>
         <div className="card p-4">
@@ -1292,6 +1326,26 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
       </div>
 
       <div className="flex-1 min-w-0">
+        {/* Toolbar: Field Guide + Overview toggle */}
+        <div className="flex items-center justify-end gap-2 mb-3">
+          <button
+            onClick={() => setShowFieldGuide(v => !v)}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 border transition-colors ${showFieldGuide ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-white border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
+            style={{ borderRadius: 'var(--radius)' }}>
+            <BookOpen className="w-3.5 h-3.5" />
+            Field Guide
+          </button>
+          <button
+            onClick={() => setShowOverview(v => !v)}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 border transition-colors ${showOverview ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-white border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
+            style={{ borderRadius: 'var(--radius)' }}>
+            {showOverview ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
+            System Overview
+          </button>
+        </div>
+
+        {showFieldGuide && <div className="mb-4"><CalcFieldGuide onClose={() => setShowFieldGuide(false)} /></div>}
+
         {!calc.multiResults ? (
           <div className="card p-16 text-center space-y-6">
             <div className="text-5xl">🧮</div>
@@ -1563,6 +1617,11 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
             <p className="text-xs text-ink-faint text-center pb-4">⚠ Quantities rounded up to nearest whole unit per run. Verify site conditions before ordering.</p>
           </div>
         )}
+      </div>
+
+      {/* Collapsible System Overview sidebar */}
+      <div className={`hidden lg:block transition-all duration-300 ease-in-out ${showOverview ? 'w-64 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
+        {showOverview && <SystemOverviewPanel sys={sys} />}
       </div>
     </div>
   )
