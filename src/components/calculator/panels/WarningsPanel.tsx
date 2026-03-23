@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input, NumberInput } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import FloatingPanel from '../FloatingPanel'
 
 interface Props {
   warnings:   Warning[]
@@ -89,16 +90,16 @@ function WarnForm({ dimOptions, d, onField, onSubmit, onCancel, submitLabel }: W
           <Button size="sm" variant="secondary" onClick={onCancel} icon={<X className="w-3.5 h-3.5" />}>Cancel</Button>
         </div>
       </div>
-      {/* Field Guide toggle */}
-      <div>
-        <button onClick={() => setGuideOpen(v => !v)}
-          className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 border transition-colors ${guideOpen ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-surface-100 border-surface-200 text-ink-faint hover:text-ink-muted'}`}
-          style={{ borderRadius: 'var(--radius)' }}>
-          <BookOpen className="w-3 h-3" />
-          Field Guide
-        </button>
-        {guideOpen && <div className="mt-2"><FieldGuide /></div>}
-      </div>
+      {/* Field Guide floating toggle */}
+      <Button size="xs" variant={guideOpen ? 'primary' : 'secondary'}
+        onClick={() => setGuideOpen(v => !v)}
+        icon={<BookOpen className="w-3 h-3" />}>
+        Field Guide
+      </Button>
+      <FloatingPanel open={guideOpen} onClose={() => setGuideOpen(false)} title="Field Guide"
+        icon={<BookOpen className="w-3.5 h-3.5 text-primary" />} width="w-80">
+        <FieldGuide />
+      </FloatingPanel>
     </div>
   )
 }

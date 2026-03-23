@@ -122,9 +122,7 @@ function BOMItemRow({
         options={QTY_UNITS.map(u => ({ value: u, label: u }))} className="w-20" />
       <Input label="Notes" value={item.notes ?? ''} onChange={e => onChange({ ...item, notes: e.target.value })}
         placeholder="Optional" className="w-40" />
-      <button type="button" onClick={onRemove} className="text-red-400 hover:text-red-600 mb-1 flex-shrink-0">
-        <Trash2 className="w-4 h-4" />
-      </button>
+      <Button size="xs" variant="danger" onClick={onRemove} icon={<Trash2 className="w-3 h-3" />} className="mb-1 flex-shrink-0" />
     </div>
   )
 }
@@ -151,9 +149,7 @@ function FabActivityRow({
         options={TIME_UNITS.map(u => ({ value: u, label: u }))} className="w-20" />
       <Input label="Labour cat." value={item.labourCategory ?? ''} onChange={e => onChange({ ...item, labourCategory: e.target.value })}
         placeholder="Optional" className="w-36" />
-      <button type="button" onClick={onRemove} className="text-red-400 hover:text-red-600 mb-1 flex-shrink-0">
-        <Trash2 className="w-4 h-4" />
-      </button>
+      <Button size="xs" variant="danger" onClick={onRemove} icon={<Trash2 className="w-3 h-3" />} className="mb-1 flex-shrink-0" />
     </div>
   )
 }
@@ -197,7 +193,7 @@ function BracketForm({
   return (
     <div className="space-y-5">
       {/* Identity */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-4 items-start">
         <div className="flex gap-2">
           <div>
             <IconPicker  label="Icon"   value={draft.icon  ?? '🔩'}     onChange={v => onChange({ icon: v })} />
@@ -247,9 +243,7 @@ function BracketForm({
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="label mb-0">Parameters (optional)</label>
-          <button type="button" onClick={addParam} className="text-xs text-primary font-semibold flex items-center gap-1 hover:underline">
-            <Plus className="w-3 h-3" /> Add
-          </button>
+          <Button size="xs" variant="secondary" onClick={addParam} icon={<Plus className="w-3 h-3" />}>Add</Button>
         </div>
         {params.length === 0 && <p className="text-xs text-ink-faint">No parameters — bracket quantities are fixed. Add parameters for adjustable assemblies (e.g. projection_mm).</p>}
         <div className="space-y-2">
@@ -264,7 +258,7 @@ function BracketForm({
               <NumberInput label="Default" value={p.default} step="any" onChange={e => updateParam(i, { ...p, default: parseFloat(e.target.value) || 0 })} className="w-24" />
               <NumberInput label="Min" value={p.min ?? ''} step="any" onChange={e => updateParam(i, { ...p, min: parseFloat(e.target.value) || undefined })} className="w-20" />
               <NumberInput label="Max" value={p.max ?? ''} step="any" onChange={e => updateParam(i, { ...p, max: parseFloat(e.target.value) || undefined })} className="w-20" />
-              <button type="button" onClick={() => removeParam(i)} className="text-red-400 hover:text-red-600 mb-1"><Trash2 className="w-4 h-4" /></button>
+              <Button size="xs" variant="danger" onClick={() => removeParam(i)} icon={<Trash2 className="w-3 h-3" />} className="mb-1" />
             </div>
           ))}
         </div>
@@ -274,9 +268,7 @@ function BracketForm({
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="label mb-0">Bill of Materials</label>
-          <button type="button" onClick={addBOM} className="text-xs text-primary font-semibold flex items-center gap-1 hover:underline">
-            <Plus className="w-3 h-3" /> Add material
-          </button>
+          <Button size="xs" variant="secondary" onClick={addBOM} icon={<Plus className="w-3 h-3" />}>Add material</Button>
         </div>
         {bom.length === 0 && <p className="text-xs text-ink-faint">No BOM items. Add raw materials that make up this bracket.</p>}
         <div className="space-y-2">
@@ -295,9 +287,7 @@ function BracketForm({
             <label className="label mb-0">Fabrication Activities</label>
             {fabActivities.length > 0 && <span className="text-xs text-ink-faint ml-2">Total: {totalFabTime.toFixed(1)} min/bracket</span>}
           </div>
-          <button type="button" onClick={addFab} className="text-xs text-primary font-semibold flex items-center gap-1 hover:underline">
-            <Plus className="w-3 h-3" /> Add activity
-          </button>
+          <Button size="xs" variant="secondary" onClick={addFab} icon={<Plus className="w-3 h-3" />}>Add activity</Button>
         </div>
         {fabActivities.length === 0 && <p className="text-xs text-ink-faint">No fab activities. Add workshop steps like cutting, drilling, welding.</p>}
         <div className="space-y-2">
@@ -396,10 +386,8 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
                   </div>
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
-                  <button type="button" onClick={() => setExpandedId(isExp ? null : bracket.id)}
-                    className="text-ink-faint hover:text-ink p-1">
-                    {isExp ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </button>
+                  <Button size="xs" variant="ghost" onClick={() => setExpandedId(isExp ? null : bracket.id)}
+                    icon={isExp ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />} />
                   <Button size="xs" variant={isEd ? 'primary' : 'ghost'} onClick={() => isEd ? cancelEdit() : startEdit(bracket)} icon={<Edit3 className="w-3 h-3" />}>
                     {isEd ? 'Cancel' : 'Edit'}
                   </Button>

@@ -11,6 +11,7 @@ import type { WorkActivity, ActivityPhase, ActivityRateType, SpeedMode, Material
 import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { IconPicker }  from '@/components/ui/IconPicker'
+import FloatingPanel from '../FloatingPanel'
 
 interface Props {
   workActivities: WorkActivity[]
@@ -104,14 +105,14 @@ function ActivityForm({
   return (
     <div className="space-y-3">
     <div className="flex-1 min-w-0 space-y-4">
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-4 items-start">
         <IconPicker label="Icon" value={d.icon ?? ''} onChange={v => set('icon')(v)} />
         <ColorPicker label="Colour" value={d.color ?? '#0284c7'} onChange={v => set('color')(v)} />
         <Input label="Activity name" value={d.name ?? ''} onChange={e => set('name')(e.target.value)}
           placeholder="e.g. Install bracket" className="flex-1 min-w-48" />
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-4 items-start">
         <Select label="Phase" value={d.phase ?? 'installation'} onChange={e => {
           const phase = e.target.value as ActivityPhase
           const icon = PHASES.find(p => p.value === phase)?.icon ?? '🏗️'
@@ -141,7 +142,7 @@ function ActivityForm({
       )}
 
       {!isThirdParty && (
-        <div className="flex flex-wrap gap-3 items-end">
+        <div className="flex flex-wrap gap-4 items-end">
           <div className="flex overflow-hidden border border-surface-300 self-end mb-px" style={{ borderRadius: 'var(--radius)' }}>
             {([['time_per_unit', '⏱ Time/unit'], ['rate', '⚡ Rate']] as const).map(([v, l], i) => (
               <button key={v} type="button" onClick={() => set('speedMode')(v)}
@@ -162,7 +163,7 @@ function ActivityForm({
       )}
 
       {isThirdParty && (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-4 items-start">
           <NumberInput label="Rate (S$)" value={d.thirdPartyRate ?? ''} step="any" min={0}
             onChange={e => set('thirdPartyRate')(parseFloat(e.target.value) || undefined)} className="w-36" />
           <Input label="Supplier" value={d.thirdPartySupplier ?? ''} onChange={e => set('thirdPartySupplier')(e.target.value)}
@@ -171,7 +172,7 @@ function ActivityForm({
       )}
 
       {!isThirdParty && (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-4 items-start">
           <Input label="Labour category" value={d.labourCategory ?? ''} onChange={e => set('labourCategory')(e.target.value)}
             placeholder="e.g. Site erection" className="w-48" />
           <NumberInput label="Rate S$/hr (Pro)" value={d.labourRateHr ?? ''} step="any" min={0}
@@ -208,16 +209,16 @@ function ActivityForm({
         <Button size="sm" variant="secondary" onClick={onCancel} icon={<X className="w-3.5 h-3.5" />}>Cancel</Button>
       </div>
     </div>
-    {/* Field Guide toggle */}
-    <div>
-      <button onClick={() => setGuideOpen(v => !v)}
-        className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 border transition-colors ${guideOpen ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-surface-100 border-surface-200 text-ink-faint hover:text-ink-muted'}`}
-        style={{ borderRadius: 'var(--radius)' }}>
-        <BookOpen className="w-3 h-3" />
-        Field Guide
-      </button>
-      {guideOpen && <div className="mt-2"><FieldGuide /></div>}
-    </div>
+    {/* Field Guide floating toggle */}
+    <Button size="xs" variant={guideOpen ? 'primary' : 'secondary'}
+      onClick={() => setGuideOpen(v => !v)}
+      icon={<BookOpen className="w-3 h-3" />}>
+      Field Guide
+    </Button>
+    <FloatingPanel open={guideOpen} onClose={() => setGuideOpen(false)} title="Field Guide"
+      icon={<BookOpen className="w-3.5 h-3.5 text-primary" />} width="w-80">
+      <FieldGuide />
+    </FloatingPanel>
     </div>
   )
 }

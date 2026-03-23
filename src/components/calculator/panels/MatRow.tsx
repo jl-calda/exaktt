@@ -10,6 +10,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { NumberInput } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Toggle } from '@/components/ui/Toggle'
+import FloatingPanel from '../FloatingPanel'
 
 // ─── Rule type descriptions ───────────────────────────────────────────────────
 
@@ -214,15 +215,9 @@ function DependencyChain({ mat, ruleSet, criteriaKeys, customDimKey, customDims,
   )
 
   return (
-    <div className="w-64 shrink-0 self-stretch bg-surface-100 border border-surface-200 px-4 py-3"
-      style={{ borderRadius: 'var(--radius)' }}>
-
+    <div className="space-y-0">
       {/* Header */}
       <div className="mb-3 pb-3 border-b border-surface-200">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-ink mb-0.5">
-          <GitBranch className="w-3.5 h-3.5 text-primary" />
-          Dependency Chain
-        </div>
         <div className="text-[10px] text-ink-faint italic leading-snug">
           Live summary of what this rule reads, conditions on, and produces.
         </div>
@@ -356,6 +351,7 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
   const [criteriaKeys, setCriteriaKeys] = useState<string[]>(mat.criteriaKeys ?? [])
   const [variantTags, setVariantTags]   = useState<Record<string, string>>(mat.variantTags ?? {})
   const [deleteRuleId, setDeleteRuleId] = useState<string | null>(null)
+  const [showDepChain, setShowDepChain] = useState(false)
   const isFirstRender = useRef(true)
 
   // Auto-save on every change when embedded (no separate Save button)
@@ -403,9 +399,7 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
         </div>
       )}
 
-      <div className="flex gap-5 items-start">
-
-        {/* ── Left: Editor ── */}
+      <div>
         <div className="flex-1 min-w-0 space-y-5">
 
           {/* Produces dim */}
@@ -592,24 +586,41 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
             <div className="flex gap-3 pt-2 border-t border-surface-300">
               <Button variant="primary" onClick={save} icon={<Check className="w-4 h-4" />}>Save Rules</Button>
               <Button variant="secondary" onClick={onClose} icon={<X className="w-4 h-4" />}>Cancel</Button>
+              <Button size="sm" variant={showDepChain ? 'primary' : 'secondary'}
+                onClick={() => setShowDepChain(v => !v)}
+                icon={<GitBranch className="w-3 h-3" />}>
+                Dependency Chain
+              </Button>
               {ruleSet.length > 0 && (
                 <Button variant="ghost" onClick={clear} className="ml-auto text-ink-faint">Clear all rules</Button>
               )}
             </div>
           )}
+
+          {/* Dependency chain toggle for embedded mode */}
+          {embedded && (
+            <Button size="xs" variant={showDepChain ? 'primary' : 'secondary'}
+              onClick={() => setShowDepChain(v => !v)}
+              icon={<GitBranch className="w-3 h-3" />}>
+              Dependency Chain
+            </Button>
+          )}
         </div>
 
-        {/* ── Right: Dependency chain ── */}
-        <DependencyChain
-          mat={mat}
-          ruleSet={ruleSet}
-          criteriaKeys={criteriaKeys}
-          customDimKey={customDimKey}
-          customDims={customDims}
-          customCriteria={customCriteria}
-          variants={variants}
-          variantTags={variantTags}
-        />
+        {/* Floating Dependency Chain panel */}
+        <FloatingPanel open={showDepChain} onClose={() => setShowDepChain(false)} title="Dependency Chain"
+          icon={<GitBranch className="w-3.5 h-3.5 text-primary" />} width="w-72">
+          <DependencyChain
+            mat={mat}
+            ruleSet={ruleSet}
+            criteriaKeys={criteriaKeys}
+            customDimKey={customDimKey}
+            customDims={customDims}
+            customCriteria={customCriteria}
+            variants={variants}
+            variantTags={variantTags}
+          />
+        </FloatingPanel>
       </div>
       <ConfirmModal
         open={deleteRuleId !== null}
