@@ -118,7 +118,7 @@ export default function SystemOverviewPanel({ sys, onViewGraph }: Props) {
   const userSpacingDims = cds.filter(cd => cd.derivType === 'spacing' && cd.spacingMode === 'user')
 
   return (
-    <div className="w-64 flex-shrink-0 sticky top-4 self-start">
+    <div className="w-64 flex-shrink-0 sticky top-4 self-start hidden lg:block">
       <div className="card overflow-hidden">
         {/* Header */}
         <div className="px-3 py-3 border-b border-surface-200 bg-surface-50 flex items-center gap-2">

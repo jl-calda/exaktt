@@ -131,7 +131,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
   }
 
   return (
-    <div className="flex gap-6 items-start relative">
+    <div className="flex flex-col lg:flex-row gap-6 items-start relative">
     {/* Toggle button — fixed to right edge */}
     <button
       onClick={() => setShowOverview(v => !v)}
