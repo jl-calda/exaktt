@@ -334,7 +334,6 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
           sysId={sys.id}
           onSave={saveMat}
           onDelete={deleteMat}
-          onAdd={addMat}
           onMakeUnique={makeUnique}
           onSyncFromLib={syncFromLib}
           onAddFromLib={addFromLib}

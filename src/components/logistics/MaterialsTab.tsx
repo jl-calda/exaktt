@@ -918,7 +918,7 @@ export default function MaterialsTab({ library, suppliers, categories, grades, m
               {filtered.length === 0 && (
                 <tr><td colSpan={9} className="px-5 py-12 text-center text-sm text-ink-faint">
                   {library.length === 0
-                    ? <span>No materials yet. <button onClick={openCreate} className="text-primary hover:underline">Add your first material</button></span>
+                    ? <span>No materials yet. <button onClick={() => openCreate()} className="text-primary hover:underline">Add your first material</button></span>
                     : 'No materials match your filter.'}
                 </td></tr>
               )}

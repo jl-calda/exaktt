@@ -18,10 +18,10 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await req.json()
-  const { name, client, projectName, reference, submissionDate, notes } = body
+  const { name, clientId, clientName, projectName, reference, submissionDate, notes } = body
   if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
   const tender = await createTender(user.id, {
-    name: name.trim(), client, projectName, reference,
+    name: name.trim(), clientId, clientName, projectName, reference,
     submissionDate: submissionDate ? new Date(submissionDate) : null,
     notes,
   })
