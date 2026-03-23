@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getUserWithPlan, upsertUser, getMtoSystems, getTenders, getReports, getClients } from '@/lib/db/queries'
+import { getUserWithPlan, upsertUser, getUserCompany, getMtoSystems, getTenders, getReports, getClients } from '@/lib/db/queries'
 import DashboardClient from './DashboardClient'
 
 export default async function DashboardPage() {
@@ -13,12 +13,16 @@ export default async function DashboardPage() {
 
   await upsertUser(user.id, user.email ?? '', user.user_metadata?.full_name ?? user.user_metadata?.name)
 
+  const company = await getUserCompany(user.id)
+  if (!company) redirect('/auth/login')
+  const companyId = company.id
+
   const [userData, systems, tenders, reports, clients] = await Promise.all([
     getUserWithPlan(user.id),
-    getMtoSystems(user.id),
-    getTenders(user.id),
-    getReports(user.id),
-    getClients(user.id),
+    getMtoSystems(companyId),
+    getTenders(companyId),
+    getReports(companyId),
+    getClients(companyId),
   ])
   const plan = userData?.companyMembers?.[0]?.company?.plan ?? 'FREE'
 

@@ -1,7 +1,7 @@
 // src/app/mto/system/[id]/page.tsx — MTO calculator
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getMtoSystem, getMtoJobs, getGlobalTags, getUserWithPlan, getProfile } from '@/lib/db/queries'
+import { getMtoSystem, getMtoJobs, getGlobalTags, getUserWithPlan, getProfile, getUserCompany } from '@/lib/db/queries'
 import SystemShellSaaS from '@/components/calculator/SystemShellSaaS'
 
 interface PageProps { params: Promise<{ id: string }> }
@@ -12,10 +12,14 @@ export default async function MtoSystemPage({ params }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
+  const company = await getUserCompany(user.id)
+  if (!company) redirect('/auth/login')
+  const companyId = company.id
+
   const [system, jobs, tags, userData, profile] = await Promise.all([
-    getMtoSystem(id, user.id),
-    getMtoJobs(user.id, id),
-    getGlobalTags(user.id),
+    getMtoSystem(id, companyId),
+    getMtoJobs(companyId, id),
+    getGlobalTags(companyId),
     getUserWithPlan(user.id),
     getProfile(user.id),
   ])
