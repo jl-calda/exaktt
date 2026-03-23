@@ -30,10 +30,10 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json()
   if (!body.id) return NextResponse.json({ error: 'id required' }, { status: 400 })
   if (body.action === 'addSystem') {
-    return NextResponse.json({ data: await addSystemToLibraryItem(body.id, body.sysId) })
+    return NextResponse.json({ data: await addSystemToLibraryItem(body.id, body.sysId, user.id) })
   }
   if (body.action === 'removeSystem') {
-    return NextResponse.json({ data: await removeSystemFromLibraryItem(body.id, body.sysId) })
+    return NextResponse.json({ data: await removeSystemFromLibraryItem(body.id, body.sysId, user.id) })
   }
   return NextResponse.json({ data: await updateLibraryItem(body.id, user.id, body) })
 }

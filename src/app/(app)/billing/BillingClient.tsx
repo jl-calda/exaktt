@@ -37,7 +37,7 @@ export default function BillingClient({ plan, stripeCustomerId, planExpiresAt }:
 
   return (
     <div className="min-h-full">
-      <main className="px-6 py-5">
+      <main className="px-4 py-4 md:px-6 md:py-5">
         {/* Current plan banner */}
         <div className="card p-5 mb-8 flex items-center gap-4">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${plan === 'PRO' ? 'bg-primary text-white' : 'bg-surface-200 text-ink-muted'}`}>

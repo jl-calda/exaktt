@@ -4,6 +4,20 @@ import { getLimits, withinLimit } from '@/lib/limits'
 import type { Plan } from '@prisma/client'
 import type { MtoSystem, SavedJob, LibraryItem, GlobalTag, MaterialSpec, Report, Profile, ActivityLibraryItem, Supplier } from '@/types'
 
+// ─── Ownership guard ─────────────────────────────────────────────────────────
+// Verifies a record belongs to the user before update/delete.
+// Throws if the record doesn't exist or belongs to another user.
+
+async function verifyOwnership(
+  model: { findFirst: (args: any) => Promise<any> },
+  id: string,
+  userId: string,
+  label: string,
+) {
+  const record = await model.findFirst({ where: { id, userId }, select: { id: true } })
+  if (!record) throw new Error(`${label} not found`)
+}
+
 // ─── Company helpers ───────────────────────────────────────────────────────────
 
 export async function getUserCompany(userId: string) {
@@ -121,6 +135,7 @@ export async function createMtoSystem(userId: string, data: Partial<MtoSystem>) 
 }
 
 export async function updateMtoSystem(id: string, userId: string, data: Partial<MtoSystem> & { materials?: any }) {
+  await verifyOwnership(prisma.mtoSystem, id, userId, 'System')
   if (data.materials !== undefined) {
     const plan   = await getCompanyPlan(userId)
     const limits = getLimits(plan)
@@ -150,6 +165,7 @@ export async function updateMtoSystem(id: string, userId: string, data: Partial<
 }
 
 export async function archiveMtoSystem(id: string, userId: string) {
+  await verifyOwnership(prisma.mtoSystem, id, userId, 'System')
   return prisma.mtoSystem.update({ where: { id }, data: { isArchived: true } })
 }
 
@@ -195,6 +211,7 @@ export async function createMtoJob(userId: string, mtoSystemId: string, data: Pa
 }
 
 export async function updateMtoJob(id: string, userId: string, data: Partial<SavedJob>) {
+  await verifyOwnership(prisma.mtoJob, id, userId, 'Job')
   return prisma.mtoJob.update({
     where: { id },
     data: {
@@ -210,6 +227,7 @@ export async function updateMtoJob(id: string, userId: string, data: Partial<Sav
 }
 
 export async function archiveMtoJob(id: string, userId: string) {
+  await verifyOwnership(prisma.mtoJob, id, userId, 'Job')
   return prisma.mtoJob.update({ where: { id }, data: { isArchived: true } })
 }
 
@@ -232,6 +250,7 @@ export async function upsertMaterialSpec(userId: string, data: Partial<MaterialS
 }
 
 export async function deleteMaterialSpec(id: string, userId: string) {
+  await verifyOwnership(prisma.materialSpec, id, userId, 'MaterialSpec')
   return prisma.materialSpec.delete({ where: { id } })
 }
 
@@ -284,6 +303,7 @@ export async function createReport(userId: string, data: Partial<Report>) {
 }
 
 export async function updateReport(id: string, userId: string, data: Partial<Report>) {
+  await verifyOwnership(prisma.report, id, userId, 'Report')
   const { nanoid } = await import('nanoid')
   return prisma.report.update({
     where: { id },
@@ -305,6 +325,7 @@ export async function updateReport(id: string, userId: string, data: Partial<Rep
 }
 
 export async function archiveReport(id: string, userId: string) {
+  await verifyOwnership(prisma.report, id, userId, 'Report')
   return prisma.report.update({ where: { id }, data: { isArchived: true } })
 }
 
@@ -365,22 +386,26 @@ export async function createLibraryItem(userId: string, data: Partial<LibraryIte
 }
 
 export async function updateLibraryItem(id: string, userId: string, data: Partial<LibraryItem>) {
+  await verifyOwnership(prisma.libraryItem, id, userId, 'LibraryItem')
   // Exclude computed/relational fields that can't be written directly
   const { grade, manufacturer, certifications, usedInSystems, ...rest } = data as any
   return prisma.libraryItem.update({ where: { id }, data: rest as any })
 }
 
 export async function deleteLibraryItem(id: string, userId: string) {
+  await verifyOwnership(prisma.libraryItem, id, userId, 'LibraryItem')
   return prisma.libraryItem.delete({ where: { id } })
 }
 
-export async function addSystemToLibraryItem(id: string, sysId: string) {
+export async function addSystemToLibraryItem(id: string, sysId: string, userId: string) {
+  await verifyOwnership(prisma.libraryItem, id, userId, 'LibraryItem')
   const item = await prisma.libraryItem.findUnique({ where: { id }, select: { usedInSystems: true } })
   if (!item || item.usedInSystems.includes(sysId)) return
   return prisma.libraryItem.update({ where: { id }, data: { usedInSystems: { push: sysId } } })
 }
 
-export async function removeSystemFromLibraryItem(id: string, sysId: string) {
+export async function removeSystemFromLibraryItem(id: string, sysId: string, userId: string) {
+  await verifyOwnership(prisma.libraryItem, id, userId, 'LibraryItem')
   const item = await prisma.libraryItem.findUnique({ where: { id }, select: { usedInSystems: true } })
   if (!item) return
   return prisma.libraryItem.update({ where: { id }, data: { usedInSystems: item.usedInSystems.filter(s => s !== sysId) } })
@@ -429,10 +454,12 @@ export async function createActivityLibraryItem(userId: string, data: Partial<Ac
 }
 
 export async function updateActivityLibraryItem(id: string, userId: string, data: Partial<ActivityLibraryItem>) {
+  await verifyOwnership(prisma.activityLibraryItem, id, userId, 'ActivityLibraryItem')
   return prisma.activityLibraryItem.update({ where: { id }, data: data as any })
 }
 
 export async function deleteActivityLibraryItem(id: string, userId: string) {
+  await verifyOwnership(prisma.activityLibraryItem, id, userId, 'ActivityLibraryItem')
   return prisma.activityLibraryItem.delete({ where: { id } })
 }
 
@@ -458,10 +485,12 @@ export async function createSupplier(userId: string, data: Partial<Supplier>) {
 }
 
 export async function updateSupplier(id: string, userId: string, data: Partial<Supplier>) {
+  await verifyOwnership(prisma.supplier, id, userId, 'Supplier')
   return prisma.supplier.update({ where: { id }, data: data as any })
 }
 
 export async function deleteSupplier(id: string, userId: string) {
+  await verifyOwnership(prisma.supplier, id, userId, 'Supplier')
   return prisma.supplier.update({ where: { id }, data: { isArchived: true } })
 }
 
@@ -484,6 +513,7 @@ export async function createPurchaseOrder(userId: string, data: any) {
 }
 
 export async function updatePurchaseOrder(id: string, userId: string, data: any) {
+  await verifyOwnership(prisma.purchaseOrder, id, userId, 'PurchaseOrder')
   const { lines, ...header } = data
   if (lines !== undefined) {
     await prisma.$transaction([
@@ -495,6 +525,7 @@ export async function updatePurchaseOrder(id: string, userId: string, data: any)
 }
 
 export async function deletePurchaseOrder(id: string, userId: string) {
+  await verifyOwnership(prisma.purchaseOrder, id, userId, 'PurchaseOrder')
   return prisma.purchaseOrder.delete({ where: { id } })
 }
 
@@ -517,6 +548,7 @@ export async function createDeliveryOrder(userId: string, data: any) {
 }
 
 export async function updateDeliveryOrder(id: string, userId: string, data: any) {
+  await verifyOwnership(prisma.deliveryOrder, id, userId, 'DeliveryOrder')
   const { lines, ...header } = data
   if (lines !== undefined) {
     await prisma.$transaction([
@@ -531,6 +563,7 @@ export async function updateDeliveryOrder(id: string, userId: string, data: any)
 }
 
 export async function deleteDeliveryOrder(id: string, userId: string) {
+  await verifyOwnership(prisma.deliveryOrder, id, userId, 'DeliveryOrder')
   return prisma.deliveryOrder.delete({ where: { id } })
 }
 
@@ -550,10 +583,12 @@ export async function createMaterialCategory(userId: string, data: { name: strin
 }
 
 export async function updateMaterialCategory(id: string, userId: string, data: { name?: string; icon?: string; sortOrder?: number }) {
+  await verifyOwnership(prisma.materialCategory, id, userId, 'MaterialCategory')
   return prisma.materialCategory.update({ where: { id }, data })
 }
 
 export async function deleteMaterialCategory(id: string, userId: string) {
+  await verifyOwnership(prisma.materialCategory, id, userId, 'MaterialCategory')
   return prisma.materialCategory.delete({ where: { id } })
 }
 
@@ -570,10 +605,12 @@ export async function createMaterialGrade(userId: string, data: { name: string; 
 }
 
 export async function updateMaterialGrade(id: string, userId: string, data: { name?: string; materialType?: string | null; standard?: string | null; density?: number | null; notes?: string | null }) {
+  await verifyOwnership(prisma.materialGrade, id, userId, 'MaterialGrade')
   return prisma.materialGrade.update({ where: { id }, data })
 }
 
 export async function deleteMaterialGrade(id: string, userId: string) {
+  await verifyOwnership(prisma.materialGrade, id, userId, 'MaterialGrade')
   return prisma.materialGrade.delete({ where: { id } })
 }
 
@@ -590,10 +627,12 @@ export async function createManufacturer(userId: string, data: { name: string; c
 }
 
 export async function updateManufacturer(id: string, userId: string, data: { name?: string; contactPerson?: string | null; email?: string | null; phone?: string | null; country?: string | null; website?: string | null; notes?: string | null }) {
+  await verifyOwnership(prisma.manufacturer, id, userId, 'Manufacturer')
   return prisma.manufacturer.update({ where: { id }, data })
 }
 
 export async function deleteManufacturer(id: string, userId: string) {
+  await verifyOwnership(prisma.manufacturer, id, userId, 'Manufacturer')
   return prisma.manufacturer.update({ where: { id }, data: { isArchived: true } })
 }
 
@@ -664,6 +703,7 @@ export async function updateTender(id: string, userId: string, data: Partial<{
   projectName: string; reference: string;
   submissionDate: Date | null; status: string; notes: string;
 }>) {
+  await verifyOwnership(prisma.tender, id, userId, 'Tender')
   return prisma.tender.update({ where: { id }, data: data as any })
 }
 
@@ -692,14 +732,17 @@ export async function updateClient(id: string, userId: string, data: Partial<{
   name: string; contactPerson: string | null; email: string | null; phone: string | null;
   address: string | null; notes: string | null;
 }>) {
+  await verifyOwnership(prisma.client, id, userId, 'Client')
   return prisma.client.update({ where: { id }, data: data as any })
 }
 
 export async function archiveClient(id: string, userId: string) {
+  await verifyOwnership(prisma.client, id, userId, 'Client')
   return prisma.client.update({ where: { id }, data: { isArchived: true } })
 }
 
 export async function archiveTender(id: string, userId: string) {
+  await verifyOwnership(prisma.tender, id, userId, 'Tender')
   return prisma.tender.update({ where: { id }, data: { isArchived: true } })
 }
 
