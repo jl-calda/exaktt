@@ -60,7 +60,7 @@ export default function SampleSystemsGuide({ onCreated, atLimit }: Props) {
       body: JSON.stringify({ templateKey }),
     })
     const { data, error: err } = await res.json()
-    if (data)  { onCreated(data); router.push('/system/' + data.id) }
+    if (data)  { onCreated(data); router.push('/products/' + data.id) }
     if (err)   { setError(String(err)) }
     setLoading(null)
   }
