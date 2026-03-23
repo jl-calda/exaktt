@@ -3,9 +3,9 @@
 /* ─── Design tokens — Tailwind reads @theme to generate utility classes ───── */
 /* Default preset: zinc + emerald (overrides applied per [data-theme] below)   */
 @theme {
-  --font-sans:    var(--font-sans-var), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-sans-var), ui-sans-serif, system-ui, sans-serif;
-  --font-mono:    var(--font-mono-var), ui-monospace, monospace;
+  --font-sans:    "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, monospace;
 
   --color-primary:     #3ecf8e;
   --color-primary-50:  #f0fdf4;

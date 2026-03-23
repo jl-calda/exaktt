@@ -189,10 +189,10 @@ function ActivityForm({
                     const keys = d.criteriaKeys ?? []
                     set('criteriaKeys')(active ? keys.filter(k => k !== cr.key) : [...keys, cr.key])
                   }}
-                  className="text-xs px-2.5 py-1 border transition-all" style={{ borderRadius: 'var(--radius)' }}
+                  className="text-xs px-2.5 py-1 border transition-all"
                   style={active
-                    ? { background: cr.color + '20', borderColor: cr.color, color: cr.color, fontWeight: 600 }
-                    : { background: 'var(--color-surface-50)', borderColor: '#e2e8f0', color: '#64748b' }}>
+                    ? { borderRadius: 'var(--radius)', background: cr.color + '20', borderColor: cr.color, color: cr.color, fontWeight: 600 }
+                    : { borderRadius: 'var(--radius)', background: 'var(--color-surface-50)', borderColor: '#e2e8f0', color: '#64748b' }}>
                   {cr.icon} {cr.name}
                 </button>
               )

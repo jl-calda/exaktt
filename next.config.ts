@@ -12,9 +12,7 @@ const nextConfig: NextConfig = {
   },
 
   // @react-pdf/renderer needs these server-only exclusions
-  experimental: {
-    serverComponentsExternalPackages: ['@react-pdf/renderer'],
-  },
+  serverExternalPackages: ['@react-pdf/renderer'],
 }
 
 export default nextConfig
