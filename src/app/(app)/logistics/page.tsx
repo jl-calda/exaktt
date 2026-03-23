@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getLibraryItems, getSuppliers, getPurchaseOrders, getDeliveryOrders, getCompanyPlan, getMaterialCategories, getMaterialGrades, getManufacturers } from '@/lib/db/queries'
+import { getLibraryItems, getSuppliers, getPurchaseOrders, getDeliveryOrders, getCompanyPlan, getMaterialCategories, getMaterialGrades, getManufacturers, getUserCompany } from '@/lib/db/queries'
 import LogisticsClient from '@/components/logistics/LogisticsClient'
 
 export default async function LogisticsPage() {
@@ -11,15 +11,19 @@ export default async function LogisticsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
+  const company = await getUserCompany(user.id)
+  if (!company) redirect('/auth/login')
+  const companyId = company.id
+
   const [library, suppliers, pos, dos, plan, categories, grades, manufacturers] = await Promise.all([
-    getLibraryItems(user.id),
-    getSuppliers(user.id),
-    getPurchaseOrders(user.id),
-    getDeliveryOrders(user.id),
+    getLibraryItems(companyId),
+    getSuppliers(companyId),
+    getPurchaseOrders(companyId),
+    getDeliveryOrders(companyId),
     getCompanyPlan(user.id),
-    getMaterialCategories(user.id),
-    getMaterialGrades(user.id),
-    getManufacturers(user.id),
+    getMaterialCategories(companyId),
+    getMaterialGrades(companyId),
+    getManufacturers(companyId),
   ])
 
   return (

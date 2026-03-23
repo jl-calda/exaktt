@@ -1,17 +1,19 @@
 // src/app/settings/page.tsx
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getUserWithPlan, getProfile, getGlobalTags } from '@/lib/db/queries'
+import { getUserWithPlan, getProfile, getGlobalTags, getUserCompany } from '@/lib/db/queries'
 import SettingsClient from './SettingsClient'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
+  const company = await getUserCompany(user.id)
+  if (!company) redirect('/auth/login')
   const [dbUser, profile, tags] = await Promise.all([
     getUserWithPlan(user.id),
     getProfile(user.id),
-    getGlobalTags(user.id),
+    getGlobalTags(company.id),
   ])
   const plan = dbUser?.companyMembers?.[0]?.company?.plan ?? 'FREE'
   return (

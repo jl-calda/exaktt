@@ -82,9 +82,38 @@ export async function upsertUser(id: string, email: string, name?: string | null
         permissions: { systems: 'write', library: 'write', reports: 'write', logistics: 'write', tenders: 'write' },
       },
     })
+
+    // Seed sample systems so new users have data to explore
+    await seedSampleSystems(company.id, id)
   }
 
   return user
+}
+
+async function seedSampleSystems(companyId: string, userId: string) {
+  const { SAMPLE_SYSTEMS } = await import('@/lib/sample-systems')
+  try {
+    await prisma.mtoSystem.createMany({
+      data: SAMPLE_SYSTEMS.map(s => ({
+        companyId,
+        createdById:    userId,
+        name:           s.template.name        ?? s.label,
+        description:    s.template.description  ?? s.description,
+        icon:           s.template.icon         ?? '📦',
+        color:          s.template.color        ?? '#7917de',
+        inputModel:     s.template.inputModel   ?? 'simple_dims',
+        materials:      (s.template.materials      ?? []) as any,
+        customDims:     (s.template.customDims     ?? []) as any,
+        customCriteria: (s.template.customCriteria ?? []) as any,
+        variants:       (s.template.variants       ?? []) as any,
+        warnings:       (s.template.warnings       ?? []) as any,
+        customBrackets: (s.template.customBrackets ?? []) as any,
+        workActivities: (s.template.workActivities ?? []) as any,
+      })),
+    })
+  } catch {
+    // Non-critical — don't block signup if seeding fails
+  }
 }
 
 // ─── Profile ──────────────────────────────────────────────────────────────────

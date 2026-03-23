@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getMtoSystems, getReports, getUserWithPlan } from '@/lib/db/queries'
+import { getMtoSystems, getReports, getUserWithPlan, getUserCompany } from '@/lib/db/queries'
 import ProductsClient from './ProductsClient'
 
 export default async function ProductsPage() {
@@ -11,10 +11,14 @@ export default async function ProductsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
+  const company = await getUserCompany(user.id)
+  if (!company) redirect('/auth/login')
+  const companyId = company.id
+
   const [userData, systems, reports] = await Promise.all([
     getUserWithPlan(user.id),
-    getMtoSystems(user.id),
-    getReports(user.id),
+    getMtoSystems(companyId),
+    getReports(companyId),
   ])
 
   const plan = userData?.companyMembers?.[0]?.company?.plan ?? 'FREE'
