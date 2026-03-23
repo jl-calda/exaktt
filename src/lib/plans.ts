@@ -1,0 +1,55 @@
+// src/lib/plans.ts
+// Static plan definitions — safe to import in client components (no Stripe SDK)
+
+export const PLANS = [
+  {
+    id:       'free',
+    name:     'Free',
+    price:    0,
+    currency: 'SGD',
+    period:   null,
+    features: [
+      '1 system',
+      '5 materials per system',
+      '1 run per job',
+      '5 saved jobs',
+      'Basic reports (watermarked)',
+      '10 library items',
+    ],
+    cta: 'Get started free',
+    highlighted: false,
+  },
+  {
+    id:        'pro_monthly',
+    name:      'Pro',
+    price:     29,
+    currency:  'SGD',
+    period:    'month',
+    priceId:   process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY,
+    features: [
+      'Unlimited systems',
+      'Unlimited materials',
+      'Multi-run calculations',
+      'Material pricing & costing',
+      'Branded PDF reports',
+      'Shareable report links',
+      'Material tags & filtering',
+      'Unlimited library',
+      'Priority support',
+    ],
+    cta: 'Start Pro',
+    highlighted: true,
+  },
+  {
+    id:        'pro_annual',
+    name:      'Pro Annual',
+    price:     249,
+    currency:  'SGD',
+    period:    'year',
+    priceId:   process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_ANNUAL,
+    badge:     'Save 28%',
+    features: ['Everything in Pro', 'Billed annually', '2 months free'],
+    cta: 'Start Pro Annual',
+    highlighted: false,
+  },
+]

@@ -1,0 +1,250 @@
+@import "tailwindcss";
+
+/* ─── Design tokens — Tailwind reads @theme to generate utility classes ───── */
+/* Default preset: zinc + emerald (overrides applied per [data-theme] below)   */
+@theme {
+  --font-sans:    var(--font-sans-var), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sans-var), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    var(--font-mono-var), ui-monospace, monospace;
+
+  --color-primary:     #3ecf8e;
+  --color-primary-50:  #f0fdf4;
+  --color-primary-800: #16a369;
+
+  --color-secondary:     #f59e0b;
+  --color-secondary-50:  #fffbeb;
+  --color-secondary-100: #fef3c7;
+  --color-secondary-200: #fcd34d;
+  --color-secondary-300: #f59e0b;
+  --color-secondary-600: #d97706;
+  --color-secondary-700: #b45309;
+  --color-secondary-900: #78350f;
+
+  --color-surface:     #f4f4f5;
+  --color-surface-50:  #ffffff;
+  --color-surface-100: #f0f0f1;
+  --color-surface-200: #e4e4e7;
+  --color-surface-300: #d1d1d6;
+
+  --color-ink:       #18181b;
+  --color-ink-muted: #52525b;
+  --color-ink-faint: #a1a1aa;
+
+  --shadow-card:  0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-panel: 0 4px 24px 0 rgb(0 0 0 / 0.07);
+  --shadow-float: 0 8px 40px 0 rgb(0 0 0 / 0.10);
+}
+
+/* Sidebar tokens — not Tailwind utilities; used via style= or CSS components */
+:root {
+  --sidebar-bg:     #ffffff;
+  --sidebar-border: #e4e4e7;
+  --radius:         4px;
+  --radius-card:    6px;
+}
+
+/* ─── AMBER preset ────────────────────────────────────────────────────────── */
+[data-theme="amber"] {
+  --color-primary:     #c9a225;
+  --color-primary-50:  #fdf8e8;
+  --color-primary-800: #a07d18;
+  --color-surface:     #f6f3ee;
+  --color-surface-50:  #ffffff;
+  --color-surface-100: #ede9e1;
+  --color-surface-200: #e0d9ce;
+  --color-surface-300: #cec5b8;
+  --color-ink:         #26201a;
+  --color-ink-muted:   #6a5e53;
+  --color-ink-faint:   #9a8b7f;
+  --sidebar-bg:        #ffffff;
+  --sidebar-border:    #e0d9ce;
+}
+
+/* ─── OCEAN preset ────────────────────────────────────────────────────────── */
+[data-theme="ocean"] {
+  --color-primary:     #2563eb;
+  --color-primary-50:  #eff6ff;
+  --color-primary-800: #1d4ed8;
+  --color-surface:     #f8fafc;
+  --color-surface-50:  #ffffff;
+  --color-surface-100: #f1f5f9;
+  --color-surface-200: #e2e8f0;
+  --color-surface-300: #cbd5e1;
+  --color-ink:         #0f172a;
+  --color-ink-muted:   #475569;
+  --color-ink-faint:   #94a3b8;
+  --sidebar-bg:        #ffffff;
+  --sidebar-border:    #e2e8f0;
+}
+
+/* ─── ROSE preset ─────────────────────────────────────────────────────────── */
+[data-theme="rose"] {
+  --color-primary:     #e11d48;
+  --color-primary-50:  #fff1f2;
+  --color-primary-800: #be123c;
+  --color-surface:     #fafafa;
+  --color-surface-50:  #ffffff;
+  --color-surface-100: #f4f4f5;
+  --color-surface-200: #e4e4e7;
+  --color-surface-300: #d1d1d6;
+  --color-ink:         #18181b;
+  --color-ink-muted:   #52525b;
+  --color-ink-faint:   #a1a1aa;
+  --sidebar-bg:        #ffffff;
+  --sidebar-border:    #e4e4e7;
+}
+
+/* ─── DARK MODE — default ─────────────────────────────────────────────────── */
+.dark {
+  --color-secondary-50:  #2c1808;
+  --color-secondary-100: #3d2410;
+  --color-secondary-200: #7c3a00;
+  --color-secondary-300: #d97706;
+  --color-secondary-600: #fbbf24;
+  --color-secondary-700: #fcd34d;
+  --color-secondary-900: #fef9c3;
+
+  --color-surface:     #111113;
+  --color-surface-50:  #1c1c1f;
+  --color-surface-100: #27272a;
+  --color-surface-200: #3f3f46;
+  --color-surface-300: #52525b;
+  --color-ink:         #fafafa;
+  --color-ink-muted:   #d4d4d8;
+  --color-ink-faint:   #71717a;
+  --sidebar-bg:        #1c1c1f;
+  --sidebar-border:    #27272a;
+  --shadow-card:       0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.25);
+  --shadow-panel:      0 4px 24px 0 rgb(0 0 0 / 0.5);
+}
+
+/* ─── DARK MODE — amber ───────────────────────────────────────────────────── */
+[data-theme="amber"].dark {
+  --color-surface:     #141210;
+  --color-surface-50:  #1d1a17;
+  --color-surface-100: #2a2520;
+  --color-surface-200: #3a332a;
+  --color-surface-300: #4e4438;
+  --color-ink:         #faf8f5;
+  --color-ink-muted:   #c9b89a;
+  --color-ink-faint:   #7a6a58;
+  --sidebar-bg:        #1d1a17;
+  --sidebar-border:    #2a2520;
+}
+
+/* ─── DARK MODE — ocean ───────────────────────────────────────────────────── */
+[data-theme="ocean"].dark {
+  --color-surface:     #0d1117;
+  --color-surface-50:  #161b22;
+  --color-surface-100: #21262d;
+  --color-surface-200: #30363d;
+  --color-surface-300: #424a53;
+  --color-ink:         #f0f6fc;
+  --color-ink-muted:   #b1bac4;
+  --color-ink-faint:   #6e7681;
+  --sidebar-bg:        #161b22;
+  --sidebar-border:    #21262d;
+}
+
+/* ─── DARK MODE — rose ────────────────────────────────────────────────────── */
+[data-theme="rose"].dark {
+  --color-surface:     #111113;
+  --color-surface-50:  #1c1c1f;
+  --color-surface-100: #27272a;
+  --color-surface-200: #3f3f46;
+  --color-surface-300: #52525b;
+  --color-ink:         #fafafa;
+  --color-ink-muted:   #d4d4d8;
+  --color-ink-faint:   #71717a;
+  --sidebar-bg:        #1c1c1f;
+  --sidebar-border:    #27272a;
+}
+
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+@layer base {
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; font-size: 13px; }
+  body { color: var(--color-ink); background: var(--color-surface); line-height: 1.5; }
+  *:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 4px; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--color-surface-300); border-radius: 3px; }
+}
+
+/* ─── Components ──────────────────────────────────────────────────────────── */
+@layer components {
+  .card {
+    background: var(--color-surface-50);
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-surface-200);
+    box-shadow: var(--shadow-card);
+  }
+
+  .input {
+    width: 100%; border-radius: var(--radius); border: 1px solid var(--color-surface-300);
+    background: var(--color-surface-50); padding: 0.35rem 0.625rem; font-size: 0.846rem;
+    color: var(--color-ink); transition: border-color 0.15s; line-height: 1.5;
+    &::placeholder { color: var(--color-ink-faint); }
+    &:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  .label {
+    display: block; font-size: 0.692rem; font-weight: 500;
+    color: var(--color-ink-muted); margin-bottom: 0.2rem;
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    border-radius: 9999px; padding: 0.1rem 0.45rem;
+    font-size: 0.692rem; font-weight: 600;
+  }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    border-radius: var(--radius); background: var(--color-primary);
+    padding: 0.38rem 0.875rem; font-size: 0.846rem; font-weight: 600;
+    color: white; border: none; cursor: pointer; transition: all 0.15s;
+    &:hover { background: var(--color-primary-800); }
+    &:active { scale: 0.97; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; scale: 1; }
+  }
+
+  .btn-secondary {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    border-radius: var(--radius); border: 1px solid var(--color-surface-300);
+    background: var(--color-surface-50); padding: 0.38rem 0.875rem;
+    font-size: 0.846rem; font-weight: 500; color: var(--color-ink-muted);
+    cursor: pointer; transition: all 0.15s;
+    &:hover { background: var(--color-surface-100); border-color: var(--color-surface-200); }
+    &:active { scale: 0.97; }
+  }
+
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    border-radius: var(--radius); padding: 0.32rem 0.625rem;
+    font-size: 0.846rem; font-weight: 500; color: var(--color-ink-muted);
+    border: none; background: transparent; cursor: pointer; transition: all 0.15s;
+    &:hover { background: var(--color-surface-100); color: var(--color-ink); }
+    &:active { scale: 0.97; }
+  }
+
+  /* Sidebar nav item — works in both light and dark by using ink-relative opacity */
+  .sidebar-item {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 7px 10px; border-radius: var(--radius);
+    color: var(--color-ink-faint);
+    text-decoration: none; transition: background 0.12s, color 0.12s;
+    &:hover {
+      background: color-mix(in srgb, var(--color-ink) 8%, transparent);
+      color: var(--color-ink-muted);
+    }
+    &.active {
+      background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+      color: var(--color-primary);
+    }
+  }
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fadeIn 0.15s ease-out; }

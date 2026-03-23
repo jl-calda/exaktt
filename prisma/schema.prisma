@@ -1,0 +1,672 @@
+// prisma/schema.prisma
+// Exakt Platform — Prisma 6 + PostgreSQL (Supabase)
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Plan {
+  FREE
+  PRO
+}
+
+enum CompanyRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum TenderStatus {
+  DRAFT
+  SUBMITTED
+  WON
+  LOST
+  CANCELLED
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  PARTIAL
+  RECEIVED
+  CANCELLED
+}
+
+enum DeliveryOrderStatus {
+  PENDING
+  PARTIAL
+  DELIVERED
+  CANCELLED
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPANY — owns the subscription and team seats
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Company {
+  id               String    @id @default(cuid())
+  name             String
+  slug             String    @unique
+  plan             Plan      @default(FREE)
+  seatLimit        Int       @default(1)
+
+  // Stripe billing
+  stripeCustomerId String?   @unique
+  stripeSubId      String?   @unique
+  stripePriceId    String?
+  planExpiresAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members     CompanyMember[]
+  invitations CompanyInvite[]
+
+  @@map("companies")
+}
+
+model CompanyMember {
+  companyId String
+  userId    String
+  role      CompanyRole @default(MEMBER)
+  joinedAt  DateTime    @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, userId])
+  @@map("company_members")
+}
+
+model CompanyInvite {
+  id          String      @id @default(cuid())
+  companyId   String
+  email       String
+  role        CompanyRole @default(MEMBER)
+  token       String      @unique
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, email])
+  @@map("company_invites")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USER + PROFILE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id  // matches Supabase auth.users.id
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  companyMembers   CompanyMember[]
+  profile          Profile?
+  mtoSystems       MtoSystem[]
+  mtoJobs          MtoJob[]
+  reports          Report[]
+  tenders          Tender[]
+  clients          Client[]
+  libraryItems     LibraryItem[]
+  globalTags       GlobalTag[]
+  materialSpecs    MaterialSpec[]
+  activityLibrary  ActivityLibraryItem[]
+  suppliers              Supplier[]
+  purchaseOrders         PurchaseOrder[]
+  deliveryOrders         DeliveryOrder[]
+  materialCategories     MaterialCategory[]
+  materialGrades         MaterialGrade[]
+  manufacturers          Manufacturer[]
+  materialCertifications MaterialCertification[]
+
+  @@map("users")
+}
+
+// Company profile for report branding
+model Profile {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyName String?
+  tradingName String?
+  logo        String?   // base64 or Supabase storage URL
+  address     String?
+  city        String?
+  country     String?
+  postcode    String?
+  phone       String?
+  website     String?
+  abn         String?   // ABN / Company Reg / Tax ID
+  registrationLabel String @default("ABN") // "ABN", "GST Reg", "UEN", "CRN" etc.
+
+  // Report defaults
+  defaultPreparedBy   String?
+  defaultReportNotes  String?
+  defaultCurrency     String  @default("SGD")
+  defaultShowPricing  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MTO MODULE — MtoSystem (was: System)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model MtoSystem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  shortName   String?
+  description String?
+  icon        String   @default("📦")
+  color       String   @default("#7917de")
+  inputModel  String   @default("simple_dims")
+  isArchived  Boolean  @default(false)
+
+  // All nested config stored as JSON
+  materials      Json @default("[]")
+  customDims     Json @default("[]")
+  customCriteria Json @default("[]")
+  variants       Json @default("[]")
+  warnings       Json @default("[]")
+  customBrackets Json @default("[]")
+  workActivities Json @default("[]")
+
+  mtoJobs     MtoJob[]
+  reports     Report[]
+  tenderItems TenderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("systems")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MTO MODULE — MtoJob (was: Job)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model MtoJob {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mtoSystemId String    @map("systemId")
+  mtoSystem   MtoSystem @relation(fields: [mtoSystemId], references: [id], onDelete: Cascade)
+
+  name        String
+  isArchived  Boolean @default(false)
+
+  runs           Json    @default("[]")
+  criteriaState  Json    @default("{}")
+  variantState   Json    @default("{}")
+  stockOptimMode String  @default("min_waste")
+  calculatedAt   DateTime?
+  matVersions    Json    @default("{}")
+  lastResults    Json?
+
+  reports     Report[]
+  tenderItems TenderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([mtoSystemId])
+  @@map("jobs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MATERIAL SPECS (pricing + stock info — Pro only)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model MaterialSpec {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Link to a material by product code (portable) or by material id (per-system)
+  productCode   String?   // preferred — links across systems
+  materialId    String?   // fallback — specific instance
+
+  // Stock & logistics
+  stockLength   Float?    // mm — standard stock/coil length
+  storageLength Float?    // mm — max storage length on site
+  weightPerM    Float?    // kg/m — for transport calculations
+  supplier      String?
+  leadTimeDays  Int?
+
+  // Pricing
+  unitPrice     Float?    // price per material unit (each, m, m², kg etc.)
+  currency      String    @default("SGD")
+  priceDate     DateTime? // when the price was last updated
+  priceNotes    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productCode])
+  @@index([userId])
+  @@map("material_specs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REPORT
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Report {
+  id          String  @id @default(cuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mtoSystemId String? @map("systemId")
+  mtoSystem   MtoSystem? @relation(fields: [mtoSystemId], references: [id], onDelete: SetNull)
+  mtoJobId    String? @map("jobId")
+  mtoJob      MtoJob?    @relation(fields: [mtoJobId], references: [id], onDelete: SetNull)
+
+  // Module discriminator — which Exakt module generated this report
+  module      String  @default("mto")  // 'mto' | 'tenders' | 'logistics' | 'finance' | 'people'
+
+  // Report metadata
+  title        String
+  jobRef       String?
+  preparedBy   String?
+  preparedFor  String?
+  reportDate   DateTime @default(now())
+  revisionNo   String   @default("A")
+  notes        String?
+  isPublic     Boolean  @default(false)  // public share link
+  publicToken  String?  @unique          // token for public URL
+
+  // Branding snapshot (copied from Profile at report generation time)
+  companyName  String?
+  companyLogo  String?
+  companyAddr  String?
+  abn          String?
+
+  // Report config
+  showPricing  Boolean @default(false)
+  showWeights  Boolean @default(false)
+  currency     String  @default("SGD")
+
+  // Calculation snapshot (denormalised for portability)
+  systemName   String?
+  inputModel   String?
+  resultsSnapshot Json?
+  specsSnapshot   Json?
+
+  isArchived Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([publicToken])
+  @@map("reports")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLIENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Client {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name          String
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  notes         String?
+  isArchived    Boolean  @default(false)
+
+  tenders Tender[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("clients")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TENDERS MODULE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Tender {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name           String
+  clientId       String?
+  clientName     String?       // snapshot — preserved if Client record deleted
+  client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectName    String?
+  reference      String?       // RFQ / tender reference number
+  submissionDate DateTime?
+  status         TenderStatus  @default(DRAFT)
+  notes          String?
+  isArchived     Boolean       @default(false)
+
+  items     TenderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("tenders")
+}
+
+model TenderItem {
+  id        String  @id @default(cuid())
+  tenderId  String
+  systemId  String?
+  jobId     String?
+  notes     String?
+  sortOrder Int     @default(0)
+
+  tender Tender     @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  system MtoSystem? @relation(fields: [systemId], references: [id], onDelete: SetNull)
+  job    MtoJob?    @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenderId])
+  @@map("tender_items")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LIBRARY + GLOBAL TAGS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model MaterialGrade {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name         String
+  materialType String?
+  standard     String?
+  density      Float?        // g/cm³ — enables auto weight calculation
+  notes        String?
+
+  items        LibraryItem[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("material_grades")
+}
+
+model Manufacturer {
+  id         String        @id @default(cuid())
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name          String
+  contactPerson String?
+  email         String?
+  phone         String?
+  country       String?
+  website       String?
+  notes         String?
+  isArchived    Boolean       @default(false)
+
+  items      LibraryItem[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@map("manufacturers")
+}
+
+model LibraryItem {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name           String
+  unit           String         @default("each")
+  notes          String?
+  productCode    String?
+  category       String         @default("other")
+  photo          String?
+  properties     Json           @default("{}")
+  spec           Json?
+  usedInSystems  String[]       @default([])
+
+  gradeId        String?
+  grade          MaterialGrade? @relation(fields: [gradeId], references: [id], onDelete: SetNull)
+  manufacturerId String?
+  manufacturer   Manufacturer?  @relation(fields: [manufacturerId], references: [id], onDelete: SetNull)
+
+  certifications MaterialCertification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("library_items")
+}
+
+model MaterialCertification {
+  id            String      @id @default(cuid())
+  libraryItemId String
+  libraryItem   LibraryItem @relation(fields: [libraryItemId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type          String      // 'mill_cert' | 'ce' | 'iso' | 'test_report' | 'msds' | 'other'
+  certNumber    String?
+  issuedBy      String?
+  issuedDate    DateTime?
+  expiryDate    DateTime?
+  fileUrl       String?
+  fileName      String?
+  notes         String?
+
+  createdAt     DateTime @default(now())
+
+  @@index([libraryItemId])
+  @@index([userId])
+  @@map("material_certifications")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOGISTICS MODULE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Supplier {
+  id            String  @id @default(cuid())
+  userId        String
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name          String
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  paymentTerms  String?
+  notes         String?
+  isArchived    Boolean @default(false)
+
+  purchaseOrders PurchaseOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id           String              @id @default(cuid())
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  supplierId   String?
+  supplier     Supplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  supplierName String?
+
+  ref          String?
+  status       PurchaseOrderStatus @default(DRAFT)
+  orderDate    DateTime            @default(now())
+  expectedDate DateTime?
+  notes        String?
+
+  lines          PurchaseOrderLine[]
+  deliveryOrders DeliveryOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id            String        @id @default(cuid())
+  poId          String
+  po            PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+
+  libraryItemId String?
+  itemName      String
+  itemUnit      String
+  qtyOrdered    Float
+  unitPrice     Float?
+  notes         String?
+
+  createdAt DateTime @default(now())
+
+  @@map("po_lines")
+}
+
+model DeliveryOrder {
+  id           String              @id @default(cuid())
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  poId         String?
+  po           PurchaseOrder?      @relation(fields: [poId], references: [id], onDelete: SetNull)
+
+  ref           String?
+  status        DeliveryOrderStatus @default(PENDING)
+  expectedDate  DateTime?
+  deliveredDate DateTime?
+  notes         String?
+
+  lines DeliveryOrderLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("delivery_orders")
+}
+
+model DeliveryOrderLine {
+  id            String        @id @default(cuid())
+  doId          String
+  do            DeliveryOrder @relation(fields: [doId], references: [id], onDelete: Cascade)
+
+  poLineId      String?
+  libraryItemId String?
+  itemName      String
+  itemUnit      String
+  qtyExpected   Float
+  qtyDelivered  Float @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@map("do_lines")
+}
+
+model MaterialCategory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  icon      String   @default("📦")
+  sortOrder Int      @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("material_categories")
+}
+
+model GlobalTag {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name  String
+  color String @default("#7c3aed")
+  order Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("global_tags")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GLOBAL ACTIVITY LIBRARY
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ActivityLibraryItem {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  phase       String    // 'fabrication' | 'installation' | 'commissioning' | 'transport' | 'third_party'
+  icon        String?
+  description String?
+
+  rateType       String    // ActivityRateType
+  defaultTimeMin Float?    // default time in minutes per unit
+  speedMode      String?   // 'time_per_unit' | 'rate'
+  defaultRate    Float?    // units per hour (rate mode)
+
+  labourCategory  String?
+  labourRateHr    Float?    // S$/hr — Pro+ only
+
+  supplier        String?
+  supplierContact String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("activity_library_items")
+}

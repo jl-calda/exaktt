@@ -1,0 +1,105 @@
+// src/app/report/[id]/page.tsx
+// Public shareable report page — no auth required
+import { notFound } from 'next/navigation'
+import { getReportByToken } from '@/lib/db/queries'
+import { format } from 'date-fns'
+
+interface PageProps { params: Promise<{ id: string }> }
+
+export default async function PublicReportPage({ params }: PageProps) {
+  const { id } = await params
+  const report = await getReportByToken(id)
+  if (!report) notFound()
+
+  const results = (report.resultsSnapshot as any[] ?? []).filter((m: any) => !m.allBlocked && m.grandTotal > 0)
+  const accentColor = '#0f172a'
+
+  return (
+    <div className="min-h-screen bg-surface-100">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Report header */}
+        <div className="card p-6 mb-5">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              {report.companyName && <div className="font-bold text-sm text-ink mb-1">{report.companyName}</div>}
+              <h1 className="font-display font-black text-2xl text-ink">{report.title}</h1>
+              <div className="flex gap-3 text-xs text-ink-muted mt-2 flex-wrap">
+                {report.jobRef && <span>Ref: <strong>{report.jobRef}</strong></span>}
+                {report.revisionNo   && <span>Rev {report.revisionNo}</span>}
+                <span>{format(new Date(report.reportDate), 'dd MMMM yyyy')}</span>
+                {report.preparedBy   && <span>Prepared by: {report.preparedBy}</span>}
+                {report.preparedFor  && <span>Prepared for: {report.preparedFor}</span>}
+              </div>
+            </div>
+            {report.companyLogo && (
+              <img src={report.companyLogo} alt="logo" className="h-14 object-contain ml-4" />
+            )}
+          </div>
+
+          {/* Download PDF */}
+          <a href={`/api/reports/${report.id}/pdf`} target="_blank"
+            className="btn-primary text-sm inline-flex items-center gap-2">
+            ⬇ Download PDF
+          </a>
+        </div>
+
+        {/* MTO Table */}
+        <div className="card overflow-hidden mb-5">
+          <div className="px-4 py-3 border-b border-surface-300 text-xs font-bold text-ink-muted uppercase tracking-wide">
+            Material Take-Off
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-surface-100 border-b border-surface-300">
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-ink-muted">#</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-ink-muted">Material</th>
+                  <th className="px-3 py-2.5 text-xs font-semibold text-ink-muted text-center">Code</th>
+                  <th className="px-3 py-2.5 text-xs font-semibold text-ink-muted text-center">Unit</th>
+                  <th className="px-3 py-2.5 text-xs font-semibold text-center" style={{ color: accentColor }}>Total</th>
+                  {report.showPricing && <th className="px-3 py-2.5 text-xs font-semibold text-ink-muted text-right">Amount</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {results.map((mat: any, i: number) => {
+                  const price  = report.showPricing ? (mat.spec?.unitPrice ?? 0) : 0
+                  const amount = price * mat.grandTotal
+                  return (
+                    <tr key={mat.id} className={i % 2 === 0 ? 'bg-white' : 'bg-surface-50'}>
+                      <td className="px-4 py-2.5 text-ink-faint text-xs">{i + 1}</td>
+                      <td className="px-4 py-2.5">
+                        <div className="font-medium text-ink">{mat.name}</div>
+                        {mat.notes && <div className="text-xs text-ink-faint">{mat.notes}</div>}
+                      </td>
+                      <td className="px-3 py-2.5 text-center font-mono text-xs text-ink-muted">{mat.productCode || '—'}</td>
+                      <td className="px-3 py-2.5 text-center text-xs text-ink-muted">{mat.unit}</td>
+                      <td className="px-3 py-2.5 text-center font-black" style={{ color: accentColor }}>{mat.grandTotal}</td>
+                      {report.showPricing && (
+                        <td className="px-3 py-2.5 text-right font-semibold text-xs">
+                          {amount > 0 ? `${report.currency} ${amount.toFixed(2)}` : '—'}
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Notes */}
+        {report.notes && (
+          <div className="card p-5 mb-5">
+            <div className="text-xs font-bold text-ink-muted uppercase tracking-wide mb-2">Notes</div>
+            <p className="text-sm text-ink">{report.notes}</p>
+          </div>
+        )}
+
+        <p className="text-center text-xs text-ink-faint">
+          Generated by <a href="https://materialmto.com" className="text-primary">MaterialMTO</a> ·{' '}
+          {format(new Date(report.createdAt), 'dd MMM yyyy HH:mm')}
+        </p>
+      </div>
+    </div>
+  )
+}
