@@ -947,55 +947,73 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     const brackets = sys.customBrackets ?? []
     if (!calc.multiResults || brackets.length === 0) return combined
 
-    const dimValues: Record<string, number> = {}
-    for (const run of calc.runs) {
+    // Compute bracket quantities per-run so run.qty multipliers are respected
+    const perRunBracketBOM: { runIndex: number; runQty: number; materialId: string; qty: number; unit: string; bracket: typeof brackets[0] }[] = []
+    for (let ri = 0; ri < calc.runs.length; ri++) {
+      const run = calc.runs[ri]
+      const runQty = run.qty || 1
+      const jobDims: Record<string, number> = {}
       const job = { ...(run.job ?? {}), ...(run.simpleJob ?? {}) } as Record<string, any>
       for (const [k, v] of Object.entries(job)) {
-        dimValues[k] = (dimValues[k] ?? 0) + (parseFloat(String(v)) || 0)
+        jobDims[k] = parseFloat(String(v)) || 0
+      }
+      // Handle linear_run simple mode dims
+      if (sys.inputModel === 'linear_run' && run.inputMode === 'simple') {
+        jobDims.length  = parseFloat(run.simpleJob?.length as any) || 0
+        jobDims.corners = parseInt(run.simpleJob?.corners as any) || 0
+        jobDims.ends    = (run.criteriaState ?? {} as any)['loop'] ? 0 : 2
+        jobDims['__spacing_int_brackets'] = parseFloat(run.simpleJob?.spacing as any) || 10
+      }
+      const criteriaState = run.criteriaState ?? {}
+      const variantState  = run.variantState  ?? {}
+      const bracketQtys = computeBracketQtys(brackets, jobDims, sys, criteriaState, variantState)
+      for (const bracket of brackets) {
+        const bQty = bracketQtys[bracket.id] ?? 0
+        if (bQty <= 0) continue
+        const params = Object.fromEntries((bracket.parameters ?? []).map(p => [p.key, p.default]))
+        const expanded = computeBracketBOM(bracket, bQty, params)
+        for (const item of expanded) {
+          if (!item.materialId) continue
+          perRunBracketBOM.push({ runIndex: ri, runQty, materialId: item.materialId, qty: Math.ceil(item.qty), unit: item.unit, bracket })
+        }
       }
     }
-    const mergedCriteria = calc.runs.reduce((acc: Record<string, boolean>, r: Run) => {
-      for (const [k, v] of Object.entries(r.criteriaState ?? {})) { if (v) acc[k] = true }
-      return acc
-    }, {} as Record<string, boolean>)
-    const mergedVariants = calc.runs.reduce((acc: Record<string, string>, r: Run) => {
-      return { ...acc, ...(r.variantState ?? {}) }
-    }, {} as Record<string, string>)
-    const bracketQtys = computeBracketQtys(brackets, dimValues, sys, mergedCriteria, mergedVariants)
 
-    for (const bracket of brackets) {
-      const bQty = bracketQtys[bracket.id] ?? 0
-      if (bQty <= 0) continue
-      const params = Object.fromEntries((bracket.parameters ?? []).map(p => [p.key, p.default]))
-      const expanded = computeBracketBOM(bracket, bQty, params)
-      for (const item of expanded) {
-        if (!item.materialId) continue
-        const sysMat = sys.materials.find(m => m.id === item.materialId)
-        const bomItem = bracket.bom.find((b: any) => b.materialId === item.materialId)
-        const name = sysMat?.name ?? (bomItem as any)?.customName ?? '(unknown)'
-        const unit = item.unit || sysMat?.unit || 'pcs'
-        const qty  = Math.ceil(item.qty)
+    // Aggregate bracket BOM items into combined results
+    for (const entry of perRunBracketBOM) {
+      const { runIndex, runQty, materialId, qty, unit, bracket } = entry
+      const sysMat  = sys.materials.find(m => m.id === materialId)
+      const bomItem = bracket.bom.find((b: any) => b.materialId === materialId)
+      const name    = sysMat?.name ?? (bomItem as any)?.customName ?? '(unknown)'
+      const matUnit = unit || sysMat?.unit || 'pcs'
 
-        const existing = combined.find(c => c.id === item.materialId)
-        if (existing) {
-          existing.grandTotal += qty
-          existing._bracketQty = (existing._bracketQty ?? 0) + qty
-          existing._bracketSource = (existing._bracketSource ?? '') + (existing._bracketSource ? ', ' : '') + bracket.icon + ' ' + bracket.name
-        } else {
-          const perRun = calc.runs.map((r: Run) => ({
-            runId: r.id, runName: r.name, runQty: r.qty || 1,
-            unitQty: 0, totalQty: 0, blocked: false, blockedBy: [],
-            activeRow: null, raw: 0, solverResults: {},
-          }))
-          combined.push({
-            id: item.materialId, name, unit,
-            productCode: sysMat?.productCode ?? '', photo: sysMat?.photo ?? null,
-            unitPrice: (sysMat as any)?.unitPrice ?? null,
-            perRun, grandTotal: qty, allBlocked: false,
-            _isBracketMat: true, _bracketQty: qty,
-            _bracketSource: bracket.icon + ' ' + bracket.name,
-          })
+      let existing = combined.find(c => c.id === materialId)
+      if (!existing) {
+        const perRun = calc.runs.map((r: Run) => ({
+          runId: r.id, runName: r.name, runQty: r.qty || 1,
+          unitQty: 0, totalQty: 0, blocked: false, blockedBy: [],
+          activeRow: null, raw: 0, solverResults: {},
+        }))
+        existing = {
+          id: materialId, name, unit: matUnit,
+          productCode: sysMat?.productCode ?? '', photo: sysMat?.photo ?? null,
+          unitPrice: (sysMat as any)?.unitPrice ?? null,
+          perRun, grandTotal: 0, allBlocked: false,
+          _isBracketMat: true, _bracketQty: 0,
+          _bracketSource: '',
         }
+        combined.push(existing)
+      }
+      // Update per-run breakdown
+      const pr = existing.perRun[runIndex]
+      if (pr) {
+        pr.unitQty  += qty
+        pr.totalQty += qty * runQty
+      }
+      existing.grandTotal  += qty * runQty
+      existing._bracketQty  = (existing._bracketQty ?? 0) + qty * runQty
+      if (!(existing._bracketSource ?? '').includes(bracket.name)) {
+        existing._bracketSource = (existing._bracketSource ?? '') + (existing._bracketSource ? ', ' : '') + bracket.icon + ' ' + bracket.name
       }
     }
     return combined
