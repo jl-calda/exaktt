@@ -4,7 +4,7 @@ import { useState } from 'react'
 import type { CustomDim, MtoSystem } from '@/types'
 import { DERIV_TYPES, PRIMITIVE_DIMS } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
-import { Plus, Trash2, Edit3, Check, X } from 'lucide-react'
+import { Plus, Trash2, Edit3, Check, X, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input, NumberInput } from '@/components/ui/Input'
@@ -91,7 +91,7 @@ const FIELD_GUIDE_ITEMS: Record<string, { label: string; desc: string }[]> = {
 function FieldGuide({ derivType, items }: { derivType: string; items: { label: string; desc: string }[] }) {
   const h = DERIV_HELP[derivType]
   return (
-    <div className="w-96 shrink-0 self-stretch bg-surface-100 border border-surface-200 px-4 py-3"
+    <div className="bg-surface-100 border border-surface-200 px-4 py-3 animate-fade-in"
       style={{ borderRadius: 'var(--radius)' }}>
       {h && (
         <div className="mb-3 pb-3 border-b border-surface-200">
@@ -156,9 +156,11 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props
   const DimForm = ({ d, set, isEdit }: { d: typeof BLANK | CustomDim; set: (k: any) => (v: any) => void; isEdit: boolean }) => {
     const stockRaw    = isEdit ? newStockLenEdit : newStockLen
     const setStockRaw = isEdit ? setNewStockLenEdit : setNewStockLen
+    const [guideOpen, setGuideOpen] = useState(false)
+    const guideItems = FIELD_GUIDE_ITEMS[d.derivType] ?? []
     return (
-      <div className="flex gap-6">
-        {/* Left: fields in logical rows */}
+      <div className="space-y-3">
+        {/* Fields */}
         <div className="flex-1 min-w-0 space-y-4">
 
           {/* Row 1: identity — always shown */}
@@ -309,8 +311,18 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props
           )}
         </div>
 
-        {/* Right: FieldGuide — stretches to match left height */}
-        <FieldGuide derivType={d.derivType} items={FIELD_GUIDE_ITEMS[d.derivType] ?? []} />
+        {/* Field Guide toggle */}
+        {guideItems.length > 0 && (
+          <div>
+            <button onClick={() => setGuideOpen(v => !v)}
+              className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 border transition-colors ${guideOpen ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-surface-100 border-surface-200 text-ink-faint hover:text-ink-muted'}`}
+              style={{ borderRadius: 'var(--radius)' }}>
+              <BookOpen className="w-3 h-3" />
+              Field Guide
+            </button>
+            {guideOpen && <div className="mt-2"><FieldGuide derivType={d.derivType} items={guideItems} /></div>}
+          </div>
+        )}
       </div>
     )
   }

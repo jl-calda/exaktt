@@ -4,7 +4,7 @@ import { useState } from 'react'
 import type { CustomCriterion, CustomDim } from '@/types'
 import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
-import { Plus, Trash2, Edit3, Check, X } from 'lucide-react'
+import { Plus, Trash2, Edit3, Check, X, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input, NumberInput } from '@/components/ui/Input'
@@ -49,7 +49,7 @@ const CRITERIA_FIELD_ITEMS: Record<string, { label: string; desc: string }[]> = 
 function FieldGuide({ type, items }: { type: string; items: { label: string; desc: string }[] }) {
   const h = CRITERIA_HELP[type]
   return (
-    <div className="w-96 shrink-0 self-stretch bg-surface-100 border border-surface-200 px-4 py-3"
+    <div className="bg-surface-100 border border-surface-200 px-4 py-3 animate-fade-in"
       style={{ borderRadius: 'var(--radius)' }}>
       {h && (
         <div className="mb-3 pb-3 border-b border-surface-200">
@@ -102,9 +102,12 @@ export default function CriteriaPanel({ customCriteria, customDims, onChange }: 
     set: (k: any) => (v: any) => void
     onSave: () => void
     onCancel: () => void
-  }) => (
-    <div className="flex gap-6">
-      {/* Left: fields in logical rows */}
+  }) => {
+    const [guideOpen, setGuideOpen] = useState(false)
+    const guideItems = CRITERIA_FIELD_ITEMS[d.type] ?? []
+    return (
+    <div className="space-y-3">
+      {/* Fields */}
       <div className="flex-1 min-w-0 space-y-4">
         {/* Row 1: identity */}
         <div className="flex flex-wrap gap-4 items-start">
@@ -145,10 +148,20 @@ export default function CriteriaPanel({ customCriteria, customDims, onChange }: 
           <Button size="sm" variant="secondary" onClick={onCancel} icon={<X className="w-3.5 h-3.5" />}>Cancel</Button>
         </div>
       </div>
-      {/* Right: FieldGuide */}
-      <FieldGuide type={d.type} items={CRITERIA_FIELD_ITEMS[d.type] ?? []} />
+      {/* Field Guide toggle */}
+      {guideItems.length > 0 && (
+        <div>
+          <button onClick={() => setGuideOpen(v => !v)}
+            className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 border transition-colors ${guideOpen ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-surface-100 border-surface-200 text-ink-faint hover:text-ink-muted'}`}
+            style={{ borderRadius: 'var(--radius)' }}>
+            <BookOpen className="w-3 h-3" />
+            Field Guide
+          </button>
+          {guideOpen && <div className="mt-2"><FieldGuide type={d.type} items={guideItems} /></div>}
+        </div>
+      )}
     </div>
-  )
+  )}
 
   return (
     <div className="border border-secondary-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>

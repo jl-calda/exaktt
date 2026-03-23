@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { MtoSystem, GlobalTag, Material, CustomDim } from '@/types'
 import { nanoid } from 'nanoid'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, PanelRightOpen, PanelRightClose } from 'lucide-react'
 import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
 import { ColorPicker }     from '@/components/ui/ColorPicker'
 import { IconPicker }      from '@/components/ui/IconPicker'
@@ -58,6 +58,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
   const [library,       setLibrary]       = useState<any[]>([])
   const [addingInput,   setAddingInput]   = useState(false)
   const [inputDraft,    setInputDraft]    = useState({ ...INPUT_BLANK })
+  const [showOverview,  setShowOverview]  = useState(false)
 
   const userInputDims = (sys.customDims ?? []).filter(cd => cd.derivType === 'user_input')
 
@@ -130,7 +131,15 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
   }
 
   return (
-    <div className="flex gap-6 items-start">
+    <div className="flex gap-6 items-start relative">
+    {/* Toggle button — fixed to right edge */}
+    <button
+      onClick={() => setShowOverview(v => !v)}
+      className={`hidden lg:flex items-center gap-1.5 fixed right-4 top-[72px] z-30 text-xs font-semibold px-3 py-1.5 border shadow-sm transition-colors ${showOverview ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-white border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
+      style={{ borderRadius: 'var(--radius)' }}>
+      {showOverview ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
+      Overview
+    </button>
     <div className="flex-1 min-w-0 space-y-4">
 
       {/* ── System Identity ── */}
@@ -352,8 +361,10 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
       </StepHeader>
     </div>
 
-    {/* Overview panel — sticky right column */}
-    <SystemOverviewPanel sys={sys} onViewGraph={onViewGraph} />
+    {/* Overview panel — collapsible sticky right sidebar */}
+    <div className={`hidden lg:block transition-all duration-300 ease-in-out ${showOverview ? 'w-64 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
+      {showOverview && <SystemOverviewPanel sys={sys} onViewGraph={onViewGraph} />}
+    </div>
   </div>
   )
 }
