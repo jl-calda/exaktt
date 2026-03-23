@@ -746,12 +746,12 @@ export default function MatRow({ mat, rowIndex, onSave, onDelete, customDims, cu
         <td className="px-3 py-2.5">
           {hasRule && grp ? (
             <div className="flex flex-col gap-1">
-              <span className="badge text-[10px]" style={{ background: grp.bg, color: grp.color }}>{grp.icon} <span className="hidden sm:inline">{grp.label}</span></span>
+              <span className="badge text-[10px]" style={{ background: grp.bg, color: grp.color }}>{grp.icon} {grp.label}</span>
             </div>
           ) : isBracketMaterial ? (
             <span className="text-[10px] text-ink-faint italic">Rules on bracket</span>
           ) : (
-            <span className="badge bg-amber-50 text-amber-700 text-[10px]"><AlertTriangle className="w-2.5 h-2.5" /> <span className="hidden sm:inline">No rule</span></span>
+            <span className="badge bg-amber-50 text-amber-700 text-[10px]"><AlertTriangle className="w-2.5 h-2.5" /> No rule</span>
           )}
         </td>
 
