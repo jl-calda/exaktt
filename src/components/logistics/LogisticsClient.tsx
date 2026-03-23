@@ -51,11 +51,24 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
   const refreshManufacturers = () => fetch('/api/mto/manufacturers').then(r => r.json()).then(j => { if (j.data) setManufacturers(j.data) })
 
   return (
-    <div className="flex" style={{ minHeight: '100%' }}>
+    <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
 
-      {/* Secondary sidebar */}
+      {/* Mobile tab bar */}
+      <nav className="md:hidden flex items-center gap-1 px-2 py-1.5 border-b border-surface-200 bg-surface-50 overflow-x-auto">
+        {NAV_TABS.map(({ id, label, Icon }) => (
+          <button key={id} onClick={() => setTab(id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
+              tab === id ? 'bg-primary/10 text-primary font-semibold' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
+            }`}>
+            <Icon className="w-3.5 h-3.5" strokeWidth={tab === id ? 2.2 : 1.8} />
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {/* Desktop secondary sidebar */}
       <aside
-        className="w-48 shrink-0 border-r border-surface-200 bg-surface-50 flex flex-col sticky top-0 self-start overflow-y-auto"
+        className="hidden md:flex w-48 shrink-0 border-r border-surface-200 bg-surface-50 flex-col sticky top-0 self-start overflow-y-auto"
         style={{ height: 'calc(100vh - 52px)', borderRight: '1px solid var(--sidebar-border)' }}>
 
         {/* Header */}
@@ -99,7 +112,7 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
 
       {/* Main content */}
       <div className="flex-1 min-w-0">
-        <div className="px-6 py-6">
+        <div className="px-3 py-4 md:px-6 md:py-6">
           {tab === 'overview'   && <OverviewTab library={library} suppliers={suppliers} pos={pos} dos={dos} onNavigate={setTab} />}
           {tab === 'materials'  && <MaterialsTab library={library} suppliers={suppliers} categories={categories} grades={grades} manufacturers={manufacturers} onRefresh={refreshLibrary} onRefreshCategories={refreshCategories} onRefreshGrades={refreshGrades} onRefreshManufacturers={refreshManufacturers} />}
           {tab === 'suppliers'      && <SuppliersTab suppliers={suppliers} onRefresh={refreshSuppliers} />}

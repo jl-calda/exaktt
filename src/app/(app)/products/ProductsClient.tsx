@@ -114,7 +114,7 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
   const visibleSamples   = showAllSamples ? filteredSamples : filteredSamples.slice(0, 6)
 
   return (
-    <div className="min-h-full px-6 py-5 space-y-8">
+    <div className="min-h-full px-4 py-4 md:px-6 md:py-5 space-y-6 md:space-y-8">
 
       {/* ── Stats strip ─────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

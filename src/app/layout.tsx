@@ -1,8 +1,15 @@
 // src/app/layout.tsx
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Toast } from '@/components/ui/Toast'
 import ThemeProvider from '@/components/ThemeProvider'
 import './globals.css'
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
 
 export const metadata: Metadata = {
   title:       'Exakt — Material Take-Off Platform',

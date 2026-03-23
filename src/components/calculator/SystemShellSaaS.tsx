@@ -187,11 +187,43 @@ export default function SystemShellSaaS({
   ]
 
   return (
-    <div className="flex" style={{ minHeight: '100%' }}>
+    <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
 
-      {/* Secondary sidebar */}
+      {/* Mobile header: back + system name + save status */}
+      <div className="md:hidden flex items-center gap-2 px-3 py-2.5 border-b border-surface-200 bg-surface-50">
+        <button onClick={() => router.push('/products')}
+          className="flex items-center gap-1 text-xs text-ink-faint hover:text-ink transition-colors shrink-0">
+          <ArrowLeft className="w-3.5 h-3.5" />
+        </button>
+        <span className="text-base shrink-0">{sys.icon}</span>
+        <span className="font-semibold text-xs text-ink truncate flex-1">{sys.name}</span>
+        {saving && <span className="text-[10px] text-ink-faint flex items-center gap-1 shrink-0"><Save className="w-2.5 h-2.5" /></span>}
+        <button onClick={() => setShowReport(true)} className="btn-primary text-[11px] px-2.5 py-1 shrink-0">
+          <FileText className="w-3 h-3" />
+        </button>
+      </div>
+
+      {/* Mobile tab bar */}
+      <nav className="md:hidden flex items-center gap-1 px-2 py-1.5 border-b border-surface-200 bg-surface-50 overflow-x-auto">
+        {NAV_TABS.map(({ id, label, Icon, locked }) => (
+          <button key={id}
+            onClick={() => {
+              if (locked) { setLimitWarning('Tags require a higher plan'); return }
+              setTab(id)
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
+              tab === id ? 'bg-primary/10 text-primary font-semibold' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
+            } ${locked ? 'opacity-40' : ''}`}>
+            <Icon className="w-3.5 h-3.5" strokeWidth={tab === id ? 2.2 : 1.8} />
+            {label}
+            {locked && <Lock className="w-2.5 h-2.5" />}
+          </button>
+        ))}
+      </nav>
+
+      {/* Desktop secondary sidebar */}
       <aside
-        className="w-48 shrink-0 border-r border-surface-200 bg-surface-50 flex flex-col sticky top-0 self-start overflow-y-auto"
+        className="hidden md:flex w-48 shrink-0 border-r border-surface-200 bg-surface-50 flex-col sticky top-0 self-start overflow-y-auto"
         style={{ height: 'calc(100vh - 52px)', borderRight: '1px solid var(--sidebar-border)' }}>
 
         {/* Back */}
@@ -287,7 +319,7 @@ export default function SystemShellSaaS({
 
         {/* Padded content for all other tabs */}
         {tab !== 'graph' && (
-          <div className="px-6 pt-4 pb-6">
+          <div className="px-3 pt-3 pb-4 md:px-6 md:pt-4 md:pb-6">
             {tab === 'setup' && (
               <SetupTab sys={sys} onUpdate={updateSystemGated} globalTags={tags} onViewGraph={() => setTab('graph')} />
             )}

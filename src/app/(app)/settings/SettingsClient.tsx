@@ -74,7 +74,7 @@ export default function SettingsClient({ user, initialProfile, initialTags }: Pr
 
   return (
     <div className="min-h-full">
-      <main className="px-6 py-5 flex gap-6">
+      <main className="px-4 py-4 md:px-6 md:py-5 flex flex-col md:flex-row gap-4 md:gap-6">
         {saveMsg && (
           <div className="fixed top-[5.5rem] right-4 z-50 text-xs text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg shadow-card">
             {saveMsg}

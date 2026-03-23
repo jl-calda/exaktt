@@ -102,7 +102,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs }: P
 
   return (
     <div className="min-h-full">
-      <main className="px-6 py-5">
+      <main className="px-4 py-4 md:px-6 md:py-5">
 
         {/* Back + header */}
         <div className="flex items-start gap-3 mb-6">

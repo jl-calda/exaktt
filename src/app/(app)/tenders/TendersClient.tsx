@@ -76,7 +76,7 @@ export default function TendersClient({ initialTenders, initialClients }: Props)
 
   return (
     <div className="min-h-full">
-      <main className="px-6 py-5">
+      <main className="px-4 py-4 md:px-6 md:py-5">
 
         <div className="flex items-center justify-between mb-4">
           <h1 className="font-semibold text-base text-ink">Tenders</h1>
