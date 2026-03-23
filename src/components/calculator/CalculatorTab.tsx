@@ -1070,8 +1070,8 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     : []
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 items-start relative">
-      <div className={`w-full flex-shrink-0 space-y-5 transition-all ${showOverview ? 'lg:w-72' : 'lg:w-80'}`}>
+    <div className="flex flex-col gap-6 items-start relative">
+      <div className="w-full flex-shrink-0 space-y-5">
 
         <CalcStep n={1}>
         <div className="card p-4">
@@ -1392,9 +1392,9 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
         {showFieldGuide && <div className="mb-4"><CalcFieldGuide onClose={() => setShowFieldGuide(false)} /></div>}
 
-        {/* Mobile inline overview */}
+        {/* Inline collapsible overview */}
         {showOverview && (
-          <div className="lg:hidden mb-4">
+          <div className="mb-4">
             <SystemOverviewPanel sys={sys} />
           </div>
         )}
@@ -1634,10 +1634,6 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
         )}
       </div>
 
-      {/* Collapsible System Overview sidebar */}
-      <div className={`hidden lg:block transition-all duration-300 ease-in-out ${showOverview ? 'w-64 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
-        {showOverview && <SystemOverviewPanel sys={sys} />}
-      </div>
     </div>
   )
 }
