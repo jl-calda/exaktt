@@ -196,7 +196,7 @@
 
   .badge {
     display: inline-flex; align-items: center; gap: 0.25rem;
-    border-radius: 9999px; padding: 0.1rem 0.45rem;
+    border-radius: var(--radius); padding: 0.1rem 0.45rem;
     font-size: 0.692rem; font-weight: 600;
   }
 

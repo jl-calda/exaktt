@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import type { Material, CustomDim, CustomCriterion, Variant, GlobalTag, RuleRow } from '@/types'
 import { PRIMITIVE_DIMS, RULE_TYPES, RULE_GROUPS } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
-import { Trash2, Edit3, Check, X, ChevronUp, ChevronDown, Plus, AlertTriangle, ArrowRight, GitBranch } from 'lucide-react'
+import { Trash2, Edit3, Check, X, ChevronUp, ChevronDown, Plus, AlertTriangle, ArrowRight, GitBranch, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { NumberInput } from '@/components/ui/Input'
@@ -729,7 +729,7 @@ export default function MatRow({ mat, rowIndex, onSave, onDelete, customDims, cu
                   const t = globalTags.find((x: any) => x.id === tid)
                   return t ? (
                     <span key={tid} style={{ background: t.color + '18', color: t.color }}
-                      className="badge text-[10px] px-2 rounded-full font-bold">{t.name}</span>
+                      className="badge text-[10px] px-2 font-bold">{t.name}</span>
                   ) : null
                 })}
               </div>
@@ -746,12 +746,12 @@ export default function MatRow({ mat, rowIndex, onSave, onDelete, customDims, cu
         <td className="px-3 py-2.5">
           {hasRule && grp ? (
             <div className="flex flex-col gap-1">
-              <span className="badge text-[10px]" style={{ background: grp.bg, color: grp.color }}>{grp.icon} {grp.label}</span>
+              <span className="badge text-[10px]" style={{ background: grp.bg, color: grp.color }}>{grp.icon} <span className="hidden sm:inline">{grp.label}</span></span>
             </div>
           ) : isBracketMaterial ? (
-            <span className="badge bg-surface-100 text-ink-faint text-[10px]">🔩 bracket component</span>
+            <span className="text-[10px] text-ink-faint italic">Rules on bracket</span>
           ) : (
-            <span className="badge bg-amber-50 text-amber-700 text-[10px]"><AlertTriangle className="w-2.5 h-2.5" /> No rule</span>
+            <span className="badge bg-amber-50 text-amber-700 text-[10px]"><AlertTriangle className="w-2.5 h-2.5" /> <span className="hidden sm:inline">No rule</span></span>
           )}
         </td>
 
@@ -762,16 +762,17 @@ export default function MatRow({ mat, rowIndex, onSave, onDelete, customDims, cu
               <Button size="xs" variant={editingRule ? 'primary' : 'ghost'}
                 onClick={() => setEditingRule(v => !v)}
                 icon={<Edit3 className="w-3 h-3" />}>
-                {editingRule ? 'Close' : 'Rules'}
+                <span className="hidden sm:inline">{editingRule ? 'Close' : 'Rules'}</span>
               </Button>
             )}
             <div ref={dropdownRef} className="relative">
               <Button size="xs" variant="secondary"
-                onClick={() => { setChanging(v => !v); setChangeQ('') }}>
-                Change
+                onClick={() => { setChanging(v => !v); setChangeQ('') }}
+                icon={<RefreshCw className="w-3 h-3 sm:hidden" />}>
+                <span className="hidden sm:inline">Change</span>
               </Button>
               {changing && (
-                <div className="absolute right-0 top-full mt-1 z-50 bg-surface-50 border border-surface-200 rounded-xl shadow-float w-72 overflow-hidden">
+                <div className="absolute right-0 top-full mt-1 z-50 bg-surface-50 border border-surface-200 shadow-float w-72 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
                   <div className="p-2 border-b border-surface-200">
                     <input autoFocus value={changeQ} onChange={e => setChangeQ(e.target.value)}
                       placeholder="Search library…" className="input text-xs py-1 w-full" />

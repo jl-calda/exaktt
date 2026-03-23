@@ -83,7 +83,7 @@ export default function SettingsTab({ tags, onTagsChange }: Props) {
           <div className="mt-4 flex flex-wrap gap-2">
             {tags.map(t => (
               <span key={t.id} style={{ background: t.color + '18', color: t.color, borderColor: t.color + '40' }}
-                className="badge border rounded-full px-3 py-1 text-sm font-bold">
+                className="badge border px-3 py-1 text-sm font-bold">
                 {t.name}
               </span>
             ))}
