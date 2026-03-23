@@ -1392,6 +1392,13 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
         {showFieldGuide && <div className="mb-4"><CalcFieldGuide onClose={() => setShowFieldGuide(false)} /></div>}
 
+        {/* Mobile inline overview */}
+        {showOverview && (
+          <div className="lg:hidden mb-4">
+            <SystemOverviewPanel sys={sys} />
+          </div>
+        )}
+
         {!calc.multiResults ? (
           <div className="card p-16 text-center space-y-6">
             <div className="text-5xl">🧮</div>

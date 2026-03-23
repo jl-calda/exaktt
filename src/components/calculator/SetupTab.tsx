@@ -132,7 +132,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 items-start relative">
-    {/* Toggle button — fixed to right edge */}
+    {/* Toggle button — fixed to right edge (desktop), inline (mobile) */}
     <button
       onClick={() => setShowOverview(v => !v)}
       className={`hidden lg:flex items-center gap-1.5 fixed right-4 top-[72px] z-30 text-xs font-semibold px-3 py-1.5 border shadow-sm transition-colors ${showOverview ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-white border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
@@ -140,6 +140,26 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
       {showOverview ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
       Overview
     </button>
+
+    {/* Mobile overview toggle + collapsible panel */}
+    <div className="lg:hidden w-full">
+      <button
+        onClick={() => setShowOverview(v => !v)}
+        className={`w-full flex items-center justify-between gap-2 text-xs font-semibold px-4 py-2.5 border transition-colors ${showOverview ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-white border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
+        style={{ borderRadius: 'var(--radius-card)' }}>
+        <span className="flex items-center gap-1.5">
+          {showOverview ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
+          System Overview
+        </span>
+        <span className="text-[10px] text-ink-faint">{showOverview ? 'tap to hide' : 'tap to show'}</span>
+      </button>
+      {showOverview && (
+        <div className="mt-2">
+          <SystemOverviewPanel sys={sys} onViewGraph={onViewGraph} />
+        </div>
+      )}
+    </div>
+
     <div className="flex-1 min-w-0 space-y-4">
 
       {/* ── System Identity ── */}
