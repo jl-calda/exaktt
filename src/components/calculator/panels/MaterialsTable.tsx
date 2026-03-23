@@ -53,11 +53,11 @@ export default function MaterialsTable({
   )
 
   return (
-    <div className="border border-secondary-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
+    <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
       {/* Toolbar */}
-      <div className="px-5 py-4 border-b flex items-center justify-between flex-wrap gap-3" style={{ background: 'var(--color-secondary-100)', borderColor: 'var(--color-secondary-200)' }}>
+      <div className="px-5 py-4 border-b flex items-center justify-between flex-wrap gap-3" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
         <div>
-          <div className="font-semibold text-sm text-secondary-700">
+          <div className="font-semibold text-sm text-ink">
             Materials ({materials.length})
             {unassigned.length > 0 && (
               <span className="ml-2 badge bg-amber-50 text-amber-700 text-[10px]">⚠ {unassigned.length} unassigned</span>
@@ -71,14 +71,14 @@ export default function MaterialsTable({
               placeholder="Filter…" className="input text-xs py-1.5 pl-8 w-32" />
           </div>
           <MaterialSearchCombobox library={library} onAddFromLib={onAddFromLib} />
-          <Button size="sm" onClick={() => setShowAddModal(true)} icon={<Plus className="w-3.5 h-3.5" />} className="!border-secondary-200 !text-secondary-700">Add Material</Button>
+          <Button size="sm" onClick={() => setShowAddModal(true)} icon={<Plus className="w-3.5 h-3.5" />}>Add Material</Button>
         </div>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="bg-surface-100 border-b border-secondary-200">
+            <tr className="bg-surface-100 border-b border-surface-200">
               <th className="px-3 py-2.5 w-14"></th>
               <th className="text-left px-4 py-2.5 font-semibold text-ink-muted text-xs uppercase tracking-wide min-w-52">Material</th>
               <th className="text-left px-3 py-2.5 font-semibold text-ink-muted text-xs uppercase tracking-wide w-20">Unit</th>

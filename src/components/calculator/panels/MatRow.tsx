@@ -261,7 +261,7 @@ function DependencyChain({ mat, ruleSet, criteriaKeys, customDimKey, customDims,
                 <div key={row.id} className="rounded border border-surface-200 bg-surface-50 px-2.5 py-2"
                   style={{ borderRadius: 'var(--radius)' }}>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    {idx > 0 && <span className="text-[9px] text-secondary-700 font-bold">ELSE IF</span>}
+                    {idx > 0 && <span className="text-[9px] text-ink font-bold">ELSE IF</span>}
                     {condCr && (
                       <span className="text-[9px] font-semibold rounded px-1 py-0.5"
                         style={ChipStyle(condCr.color ?? '#0891b2')}>
@@ -420,7 +420,7 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
           {/* Rule rows */}
           <div className="space-y-3">
             {ruleSet.length > 1 && (
-              <p className="text-[11px] text-secondary-700 border border-secondary-200 rounded-lg px-3 py-2" style={{ background: 'var(--color-secondary-50)' }}>
+              <p className="text-[11px] text-ink border border-surface-200 rounded-lg px-3 py-2" style={{ background: 'var(--color-surface-100)' }}>
                 <strong>Multiple rows:</strong> rows are evaluated top-to-bottom. The first row whose <em>When</em> condition matches is used. Use "always" on the last row as a fallback.
               </p>
             )}

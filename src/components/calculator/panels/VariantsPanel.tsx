@@ -207,17 +207,17 @@ export default function VariantsPanel({ variants, onChange }: Props) {
   )}
 
   return (
-    <div className="border border-secondary-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
-      <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: 'var(--color-secondary-100)', borderColor: 'var(--color-secondary-200)' }}>
+    <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
+      <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
         <div>
-          <h3 className="font-semibold text-sm text-secondary-700">🔀 Variants</h3>
-          <p className="text-xs text-secondary-600 mt-0.5">Cascading selectors — tag materials to specific leaf nodes.</p>
+          <h3 className="font-semibold text-sm text-ink">🔀 Variants</h3>
+          <p className="text-xs text-ink-muted mt-0.5">Cascading selectors — tag materials to specific leaf nodes.</p>
         </div>
-        <Button size="sm" onClick={() => setAdding(v => !v)} icon={<Plus className="w-3.5 h-3.5" />} className="!border-secondary-200 !text-secondary-700">Add Variant</Button>
+        <Button size="sm" onClick={() => setAdding(v => !v)} icon={<Plus className="w-3.5 h-3.5" />}>Add Variant</Button>
       </div>
 
       {adding && (
-        <div className="p-5 bg-surface-100 border-b border-secondary-200">
+        <div className="p-5 bg-surface-100 border-b border-surface-200">
           <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide mb-4">New Variant</div>
           <VariantForm
             name={draft.name} icon={draft.icon} color={draft.color} levelLabels={draft.levelLabels}
@@ -234,7 +234,7 @@ export default function VariantsPanel({ variants, onChange }: Props) {
         <div className="py-10 text-center text-sm text-ink-faint">No variants defined yet.</div>
       )}
 
-      <div className="divide-y divide-secondary-200">
+      <div className="divide-y divide-surface-200">
         {variants.map(v => {
           const isEd = editingVarId === v.id
           return (
