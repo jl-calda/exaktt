@@ -758,11 +758,13 @@ export default function MatRow({ mat, rowIndex, onSave, onDelete, customDims, cu
         {/* Actions */}
         <td className="px-3 py-2.5">
           <div className="flex gap-1 items-center">
-            <Button size="xs" variant={editingRule ? 'primary' : 'ghost'}
-              onClick={() => setEditingRule(v => !v)}
-              icon={<Edit3 className="w-3 h-3" />}>
-              {editingRule ? 'Close' : 'Rules'}
-            </Button>
+            {!isBracketMaterial && (
+              <Button size="xs" variant={editingRule ? 'primary' : 'ghost'}
+                onClick={() => setEditingRule(v => !v)}
+                icon={<Edit3 className="w-3 h-3" />}>
+                {editingRule ? 'Close' : 'Rules'}
+              </Button>
+            )}
             <div ref={dropdownRef} className="relative">
               <Button size="xs" variant="secondary"
                 onClick={() => { setChanging(v => !v); setChangeQ('') }}>
@@ -800,7 +802,7 @@ export default function MatRow({ mat, rowIndex, onSave, onDelete, customDims, cu
         </td>
       </tr>
 
-      {editingRule && (
+      {editingRule && !isBracketMaterial && (
         <tr>
           <td colSpan={5} className="bg-primary/5 border-t border-b border-primary/20 px-0 py-0">
             <InlineRuleEditor
