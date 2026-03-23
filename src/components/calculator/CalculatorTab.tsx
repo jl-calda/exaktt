@@ -10,7 +10,7 @@ import { getLimits } from '@/lib/limits'
 import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
-import { computeWorkSchedule, computeBracketQtys, computeAllBracketBOM } from '@/lib/engine/work'
+import { computeWorkSchedule, computeBracketQtys, computeBracketBOM } from '@/lib/engine/work'
 import SystemOverviewPanel from './SystemOverviewPanel'
 
 interface Props {
@@ -56,14 +56,16 @@ function buildLastResults(
       materials: combined.filter((m: any) => !m.allBlocked).map((m: any) => {
         const pr = m.perRun?.[ri]
         const ar = pr?.activeRow
+        const isBracketOnly = m._isBracketMat && (!pr || pr.unitQty === 0)
         const unitPrice = priceMap[m.id] as number | null
+        const unitQty = isBracketOnly ? (ri === 0 ? (m._bracketQty ?? m.grandTotal) : 0) : (pr?.unitQty ?? 0)
         return {
           id: m.id, name: m.name,
-          ruleType: ar?.ruleType ?? '',
-          formula: pr ? formulaTextForPrint(ar, dims, sys) : '',
-          raw: pr?.raw ?? 0, unitQty: pr?.unitQty ?? 0,
+          ruleType: isBracketOnly ? 'bracket' : (ar?.ruleType ?? ''),
+          formula: isBracketOnly ? 'from bracket BOM' : (pr ? formulaTextForPrint(ar, dims, sys) : ''),
+          raw: isBracketOnly ? 0 : (pr?.raw ?? 0), unitQty,
           unitPrice,
-          lineTotal: unitPrice != null && pr ? unitPrice * pr.unitQty : null,
+          lineTotal: unitPrice != null ? unitPrice * unitQty : null,
         }
       }),
     }
@@ -532,20 +534,27 @@ function CalcBreakdownPanel({ sys, runs, multiResults, workSchedule }: {
                 <tbody>
                   {combined.map((mat: any, mi: number) => {
                     const pr = mat.perRun?.[ri]
-                    if (!pr) return null
-                    const ar        = pr.activeRow
-                    const lineTotal = mat.unitPrice != null ? mat.unitPrice * pr.unitQty : null
+                    const isBracketOnly = mat._isBracketMat && (!pr || pr.unitQty === 0)
+                    const ar        = pr?.activeRow
+                    const displayQty = isBracketOnly ? (ri === 0 ? (mat._bracketQty ?? mat.grandTotal) : 0) : (pr?.unitQty ?? 0)
+                    const lineTotal = mat.unitPrice != null ? mat.unitPrice * displayQty : null
+                    if (!pr && !isBracketOnly) return null
                     return (
                       <tr key={mat.id} className={(mi % 2 === 0 ? 'bg-white' : 'bg-surface-50') + ' border-b border-surface-100 last:border-0'}>
-                        <td className="px-4 py-2 font-medium text-ink truncate max-w-44">{mat.name}</td>
+                        <td className="px-4 py-2 font-medium text-ink truncate max-w-44">
+                          {mat.name}
+                          {mat._bracketSource && <div className="text-[9px] text-violet-600 font-semibold">🔩 {mat._bracketSource}</div>}
+                        </td>
                         <td className="px-3 py-2 font-mono text-ink-muted text-[11px]">
                           <span className="px-1.5 py-0.5 rounded bg-surface-100 text-ink-muted text-[10px]">
-                            {RULE_LABELS[ar?.ruleType] ?? ar?.ruleType ?? '—'}
+                            {isBracketOnly ? 'Bracket' : (RULE_LABELS[ar?.ruleType] ?? ar?.ruleType ?? '—')}
                           </span>
                         </td>
-                        <td className="px-3 py-2"><FormulaCell activeRow={ar} dims={dims} sys={sys} /></td>
-                        <td className="px-3 py-2 text-right font-mono text-ink-muted text-[11px]">{pr.raw}</td>
-                        <td className="px-4 py-2 text-right font-semibold text-primary">{pr.unitQty} <span className="text-[10px] font-normal text-ink-faint">{mat.unit}</span></td>
+                        <td className="px-3 py-2">{isBracketOnly
+                          ? <span className="text-[11px] text-violet-600 italic">from bracket BOM</span>
+                          : <FormulaCell activeRow={ar} dims={dims} sys={sys} />}</td>
+                        <td className="px-3 py-2 text-right font-mono text-ink-muted text-[11px]">{isBracketOnly ? '—' : (pr?.raw ?? 0)}</td>
+                        <td className="px-4 py-2 text-right font-semibold text-primary">{displayQty} <span className="text-[10px] font-normal text-ink-faint">{mat.unit}</span></td>
                         {hasPrice && <td className="px-3 py-2 text-right font-mono text-ink-muted text-[11px]">{mat.unitPrice != null ? `$${mat.unitPrice.toFixed(2)}` : '—'}</td>}
                         {hasPrice && <td className="px-3 py-2 text-right font-semibold text-emerald-700 text-[11px]">{lineTotal != null ? `$${lineTotal.toFixed(2)}` : '—'}</td>}
                       </tr>
@@ -932,10 +941,69 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
   const spacingDims  = (sys.customDims ?? []).filter(cd => cd.derivType === 'spacing' && cd.spacingMode === 'user')
   const userInputDims = (sys.customDims ?? []).filter(cd => cd.derivType === 'user_input')
 
+  // ── Merge bracket BOM materials into combined results ────────────────────
+  const combinedWithBrackets: any[] = (() => {
+    const combined = [...(calc.multiResults?.combined ?? [])]
+    const brackets = sys.customBrackets ?? []
+    if (!calc.multiResults || brackets.length === 0) return combined
+
+    const dimValues: Record<string, number> = {}
+    for (const run of calc.runs) {
+      const job = { ...(run.job ?? {}), ...(run.simpleJob ?? {}) } as Record<string, any>
+      for (const [k, v] of Object.entries(job)) {
+        dimValues[k] = (dimValues[k] ?? 0) + (parseFloat(String(v)) || 0)
+      }
+    }
+    const mergedCriteria = calc.runs.reduce((acc: Record<string, boolean>, r: Run) => {
+      for (const [k, v] of Object.entries(r.criteriaState ?? {})) { if (v) acc[k] = true }
+      return acc
+    }, {} as Record<string, boolean>)
+    const mergedVariants = calc.runs.reduce((acc: Record<string, string>, r: Run) => {
+      return { ...acc, ...(r.variantState ?? {}) }
+    }, {} as Record<string, string>)
+    const bracketQtys = computeBracketQtys(brackets, dimValues, sys, mergedCriteria, mergedVariants)
+
+    for (const bracket of brackets) {
+      const bQty = bracketQtys[bracket.id] ?? 0
+      if (bQty <= 0) continue
+      const params = Object.fromEntries((bracket.parameters ?? []).map(p => [p.key, p.default]))
+      const expanded = computeBracketBOM(bracket, bQty, params)
+      for (const item of expanded) {
+        if (!item.materialId) continue
+        const sysMat = sys.materials.find(m => m.id === item.materialId)
+        const bomItem = bracket.bom.find((b: any) => b.materialId === item.materialId)
+        const name = sysMat?.name ?? (bomItem as any)?.customName ?? '(unknown)'
+        const unit = item.unit || sysMat?.unit || 'pcs'
+        const qty  = Math.ceil(item.qty)
+
+        const existing = combined.find(c => c.id === item.materialId)
+        if (existing) {
+          existing.grandTotal += qty
+          existing._bracketQty = (existing._bracketQty ?? 0) + qty
+          existing._bracketSource = (existing._bracketSource ?? '') + (existing._bracketSource ? ', ' : '') + bracket.icon + ' ' + bracket.name
+        } else {
+          const perRun = calc.runs.map((r: Run) => ({
+            runId: r.id, runName: r.name, runQty: r.qty || 1,
+            unitQty: 0, totalQty: 0, blocked: false, blockedBy: [],
+            activeRow: null, raw: 0, solverResults: {},
+          }))
+          combined.push({
+            id: item.materialId, name, unit,
+            productCode: sysMat?.productCode ?? '', photo: sysMat?.photo ?? null,
+            unitPrice: (sysMat as any)?.unitPrice ?? null,
+            perRun, grandTotal: qty, allBlocked: false,
+            _isBracketMat: true, _bracketQty: qty,
+            _bracketSource: bracket.icon + ' ' + bracket.name,
+          })
+        }
+      }
+    }
+    return combined
+  })()
+
   // Compute work schedule when results are available
   const workSchedule: WorkScheduleSummary | null = (() => {
     if (!calc.multiResults || !(sys.workActivities?.length)) return null
-    // Aggregate dim values from all runs (sum across runs)
     const dimValues: Record<string, number> = {}
     for (const run of calc.runs) {
       const job = { ...(run.job ?? {}), ...(run.simpleJob ?? {}) } as Record<string, any>
@@ -954,7 +1022,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     const bracketQtys = computeBracketQtys(brackets, dimValues, sys, mergedCriteria, mergedVariants)
     return computeWorkSchedule(
       sys.workActivities ?? [],
-      calc.multiResults.combined ?? [],
+      combinedWithBrackets,
       dimValues,
       mergedCriteria,
       calc.runs.length,
@@ -962,28 +1030,6 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
       brackets,
       bracketQtys,
     )
-  })()
-
-  // Bracket BOM groups (expanded sub-assemblies)
-  const bracketBOMGroups = (() => {
-    if (!calc.multiResults) return []
-    const dimValues: Record<string, number> = {}
-    for (const run of calc.runs) {
-      const job = { ...(run.job ?? {}), ...(run.simpleJob ?? {}) } as Record<string, any>
-      for (const [k, v] of Object.entries(job)) {
-        dimValues[k] = (dimValues[k] ?? 0) + (parseFloat(String(v)) || 0)
-      }
-    }
-    const mergedCriteria = calc.runs.reduce((acc: Record<string, boolean>, r: Run) => {
-      for (const [k, v] of Object.entries(r.criteriaState ?? {})) { if (v) acc[k] = true }
-      return acc
-    }, {} as Record<string, boolean>)
-    const mergedVariants = calc.runs.reduce((acc: Record<string, string>, r: Run) => {
-      return { ...acc, ...(r.variantState ?? {}) }
-    }, {} as Record<string, string>)
-    const brackets = sys.customBrackets ?? []
-    const bracketQtys = computeBracketQtys(brackets, dimValues, sys, mergedCriteria, mergedVariants)
-    return computeAllBracketBOM(brackets, bracketQtys, sys)
   })()
 
   // Total run length for rate calculations
@@ -1000,7 +1046,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
   const handleSave = async () => {
     if (!jobName.trim()) return
     setSaving(true)
-    const lastResults = calc.multiResults ? buildLastResults(sys, calc.runs, calc.multiResults, workSchedule) : null
+    const lastResults = calc.multiResults ? buildLastResults(sys, calc.runs, { ...calc.multiResults, combined: combinedWithBrackets }, workSchedule) : null
     await onSaveJob(jobName.trim(), lastResults)
     setJobName(''); setSaving(false)
   }
@@ -1386,7 +1432,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
               </div>
             )}
             {(() => {
-              const bomMats = (calc.multiResults.combined ?? []).filter((m: any) => !m.allBlocked)
+              const bomMats = combinedWithBrackets.filter((m: any) => !m.allBlocked)
               // Look up unitPrice from live sys.materials (not engine results) so price changes show immediately
               const priceMap = Object.fromEntries(sys.materials.map(m => [m.id, m.unitPrice ?? null]))
               const grandCost = bomMats.reduce((a: number, m: any) => {
@@ -1432,6 +1478,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                               <td className="px-3 py-2 text-ink font-medium leading-snug">
                                 {mat.name}
                                 {mat._isPlateAuto && mat._sheetResult && <div className="text-[9px] text-primary font-semibold">{mat._sheetResult.partsPerSheet}/sheet · {mat._sheetResult.utilisation}% util</div>}
+                                {mat._bracketSource && <div className="text-[9px] text-violet-600 font-semibold">🔩 {mat._bracketSource}{mat._bracketQty ? ` · ${mat._bracketQty}` : ''}</div>}
                               </td>
                               <td className="px-3 py-2 font-mono text-ink-muted">{mat.productCode || '—'}</td>
                               <td className="px-2 py-2 text-center text-ink-muted">{mat.unit}</td>
@@ -1472,7 +1519,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
             })()}
             {/* Rate summary bar */}
             {totalRunLength > 0 && (() => {
-              const bomMats      = (calc.multiResults.combined ?? []).filter((m: any) => !m.allBlocked)
+              const bomMats      = combinedWithBrackets.filter((m: any) => !m.allBlocked)
               const priceMap2    = Object.fromEntries(sys.materials.map(m => [m.id, m.unitPrice ?? null]))
               const totalMatCost = bomMats.reduce((a: number, m: any) => { const p = priceMap2[m.id]; return a + (p != null ? p * m.grandTotal : 0) }, 0)
               const pills: { label: string; value: string; color: string }[] = [
@@ -1497,51 +1544,12 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                 </div>
               )
             })()}
-            {(calc.multiResults.combined ?? []).some((m: any) => m.allBlocked) && (
+            {combinedWithBrackets.some((m: any) => m.allBlocked) && (
               <div className="card overflow-hidden">
                 <div className="px-4 py-3 bg-surface-100 border-b border-surface-200 text-xs font-semibold text-ink-muted">Gated Materials</div>
                 <div className="p-4 flex flex-wrap gap-2">
-                  {(calc.multiResults.combined ?? []).filter((m: any) => m.allBlocked).map((mat: any) => (
+                  {combinedWithBrackets.filter((m: any) => m.allBlocked).map((mat: any) => (
                     <span key={mat.id} className="badge bg-surface-100 text-ink-muted">{mat.name}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {bracketBOMGroups.length > 0 && (
-              <div className="card overflow-hidden">
-                <div className="px-4 py-3 bg-surface-100 border-b border-surface-200 flex items-center gap-2">
-                  <span className="text-base">🔩</span>
-                  <span className="text-xs font-semibold text-ink">Bracket Sub-assemblies</span>
-                  <span className="text-xs text-ink-faint ml-1">{bracketBOMGroups.length} bracket type{bracketBOMGroups.length !== 1 ? 's' : ''}</span>
-                </div>
-                <div className="divide-y divide-surface-200">
-                  {bracketBOMGroups.map(group => (
-                    <div key={group.bracketId} className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-base">{group.bracketIcon}</span>
-                        <span className="font-semibold text-sm text-ink">{group.bracketName}</span>
-                        <span className="text-xs font-mono text-ink-muted">×{group.bracketQty}</span>
-                      </div>
-                      {group.items.length === 0
-                        ? <p className="text-xs text-ink-faint pl-6">No BOM items defined.</p>
-                        : (
-                          <div className="space-y-1 pl-6">
-                            {group.items.map((item, ii) => {
-                              const perEach = group.bracketQty > 0 ? item.qty / group.bracketQty : item.qty
-                              return (
-                                <div key={ii} className="flex items-center gap-3 text-xs text-ink">
-                                  <span className="text-ink-faint w-3">└</span>
-                                  <span className="font-medium flex-1">{item.resolvedName}</span>
-                                  {item.customEntry && <span className="text-[9px] border border-surface-300 px-1 rounded text-ink-faint">custom</span>}
-                                  <span className="text-ink-muted font-mono">{perEach.toFixed(2)} {item.unit}/ea</span>
-                                  <span className="text-ink font-semibold font-mono">{item.qty.toFixed(2)} {item.unit} total</span>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )
-                      }
-                    </div>
                   ))}
                 </div>
               </div>
@@ -1556,7 +1564,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
             {/* Overall cost summary */}
             {(() => {
-              const bomMats    = (calc.multiResults.combined ?? []).filter((m: any) => !m.allBlocked)
+              const bomMats    = combinedWithBrackets.filter((m: any) => !m.allBlocked)
               const priceMap3  = Object.fromEntries(sys.materials.map(m => [m.id, m.unitPrice ?? null]))
               const matTotal   = bomMats.reduce((a: number, m: any) => { const p = priceMap3[m.id]; return a + (p != null ? p * m.grandTotal : 0) }, 0)
               const labourTotal = workSchedule?.totalLabourCost ?? 0
@@ -1609,7 +1617,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
             {showBreakdown && (
               <CalcBreakdownPanel
-                sys={sys} runs={calc.runs} multiResults={calc.multiResults}
+                sys={sys} runs={calc.runs} multiResults={{ ...calc.multiResults, combined: combinedWithBrackets }}
                 workSchedule={workSchedule}
               />
             )}
