@@ -120,7 +120,7 @@ export function computeResults(opts: ComputeOptions): MaterialResult[] {
           ? parseFloat(jobDims[spacingInputKey] as any) || parseFloat(cd.spacing as any) || 1
           : null
         const actualSp = userSpacing ?? parseFloat(cd.spacing as any) ?? 1
-        const L = prim[cd.spacingTargetDim ?? 'length'] ?? prim.length
+        const L = prim[cd.spacingTargetDim ?? 'length'] ?? customVals[cd.spacingTargetDim ?? 'length'] ?? prim.length
         const firstGapVal = parseFloat(cd.firstGap as any) ?? 300
         let count = 0
         if (L > 0) {
@@ -143,10 +143,10 @@ export function computeResults(opts: ComputeOptions): MaterialResult[] {
         customVals[cd.key] = prim.length * prim.width
         break
       case 'formula':
-        customVals[cd.key] = (parseFloat(cd.formulaQty as any) || 1) * (prim[cd.formulaDimKey ?? 'length'] ?? 0)
+        customVals[cd.key] = (parseFloat(cd.formulaQty as any) || 1) * (prim[cd.formulaDimKey ?? 'length'] ?? customVals[cd.formulaDimKey ?? 'length'] ?? 0)
         break
       case 'stock_length': {
-        const rawTarget = parseFloat(jobDims[cd.stockTargetDim ?? 'length'] as any) || 0
+        const rawTarget = parseFloat(jobDims[cd.stockTargetDim ?? 'length'] as any) || customVals[cd.stockTargetDim ?? 'length'] || 0
         const metreDims = new Set(['length', 'height', 'width', 'perimeter'])
         const targetMm = metreDims.has(cd.stockTargetDim ?? 'length') ? rawTarget * 1000 : rawTarget
         const result = solveStockLengths(targetMm, cd.stockLengths ?? [], 'min_waste', {})
@@ -157,7 +157,7 @@ export function computeResults(opts: ComputeOptions): MaterialResult[] {
         break
       }
       case 'sheet_cut': {
-        const partsNeeded = parseFloat(jobDims[cd.sheetPartsNeededDim ?? 'custom_a'] as any) || 0
+        const partsNeeded = parseFloat(jobDims[cd.sheetPartsNeededDim ?? 'custom_a'] as any) || customVals[cd.sheetPartsNeededDim ?? 'custom_a'] || 0
         let sheetW = (cd as any).sheetW ?? 2400
         let sheetH = (cd as any).sheetH ?? 1200
         if (cd.plateMaterialId) {

@@ -154,11 +154,16 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props
     if (val > 0) { setter([...(d.stockLengths ?? []), val].sort((a, b) => a - b)); setRaw('') }
   }
 
-  const DimForm = ({ d, set, isEdit }: { d: typeof BLANK | CustomDim; set: (k: any) => (v: any) => void; isEdit: boolean }) => {
+  const DimForm = ({ d, set, isEdit, precedingDims }: { d: typeof BLANK | CustomDim; set: (k: any) => (v: any) => void; isEdit: boolean; precedingDims: CustomDim[] }) => {
     const stockRaw    = isEdit ? newStockLenEdit : newStockLen
     const setStockRaw = isEdit ? setNewStockLenEdit : setNewStockLen
     const [guideOpen, setGuideOpen] = useState(false)
     const guideItems = FIELD_GUIDE_ITEMS[d.derivType] ?? []
+    // Build combined dim options: primitives + custom dims that appear before this one
+    const dimOptions = [
+      ...PRIMITIVE_DIMS.map(p => ({ value: p.key, label: p.icon + ' ' + p.label, group: 'Primitive' as const })),
+      ...precedingDims.map(cd => ({ value: cd.key, label: cd.icon + ' ' + cd.name + (cd.unit ? ` (${cd.unit})` : ''), group: 'Custom' as const })),
+    ]
     return (
       <div className="space-y-3">
         {/* Fields */}
@@ -181,7 +186,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props
             <div className="flex flex-wrap gap-4 items-start">
               <Select label="Spacing along" value={(d as any).spacingTargetDim ?? 'length'}
                 onChange={e => set('spacingTargetDim')(e.target.value)}
-                options={PRIMITIVE_DIMS.map(p => ({ value: p.key, label: p.icon + ' ' + p.label }))}
+                options={dimOptions}
                 className="w-40" />
               <div className="flex flex-col gap-1">
                 <label className="label">Spacing value</label>
@@ -220,7 +225,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props
                 onChange={e => set('formulaQty')(parseFloat(e.target.value))} className="w-24" />
               <Select label="× Dimension" value={(d as any).formulaDimKey ?? 'length'}
                 onChange={e => set('formulaDimKey')(e.target.value)}
-                options={PRIMITIVE_DIMS.map(p => ({ value: p.key, label: p.icon + ' ' + p.label }))}
+                options={dimOptions}
                 className="w-44" />
             </div>
           )}
@@ -229,7 +234,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props
             <div className="flex flex-wrap gap-4 items-start">
               <Select label="Target dim" value={(d as any).stockTargetDim ?? 'height'}
                 onChange={e => set('stockTargetDim')(e.target.value)}
-                options={PRIMITIVE_DIMS.map(p => ({ value: p.key, label: p.icon + ' ' + p.label }))}
+                options={dimOptions}
                 className="w-44" />
               <div className="flex flex-col gap-2">
                 <label className="label">Stock lengths (mm)</label>
@@ -277,7 +282,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props
                 <NumberInput label="Kerf (mm)"   value={(d as any).kerf ?? 0}   min={0} step={0.5} onChange={e => set('kerf')(parseFloat(e.target.value))} className="w-24" />
                 <Select label="Parts needed from" value={(d as any).sheetPartsNeededDim ?? 'custom_a'}
                   onChange={e => set('sheetPartsNeededDim')(e.target.value)}
-                  options={PRIMITIVE_DIMS.map(p => ({ value: p.key, label: p.icon + ' ' + p.label }))}
+                  options={dimOptions}
                   className="w-44" />
                 <div className="flex flex-col gap-1">
                   <label className="label">Allow rotation</label>
@@ -295,15 +300,15 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props
             <div className="space-y-2">
               <label className="label">Sum of dimensions</label>
               <div className="flex flex-wrap gap-2">
-                {PRIMITIVE_DIMS.filter(p => !['area', 'length', 'width'].includes(p.key)).map(p => {
-                  const checked = (d.sumKeys ?? []).includes(p.key)
+                {dimOptions.filter(o => !['area'].includes(o.value)).map(o => {
+                  const checked = (d.sumKeys ?? []).includes(o.value)
                   return (
-                    <label key={p.key}
+                    <label key={o.value}
                       className={`flex items-center gap-1.5 cursor-pointer border px-3 py-1.5 text-xs font-semibold transition-all ${checked ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-surface-50 border-surface-300 text-ink-muted hover:bg-surface-100'}`}
                       style={{ borderRadius: 'var(--radius)' }}>
                       <input type="checkbox" checked={checked} className="sr-only"
-                        onChange={e => set('sumKeys')(e.target.checked ? [...(d.sumKeys ?? []), p.key] : (d.sumKeys ?? []).filter(k => k !== p.key))} />
-                      {p.icon} {p.label}
+                        onChange={e => set('sumKeys')(e.target.checked ? [...(d.sumKeys ?? []), o.value] : (d.sumKeys ?? []).filter(k => k !== o.value))} />
+                      {o.label}
                     </label>
                   )
                 })}
@@ -345,7 +350,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props
       {adding && (
         <div className="p-5 bg-surface-100 border-b border-surface-200">
           <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide mb-4">New Custom Dimension</div>
-          <DimForm d={draft} set={sd} isEdit={false} />
+          <DimForm d={draft} set={sd} isEdit={false} precedingDims={derivedDims} />
           <div className="flex gap-2 mt-4">
             <Button size="sm" variant="primary" onClick={add} icon={<Check className="w-3.5 h-3.5" />}>Add</Button>
             <Button size="sm" variant="secondary" onClick={() => setAdding(false)} icon={<X className="w-3.5 h-3.5" />}>Cancel</Button>
@@ -358,7 +363,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props
       )}
 
       <div className="divide-y divide-surface-200">
-        {derivedDims.map(cd => {
+        {derivedDims.map((cd, cdIdx) => {
           const dt   = DERIV_TYPES.find(t => t.value === cd.derivType)
           const isEd = editingId === cd.id
           return (
@@ -395,7 +400,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props
               {isEd && editDraft && (
                 <div className="px-5 pb-5 border-t border-primary/20">
                   <div className="pt-4">
-                    <DimForm d={editDraft} set={se} isEdit={true} />
+                    <DimForm d={editDraft} set={se} isEdit={true} precedingDims={derivedDims.slice(0, cdIdx)} />
                     <div className="flex gap-2 mt-4">
                       <Button size="sm" variant="primary" onClick={saveEdit} icon={<Check className="w-3.5 h-3.5" />}>Save</Button>
                       <Button size="sm" variant="secondary" onClick={cancelEdit} icon={<X className="w-3.5 h-3.5" />}>Cancel</Button>

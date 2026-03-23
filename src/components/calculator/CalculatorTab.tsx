@@ -11,6 +11,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
 import { computeWorkSchedule, computeBracketQtys, computeBracketBOM } from '@/lib/engine/work'
+import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
 import SystemOverviewPanel from './SystemOverviewPanel'
 
 interface Props {
@@ -1207,26 +1208,28 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
                     {sys.inputModel === 'simple_dims' && (
                       <div className="grid grid-cols-2 gap-2">
-                        {['height','length','width','perimeter','corners','custom_a','custom_b'].filter(key => {
+                        {PRIMITIVE_DIMS.map(p => p.key).filter(key => {
                           const cds = sys.customDims ?? []
                           return cds.some(cd => cd.derivType === 'stock_length' && cd.stockTargetDim === key)
                               || cds.some(cd => cd.derivType === 'spacing'      && cd.spacingTargetDim === key)
                               || cds.some(cd => cd.derivType === 'formula'      && cd.formulaDimKey === key)
                               || sys.materials.some(m => (m.ruleSet ?? []).some(r => r.ruleDimKey === key))
-                        }).map(key => (
+                        }).map(key => {
+                          const dimDef = PRIMITIVE_DIMS.find(p => p.key === key)
+                          return (
                           <div key={key}>
-                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{key}</div>
+                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{dimDef?.icon} {dimDef?.label ?? key}</div>
                             <div className="relative">
                               <input type="number" value={(run.job as any)[key] ?? ''} min={0} step="0.1" placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
                                 style={{ borderColor: parseFloat((run.job as any)[key]) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
                               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">
-                                {['height','length','width','perimeter'].includes(key) ? 'm' : ''}
+                                {dimDef?.unit ?? ''}
                               </span>
                             </div>
                           </div>
-                        ))}
+                        )})}
                         {spacingDims.map(cd => (
                           <div key={cd.key}>
                             <div className="text-[9px] font-semibold uppercase text-ink-faint mb-1">{cd.spacingLabel || cd.name} <span className="text-secondary-600">(spacing)</span></div>
