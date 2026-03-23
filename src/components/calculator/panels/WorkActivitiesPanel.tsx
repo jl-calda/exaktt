@@ -258,17 +258,17 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
   }
 
   return (
-    <div className="border border-secondary-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
-      <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: 'var(--color-secondary-100)', borderColor: 'var(--color-secondary-200)' }}>
+    <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
+      <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
         <div>
-          <h3 className="font-semibold text-sm text-secondary-700">⚙️ Work Activities</h3>
-          <p className="text-xs text-secondary-600 mt-0.5">Fabrication, installation and third-party activities — time and cost per run.</p>
+          <h3 className="font-semibold text-sm text-ink">⚙️ Work Activities</h3>
+          <p className="text-xs text-ink-muted mt-0.5">Fabrication, installation and third-party activities — time and cost per run.</p>
         </div>
-        <Button size="sm" onClick={() => { setAdding(v => !v); setEditingId(null) }} icon={<Plus className="w-3.5 h-3.5" />} className="!border-secondary-200 !text-secondary-700">Add Activity</Button>
+        <Button size="sm" onClick={() => { setAdding(v => !v); setEditingId(null) }} icon={<Plus className="w-3.5 h-3.5" />}>Add Activity</Button>
       </div>
 
       {adding && (
-        <div className="p-5 bg-surface-100 border-b border-secondary-200">
+        <div className="p-5 bg-surface-100 border-b border-surface-200">
           <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide mb-4">New Activity</div>
           <ActivityForm d={draft} set={sd} materials={materials} customCriteria={customCriteria} customBrackets={customBrackets}
             onSave={add} onCancel={() => setAdding(false)} label="Add" />
@@ -281,7 +281,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
         </div>
       )}
 
-      <div className="divide-y divide-secondary-200">
+      <div className="divide-y divide-surface-200">
         {sorted.map(act => {
           const isEd = editingId === act.id
           const phaseInfo = PHASES.find(p => p.value === act.phase)

@@ -41,15 +41,15 @@ function StepHeader({ step, children }: { step: typeof STEPS[number]; children: 
   return (
     <div>
       <div className="flex items-center gap-2 mb-2 px-1">
-        <div className="w-5 h-5 flex items-center justify-center text-[10px] font-bold text-secondary-700 bg-secondary-50 border border-secondary-200 flex-shrink-0"
+        <div className="w-5 h-5 flex items-center justify-center text-[10px] font-bold text-ink-muted bg-surface-100 border border-surface-200 flex-shrink-0"
           style={{ borderRadius: 'var(--radius)' }}>
           {step.n}
         </div>
         <span className="text-xs font-semibold text-ink">{step.label}</span>
         <span className="text-xs text-ink-faint">— {step.desc}</span>
-        <div className="flex-1 h-px bg-secondary-200" />
+        <div className="flex-1 h-px bg-surface-200" />
       </div>
-      <div className="space-y-3 pl-3.5 border-l-2 border-secondary-200">
+      <div className="space-y-3 pl-3.5 border-l-2 border-surface-200">
         {children}
       </div>
     </div>
@@ -155,28 +155,28 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
     <div className="flex-1 min-w-0 space-y-4 w-full">
 
       {/* ── System Identity ── */}
-      <div className="border border-secondary-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
-        <div className="px-4 py-2.5 border-b flex items-center gap-2" style={{ background: 'var(--color-secondary-100)', borderColor: 'var(--color-secondary-200)' }}>
+      <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
+        <div className="px-4 py-2.5 border-b flex items-center gap-2" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
           <div className="w-6 h-6 flex items-center justify-center text-base flex-shrink-0"
             style={{ background: sys.color + '18', border: `1.5px solid ${sys.color}30`, borderRadius: 'var(--radius)' }}>
             {sys.icon}
           </div>
-          <span className="text-xs font-semibold text-secondary-700">{sys.name || 'System Identity'}</span>
-          {sys.description && <span className="text-xs text-secondary-600 truncate">— {sys.description}</span>}
+          <span className="text-xs font-semibold text-ink">{sys.name || 'System Identity'}</span>
+          {sys.description && <span className="text-xs text-ink-muted truncate">— {sys.description}</span>}
         </div>
         <div className="p-5">
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-48">
-              <label className="label text-secondary-600">Name</label>
-              <input value={sys.name} onChange={e => onUpdate({ name: e.target.value })} className="input" style={{ borderColor: 'var(--color-secondary-200)' }} />
+              <label className="label text-ink-muted">Name</label>
+              <input value={sys.name} onChange={e => onUpdate({ name: e.target.value })} className="input" style={{ borderColor: 'var(--color-surface-200)' }} />
             </div>
             <div className="w-32">
-              <label className="label text-secondary-600">Short Name</label>
-              <input value={sys.shortName ?? ''} onChange={e => onUpdate({ shortName: e.target.value })} className="input" placeholder="e.g. VLL" maxLength={12} style={{ borderColor: 'var(--color-secondary-200)' }} />
+              <label className="label text-ink-muted">Short Name</label>
+              <input value={sys.shortName ?? ''} onChange={e => onUpdate({ shortName: e.target.value })} className="input" placeholder="e.g. VLL" maxLength={12} style={{ borderColor: 'var(--color-surface-200)' }} />
             </div>
             <div className="flex-1 min-w-48">
-              <label className="label text-secondary-600">Description</label>
-              <input value={sys.description ?? ''} onChange={e => onUpdate({ description: e.target.value })} className="input" placeholder="Optional" style={{ borderColor: 'var(--color-secondary-200)' }} />
+              <label className="label text-ink-muted">Description</label>
+              <input value={sys.description ?? ''} onChange={e => onUpdate({ description: e.target.value })} className="input" placeholder="Optional" style={{ borderColor: 'var(--color-surface-200)' }} />
             </div>
             <IconPicker label="Icon" value={sys.icon} onChange={icon => onUpdate({ icon })} />
             <ColorPicker label="Colour" value={sys.color} onChange={color => onUpdate({ color })} />
@@ -186,10 +186,10 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
 
       {/* ── Step 1: Input Model ── */}
       <StepHeader step={STEPS[0]}>
-        <div className="border border-secondary-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
-          <div className="px-5 py-4 border-b" style={{ background: 'var(--color-secondary-100)', borderColor: 'var(--color-secondary-200)' }}>
-            <h3 className="font-semibold text-sm text-secondary-700">📐 Input Model</h3>
-            <p className="text-xs text-secondary-600 mt-0.5">How dimensions are entered in the calculator.</p>
+        <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
+          <div className="px-5 py-4 border-b" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
+            <h3 className="font-semibold text-sm text-ink">📐 Input Model</h3>
+            <p className="text-xs text-ink-muted mt-0.5">How dimensions are entered in the calculator.</p>
           </div>
           <div className="p-4">
           <div className="flex gap-3 flex-wrap">
@@ -203,7 +203,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
                 className={`flex-1 min-w-36 text-left p-4 border transition-all ${
                   sys.inputModel === opt.value
                     ? 'border-primary bg-primary/10'
-                    : 'border-surface-300 bg-surface-100 hover:border-secondary-200 hover:bg-secondary-50/30'
+                    : 'border-surface-300 bg-surface-100 hover:border-surface-300 hover:bg-surface-100'
                 }`}
                 style={{ borderRadius: 'var(--radius-card)' }}>
                 <div className="text-lg mb-1">{opt.icon}</div>
@@ -233,28 +233,28 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
 
             {/* Add input card */}
             {addingInput ? (
-              <div className="w-full border border-secondary-200 bg-surface-50 p-4 flex items-end gap-4 flex-wrap" style={{ borderRadius: 'var(--radius-card)' }}>
+              <div className="w-full border border-surface-200 bg-surface-50 p-4 flex items-end gap-4 flex-wrap" style={{ borderRadius: 'var(--radius-card)' }}>
                 <div className="flex flex-col gap-1 flex-1 min-w-36">
-                  <label className="label text-secondary-600">Label</label>
+                  <label className="label text-ink-muted">Label</label>
                   <input value={inputDraft.name}
                     onChange={e => setInputDraft(d => ({ ...d, name: e.target.value }))}
                     className="input" placeholder="e.g. Volume" autoFocus
-                    style={{ borderColor: 'var(--color-secondary-200)' }}
+                    style={{ borderColor: 'var(--color-surface-200)' }}
                     onKeyDown={e => e.key === 'Enter' && addUserInput()} />
                 </div>
                 <div className="flex flex-col gap-1 w-24">
-                  <label className="label text-secondary-600">Unit</label>
+                  <label className="label text-ink-muted">Unit</label>
                   <input value={inputDraft.unit}
                     onChange={e => setInputDraft(d => ({ ...d, unit: e.target.value }))}
                     className="input" placeholder="L"
-                    style={{ borderColor: 'var(--color-secondary-200)' }} />
+                    style={{ borderColor: 'var(--color-surface-200)' }} />
                 </div>
                 <div className="flex flex-col gap-1 w-24">
-                  <label className="label text-secondary-600">Step</label>
+                  <label className="label text-ink-muted">Step</label>
                   <input type="number" value={inputDraft.inputStep}
                     onChange={e => setInputDraft(d => ({ ...d, inputStep: parseFloat(e.target.value) || 1 }))}
                     className="input" min={0.001} step={0.1}
-                    style={{ borderColor: 'var(--color-secondary-200)' }} />
+                    style={{ borderColor: 'var(--color-surface-200)' }} />
                 </div>
                 <IconPicker label="Icon" value={inputDraft.icon}
                   onChange={v => setInputDraft(d => ({ ...d, icon: v }))} />
@@ -265,13 +265,13 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
               </div>
             ) : (
               <button onClick={() => setAddingInput(true)}
-                className="flex-1 min-w-36 p-4 text-left border border-dashed border-secondary-200 hover:border-secondary-300 hover:bg-secondary-50/30 transition-all group"
+                className="flex-1 min-w-36 p-4 text-left border border-dashed border-surface-300 hover:border-surface-300 hover:bg-surface-100 transition-all group"
                 style={{ borderRadius: 'var(--radius-card)' }}>
-                <div className="text-lg mb-1 text-secondary-600 group-hover:text-secondary-700 transition-colors">
+                <div className="text-lg mb-1 text-ink-muted group-hover:text-ink transition-colors">
                   <Plus className="w-5 h-5" />
                 </div>
-                <div className="font-semibold text-xs text-secondary-600 group-hover:text-secondary-700 transition-colors">Add input</div>
-                <div className="text-[11px] text-secondary-600 mt-0.5">volume, weight, qty…</div>
+                <div className="font-semibold text-xs text-ink-muted group-hover:text-ink transition-colors">Add input</div>
+                <div className="text-[11px] text-ink-muted mt-0.5">volume, weight, qty…</div>
               </button>
             )}
           </div>
@@ -286,21 +286,21 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
               : PRIMITIVE_DIMS.filter(d => !['ends'].includes(d.key))
             return (
               <div className="mt-4">
-                <div className="text-[10px] font-semibold text-secondary-600 uppercase tracking-wide mb-2">
+                <div className="text-[10px] font-semibold text-ink-muted uppercase tracking-wide mb-2">
                   {fixed ? 'Fixed inputs for this model' : 'Available primitive dimensions'}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {available.map(d => (
                     <span key={d.key}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-secondary-700 border border-secondary-200"
+                      className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-ink border border-surface-200"
                       style={{ borderRadius: 'var(--radius)' }}>
                       <span className="text-sm leading-none">{d.icon}</span>
                       {d.label}
-                      {d.unit && <span className="text-[10px] text-secondary-600 opacity-70">({d.unit})</span>}
+                      {d.unit && <span className="text-[10px] text-ink-faint opacity-70">({d.unit})</span>}
                     </span>
                   ))}
                   {sys.inputModel === 'linear_run' && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-secondary-700 border border-secondary-200"
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-ink border border-surface-200"
                       style={{ borderRadius: 'var(--radius)' }}>
                       + segment mode
                     </span>

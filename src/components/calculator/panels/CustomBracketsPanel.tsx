@@ -330,17 +330,17 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
   }
 
   return (
-    <div className="border border-secondary-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
-      <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: 'var(--color-secondary-100)', borderColor: 'var(--color-secondary-200)' }}>
+    <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
+      <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
         <div>
-          <h3 className="font-semibold text-sm text-secondary-700">🔩 Custom Brackets</h3>
-          <p className="text-xs text-secondary-600 mt-0.5">Composite assemblies with bill of materials and fabrication activities.</p>
+          <h3 className="font-semibold text-sm text-ink">🔩 Custom Brackets</h3>
+          <p className="text-xs text-ink-muted mt-0.5">Composite assemblies with bill of materials and fabrication activities.</p>
         </div>
-        <Button size="sm" onClick={() => { setAdding(v => !v); setEditingId(null) }} icon={<Plus className="w-3.5 h-3.5" />} className="!border-secondary-200 !text-secondary-700">Add Bracket</Button>
+        <Button size="sm" onClick={() => { setAdding(v => !v); setEditingId(null) }} icon={<Plus className="w-3.5 h-3.5" />}>Add Bracket</Button>
       </div>
 
       {adding && (
-        <div className="p-5 bg-surface-100 border-b border-secondary-200">
+        <div className="p-5 bg-surface-100 border-b border-surface-200">
           <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide mb-4">New Bracket</div>
           <BracketForm draft={draft} onChange={patch => setDraft(d => ({ ...d, ...patch }))}
             materials={materials} libraryItems={libraryItems} customDims={customDims} customCriteria={customCriteria} variants={variants}
@@ -354,7 +354,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
         </div>
       )}
 
-      <div className="divide-y divide-secondary-200" key="list">
+      <div className="divide-y divide-surface-200" key="list">
         {customBrackets.map(bracket => {
           const isEd  = editingId === bracket.id
           const isExp = expandedId === bracket.id && !isEd
@@ -371,7 +371,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
                     <span className="font-semibold text-sm text-ink">{bracket.name}</span>
                     {bracket.code && <span className="font-mono text-xs text-ink-faint">{bracket.code}</span>}
                     {(bracket.parameters ?? []).length > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold text-secondary-700" style={{ background: 'var(--color-secondary-100)' }}>parametric</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold text-ink" style={{ background: 'var(--color-surface-100)' }}>parametric</span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5 text-xs text-ink-muted flex-wrap">
@@ -403,7 +403,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
                       <div className="text-[10px] font-bold uppercase text-ink-faint tracking-wide mb-1">Parameters</div>
                       <div className="flex flex-wrap gap-2">
                         {bracket.parameters.map(p => (
-                          <span key={p.key} className="text-xs border px-2 py-0.5 font-mono text-secondary-700 border-secondary-200" style={{ borderRadius: 'var(--radius)', background: 'var(--color-secondary-50)' }}>
+                          <span key={p.key} className="text-xs border px-2 py-0.5 font-mono text-ink border-surface-200" style={{ borderRadius: 'var(--radius)', background: 'var(--color-surface-100)' }}>
                             {p.key} = {p.default}{p.unit}
                           </span>
                         ))}
