@@ -199,10 +199,16 @@ export function computeResults(opts: ComputeOptions): MaterialResult[] {
     customDims.filter(cd => cd.derivType === 'sheet_cut' && cd.plateMaterialId).map(cd => cd.plateMaterialId)
   )
 
+  // Materials used as bracket BOM components get their quantities from bracket
+  // expansion only — exclude them from direct rule evaluation to avoid doubling
+  const bracketMatIds = new Set(
+    (sys.customBrackets ?? []).flatMap((b: any) => (b.bom ?? []).map((item: any) => item.materialId).filter(Boolean))
+  )
+
   const active = materials
     .filter(m => m.substrate === 'all' || substrate === 'all' || m.substrate === substrate)
     .map(migrateMat)
-    .filter(m => matHasRule(m) || plateMaterialIds.has(m.id))
+    .filter(m => !bracketMatIds.has(m.id) && (matHasRule(m) || plateMaterialIds.has(m.id)))
 
   return active.map(mat => {
     // Plate auto-qty
