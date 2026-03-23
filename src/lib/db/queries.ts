@@ -5,16 +5,15 @@ import type { Plan } from '@prisma/client'
 import type { MtoSystem, SavedJob, LibraryItem, GlobalTag, MaterialSpec, Report, Profile, ActivityLibraryItem, Supplier } from '@/types'
 
 // ─── Ownership guard ─────────────────────────────────────────────────────────
-// Verifies a record belongs to the user before update/delete.
-// Throws if the record doesn't exist or belongs to another user.
+// Verifies a record belongs to the company before update/delete.
 
 async function verifyOwnership(
   model: { findFirst: (args: any) => Promise<any> },
   id: string,
-  userId: string,
+  companyId: string,
   label: string,
 ) {
-  const record = await model.findFirst({ where: { id, userId }, select: { id: true } })
+  const record = await model.findFirst({ where: { id, companyId }, select: { id: true } })
   if (!record) throw new Error(`${label} not found`)
 }
 
@@ -34,6 +33,14 @@ export async function getCompanyPlan(userId: string): Promise<Plan> {
     select: { company: { select: { plan: true } } },
   })
   return member?.company?.plan ?? 'FREE'
+}
+
+export async function getCompanyPlanById(companyId: string): Promise<Plan> {
+  const company = await prisma.company.findUnique({
+    where:  { id: companyId },
+    select: { plan: true },
+  })
+  return company?.plan ?? 'FREE'
 }
 
 // ─── Plan helper (kept for compatibility — reads from Company) ─────────────────
@@ -68,7 +75,12 @@ export async function upsertUser(id: string, email: string, name?: string | null
       data: { name: name ?? email, slug },
     })
     await prisma.companyMember.create({
-      data: { companyId: company.id, userId: id, role: 'OWNER' },
+      data: {
+        companyId: company.id,
+        userId: id,
+        role: 'OWNER',
+        permissions: { systems: 'write', library: 'write', reports: 'write', logistics: 'write', tenders: 'write' },
+      },
     })
   }
 
@@ -91,9 +103,9 @@ export async function upsertProfile(userId: string, data: Partial<Profile>) {
 
 // ─── MTO Systems ──────────────────────────────────────────────────────────────
 
-export async function getMtoSystems(userId: string) {
+export async function getMtoSystems(companyId: string) {
   return prisma.mtoSystem.findMany({
-    where:   { userId, isArchived: false },
+    where:   { companyId, isArchived: false },
     orderBy: { updatedAt: 'desc' },
     select: {
       id: true, name: true, description: true,
@@ -104,20 +116,21 @@ export async function getMtoSystems(userId: string) {
   })
 }
 
-export async function getMtoSystem(id: string, userId: string) {
-  return prisma.mtoSystem.findFirst({ where: { id, userId } })
+export async function getMtoSystem(id: string, companyId: string) {
+  return prisma.mtoSystem.findFirst({ where: { id, companyId } })
 }
 
-export async function createMtoSystem(userId: string, data: Partial<MtoSystem>) {
-  const plan   = await getCompanyPlan(userId)
+export async function createMtoSystem(companyId: string, createdById: string, data: Partial<MtoSystem>) {
+  const plan   = await getCompanyPlanById(companyId)
   const limits = getLimits(plan)
-  const count  = await prisma.mtoSystem.count({ where: { userId, isArchived: false } })
+  const count  = await prisma.mtoSystem.count({ where: { companyId, isArchived: false } })
   if (!withinLimit(count, limits.maxSystems)) {
     throw new LimitError('maxSystems')
   }
   return prisma.mtoSystem.create({
     data: {
-      userId,
+      companyId,
+      createdById,
       name:           data.name        ?? 'New System',
       description:    data.description ?? '',
       icon:           data.icon        ?? '📦',
@@ -134,10 +147,10 @@ export async function createMtoSystem(userId: string, data: Partial<MtoSystem>) 
   })
 }
 
-export async function updateMtoSystem(id: string, userId: string, data: Partial<MtoSystem> & { materials?: any }) {
-  await verifyOwnership(prisma.mtoSystem, id, userId, 'System')
+export async function updateMtoSystem(id: string, companyId: string, data: Partial<MtoSystem> & { materials?: any }) {
+  await verifyOwnership(prisma.mtoSystem, id, companyId, 'System')
   if (data.materials !== undefined) {
-    const plan   = await getCompanyPlan(userId)
+    const plan   = await getCompanyPlanById(companyId)
     const limits = getLimits(plan)
     const mats   = Array.isArray(data.materials) ? data.materials : []
     if (!withinLimit(mats.length - 1, limits.maxMaterials)) {
@@ -164,16 +177,16 @@ export async function updateMtoSystem(id: string, userId: string, data: Partial<
   })
 }
 
-export async function archiveMtoSystem(id: string, userId: string) {
-  await verifyOwnership(prisma.mtoSystem, id, userId, 'System')
+export async function archiveMtoSystem(id: string, companyId: string) {
+  await verifyOwnership(prisma.mtoSystem, id, companyId, 'System')
   return prisma.mtoSystem.update({ where: { id }, data: { isArchived: true } })
 }
 
 // ─── MTO Jobs ─────────────────────────────────────────────────────────────────
 
-export async function getMtoJobs(userId: string, mtoSystemId?: string) {
+export async function getMtoJobs(companyId: string, mtoSystemId?: string) {
   return prisma.mtoJob.findMany({
-    where:   { userId, isArchived: false, ...(mtoSystemId && { mtoSystemId }) },
+    where:   { companyId, isArchived: false, ...(mtoSystemId && { mtoSystemId }) },
     orderBy: { updatedAt: 'desc' },
     select:  {
       id: true, name: true, mtoSystemId: true, calculatedAt: true, createdAt: true, updatedAt: true,
@@ -182,14 +195,14 @@ export async function getMtoJobs(userId: string, mtoSystemId?: string) {
   })
 }
 
-export async function getMtoJob(id: string, userId: string) {
-  return prisma.mtoJob.findFirst({ where: { id, userId } })
+export async function getMtoJob(id: string, companyId: string) {
+  return prisma.mtoJob.findFirst({ where: { id, companyId } })
 }
 
-export async function createMtoJob(userId: string, mtoSystemId: string, data: Partial<SavedJob>) {
-  const plan   = await getCompanyPlan(userId)
+export async function createMtoJob(companyId: string, createdById: string, mtoSystemId: string, data: Partial<SavedJob>) {
+  const plan   = await getCompanyPlanById(companyId)
   const limits = getLimits(plan)
-  const count  = await prisma.mtoJob.count({ where: { userId, isArchived: false } })
+  const count  = await prisma.mtoJob.count({ where: { companyId, isArchived: false } })
   if (!withinLimit(count, limits.maxJobs)) throw new LimitError('maxJobs')
 
   const runs = data.runs ?? []
@@ -197,7 +210,7 @@ export async function createMtoJob(userId: string, mtoSystemId: string, data: Pa
 
   return prisma.mtoJob.create({
     data: {
-      userId, mtoSystemId,
+      companyId, createdById, mtoSystemId,
       name:           data.name           ?? 'Untitled Job',
       runs:           (data.runs           ?? []) as any,
       criteriaState:  (data.criteriaState  ?? {}) as any,
@@ -210,8 +223,8 @@ export async function createMtoJob(userId: string, mtoSystemId: string, data: Pa
   })
 }
 
-export async function updateMtoJob(id: string, userId: string, data: Partial<SavedJob>) {
-  await verifyOwnership(prisma.mtoJob, id, userId, 'Job')
+export async function updateMtoJob(id: string, companyId: string, data: Partial<SavedJob>) {
+  await verifyOwnership(prisma.mtoJob, id, companyId, 'Job')
   return prisma.mtoJob.update({
     where: { id },
     data: {
@@ -226,57 +239,58 @@ export async function updateMtoJob(id: string, userId: string, data: Partial<Sav
   })
 }
 
-export async function archiveMtoJob(id: string, userId: string) {
-  await verifyOwnership(prisma.mtoJob, id, userId, 'Job')
+export async function archiveMtoJob(id: string, companyId: string) {
+  await verifyOwnership(prisma.mtoJob, id, companyId, 'Job')
   return prisma.mtoJob.update({ where: { id }, data: { isArchived: true } })
 }
 
 // ─── Material Specs ───────────────────────────────────────────────────────────
 
-export async function getMaterialSpecs(userId: string) {
-  return prisma.materialSpec.findMany({ where: { userId }, orderBy: { updatedAt: 'desc' } })
+export async function getMaterialSpecs(companyId: string) {
+  return prisma.materialSpec.findMany({ where: { companyId }, orderBy: { updatedAt: 'desc' } })
 }
 
-export async function upsertMaterialSpec(userId: string, data: Partial<MaterialSpec>) {
-  const key = data.productCode ? { userId, productCode: data.productCode } : null
+export async function upsertMaterialSpec(companyId: string, createdById: string, data: Partial<MaterialSpec>) {
+  const key = data.productCode ? { companyId, productCode: data.productCode } : null
   if (key) {
     return prisma.materialSpec.upsert({
-      where:  { userId_productCode: key },
+      where:  { companyId_productCode: key },
       update: data as any,
-      create: { userId, ...(data as any) },
+      create: { companyId, createdById, ...(data as any) },
     })
   }
-  return prisma.materialSpec.create({ data: { userId, ...(data as any) } })
+  return prisma.materialSpec.create({ data: { companyId, createdById, ...(data as any) } })
 }
 
-export async function deleteMaterialSpec(id: string, userId: string) {
-  await verifyOwnership(prisma.materialSpec, id, userId, 'MaterialSpec')
+export async function deleteMaterialSpec(id: string, companyId: string) {
+  await verifyOwnership(prisma.materialSpec, id, companyId, 'MaterialSpec')
   return prisma.materialSpec.delete({ where: { id } })
 }
 
 // ─── Reports ──────────────────────────────────────────────────────────────────
 
-export async function getReports(userId: string) {
+export async function getReports(companyId: string) {
   return prisma.report.findMany({
-    where:   { userId, isArchived: false },
+    where:   { companyId, isArchived: false },
     orderBy: { createdAt: 'desc' },
     select:  { id: true, title: true, jobRef: true, reportDate: true, systemName: true, isPublic: true, publicToken: true, createdAt: true },
   })
 }
 
-export async function getReport(id: string, userId: string) {
-  return prisma.report.findFirst({ where: { id, userId } })
+export async function getReport(id: string, companyId: string) {
+  return prisma.report.findFirst({ where: { id, companyId } })
 }
 
 export async function getReportByToken(token: string) {
   return prisma.report.findFirst({ where: { publicToken: token, isPublic: true, isArchived: false } })
 }
 
-export async function createReport(userId: string, data: Partial<Report>) {
+export async function createReport(companyId: string, createdById: string, data: Partial<Report>) {
   const { nanoid } = await import('nanoid')
   return prisma.report.create({
     data: {
-      userId,
+      companyId,
+      createdById,
       title:            data.title       ?? 'MTO Report',
       jobRef:           data.jobRef,
       preparedBy:       data.preparedBy,
@@ -302,8 +316,8 @@ export async function createReport(userId: string, data: Partial<Report>) {
   })
 }
 
-export async function updateReport(id: string, userId: string, data: Partial<Report>) {
-  await verifyOwnership(prisma.report, id, userId, 'Report')
+export async function updateReport(id: string, companyId: string, data: Partial<Report>) {
+  await verifyOwnership(prisma.report, id, companyId, 'Report')
   const { nanoid } = await import('nanoid')
   return prisma.report.update({
     where: { id },
@@ -324,24 +338,24 @@ export async function updateReport(id: string, userId: string, data: Partial<Rep
   })
 }
 
-export async function archiveReport(id: string, userId: string) {
-  await verifyOwnership(prisma.report, id, userId, 'Report')
+export async function archiveReport(id: string, companyId: string) {
+  await verifyOwnership(prisma.report, id, companyId, 'Report')
   return prisma.report.update({ where: { id }, data: { isArchived: true } })
 }
 
 // ─── Library ──────────────────────────────────────────────────────────────────
 
-export async function getLibraryItems(userId: string) {
+export async function getLibraryItems(companyId: string) {
   const [items, systems] = await Promise.all([
     prisma.libraryItem.findMany({
-      where:   { userId },
+      where:   { companyId },
       orderBy: [{ category: 'asc' }, { name: 'asc' }],
       include: {
         grade:        { select: { id: true, name: true, materialType: true, density: true } },
         manufacturer: { select: { id: true, name: true } },
       },
     }),
-    prisma.mtoSystem.findMany({ where: { userId, isArchived: false }, select: { id: true, name: true, shortName: true, materials: true } }),
+    prisma.mtoSystem.findMany({ where: { companyId, isArchived: false }, select: { id: true, name: true, shortName: true, materials: true } }),
   ])
 
   // Build usedInSystems dynamically from the actual JSON — always accurate
@@ -362,15 +376,16 @@ export async function getLibraryItems(userId: string) {
   return items.map(item => ({ ...item, usedInSystems: usedIn.get(item.id) ?? [] }))
 }
 
-export async function createLibraryItem(userId: string, data: Partial<LibraryItem>) {
-  const plan   = await getCompanyPlan(userId)
+export async function createLibraryItem(companyId: string, createdById: string, data: Partial<LibraryItem>) {
+  const plan   = await getCompanyPlanById(companyId)
   const limits = getLimits(plan)
-  const count  = await prisma.libraryItem.count({ where: { userId } })
+  const count  = await prisma.libraryItem.count({ where: { companyId } })
   if (!withinLimit(count, limits.maxLibraryItems)) throw new LimitError('maxLibraryItems')
 
   return prisma.libraryItem.create({
     data: {
-      userId,
+      companyId,
+      createdById,
       name:           data.name ?? '',
       unit:           data.unit ?? 'each',
       notes:          data.notes,
@@ -385,27 +400,27 @@ export async function createLibraryItem(userId: string, data: Partial<LibraryIte
   })
 }
 
-export async function updateLibraryItem(id: string, userId: string, data: Partial<LibraryItem>) {
-  await verifyOwnership(prisma.libraryItem, id, userId, 'LibraryItem')
+export async function updateLibraryItem(id: string, companyId: string, data: Partial<LibraryItem>) {
+  await verifyOwnership(prisma.libraryItem, id, companyId, 'LibraryItem')
   // Exclude computed/relational fields that can't be written directly
   const { grade, manufacturer, certifications, usedInSystems, ...rest } = data as any
   return prisma.libraryItem.update({ where: { id }, data: rest as any })
 }
 
-export async function deleteLibraryItem(id: string, userId: string) {
-  await verifyOwnership(prisma.libraryItem, id, userId, 'LibraryItem')
+export async function deleteLibraryItem(id: string, companyId: string) {
+  await verifyOwnership(prisma.libraryItem, id, companyId, 'LibraryItem')
   return prisma.libraryItem.delete({ where: { id } })
 }
 
-export async function addSystemToLibraryItem(id: string, sysId: string, userId: string) {
-  await verifyOwnership(prisma.libraryItem, id, userId, 'LibraryItem')
+export async function addSystemToLibraryItem(id: string, sysId: string, companyId: string) {
+  await verifyOwnership(prisma.libraryItem, id, companyId, 'LibraryItem')
   const item = await prisma.libraryItem.findUnique({ where: { id }, select: { usedInSystems: true } })
   if (!item || item.usedInSystems.includes(sysId)) return
   return prisma.libraryItem.update({ where: { id }, data: { usedInSystems: { push: sysId } } })
 }
 
-export async function removeSystemFromLibraryItem(id: string, sysId: string, userId: string) {
-  await verifyOwnership(prisma.libraryItem, id, userId, 'LibraryItem')
+export async function removeSystemFromLibraryItem(id: string, sysId: string, companyId: string) {
+  await verifyOwnership(prisma.libraryItem, id, companyId, 'LibraryItem')
   const item = await prisma.libraryItem.findUnique({ where: { id }, select: { usedInSystems: true } })
   if (!item) return
   return prisma.libraryItem.update({ where: { id }, data: { usedInSystems: item.usedInSystems.filter(s => s !== sysId) } })
@@ -413,30 +428,31 @@ export async function removeSystemFromLibraryItem(id: string, sysId: string, use
 
 // ─── Tags ─────────────────────────────────────────────────────────────────────
 
-export async function getGlobalTags(userId: string) {
-  return prisma.globalTag.findMany({ where: { userId }, orderBy: { order: 'asc' } })
+export async function getGlobalTags(companyId: string) {
+  return prisma.globalTag.findMany({ where: { companyId }, orderBy: { order: 'asc' } })
 }
 
-export async function upsertGlobalTags(userId: string, tags: GlobalTag[]) {
+export async function upsertGlobalTags(companyId: string, createdById: string, tags: GlobalTag[]) {
   return prisma.$transaction([
-    prisma.globalTag.deleteMany({ where: { userId } }),
-    ...tags.map((t, i) => prisma.globalTag.create({ data: { id: t.id, userId, name: t.name, color: t.color, order: i } })),
+    prisma.globalTag.deleteMany({ where: { companyId } }),
+    ...tags.map((t, i) => prisma.globalTag.create({ data: { id: t.id, companyId, createdById, name: t.name, color: t.color, order: i } })),
   ])
 }
 
 // ─── Activity Library ─────────────────────────────────────────────────────────
 
-export async function getActivityLibrary(userId: string) {
+export async function getActivityLibrary(companyId: string) {
   return prisma.activityLibraryItem.findMany({
-    where:   { userId },
+    where:   { companyId },
     orderBy: [{ phase: 'asc' }, { name: 'asc' }],
   })
 }
 
-export async function createActivityLibraryItem(userId: string, data: Partial<ActivityLibraryItem>) {
+export async function createActivityLibraryItem(companyId: string, createdById: string, data: Partial<ActivityLibraryItem>) {
   return prisma.activityLibraryItem.create({
     data: {
-      userId,
+      companyId,
+      createdById,
       name:           data.name           ?? 'New Activity',
       phase:          data.phase          ?? 'installation',
       icon:           data.icon           ?? null,
@@ -453,26 +469,27 @@ export async function createActivityLibraryItem(userId: string, data: Partial<Ac
   })
 }
 
-export async function updateActivityLibraryItem(id: string, userId: string, data: Partial<ActivityLibraryItem>) {
-  await verifyOwnership(prisma.activityLibraryItem, id, userId, 'ActivityLibraryItem')
+export async function updateActivityLibraryItem(id: string, companyId: string, data: Partial<ActivityLibraryItem>) {
+  await verifyOwnership(prisma.activityLibraryItem, id, companyId, 'ActivityLibraryItem')
   return prisma.activityLibraryItem.update({ where: { id }, data: data as any })
 }
 
-export async function deleteActivityLibraryItem(id: string, userId: string) {
-  await verifyOwnership(prisma.activityLibraryItem, id, userId, 'ActivityLibraryItem')
+export async function deleteActivityLibraryItem(id: string, companyId: string) {
+  await verifyOwnership(prisma.activityLibraryItem, id, companyId, 'ActivityLibraryItem')
   return prisma.activityLibraryItem.delete({ where: { id } })
 }
 
 // ─── Suppliers ────────────────────────────────────────────────────────────────
 
-export async function getSuppliers(userId: string) {
-  return prisma.supplier.findMany({ where: { userId, isArchived: false }, orderBy: { name: 'asc' } })
+export async function getSuppliers(companyId: string) {
+  return prisma.supplier.findMany({ where: { companyId, isArchived: false }, orderBy: { name: 'asc' } })
 }
 
-export async function createSupplier(userId: string, data: Partial<Supplier>) {
+export async function createSupplier(companyId: string, createdById: string, data: Partial<Supplier>) {
   return prisma.supplier.create({
     data: {
-      userId,
+      companyId,
+      createdById,
       name:          data.name          ?? '',
       contactPerson: data.contactPerson ?? null,
       email:         data.email         ?? null,
@@ -484,36 +501,36 @@ export async function createSupplier(userId: string, data: Partial<Supplier>) {
   })
 }
 
-export async function updateSupplier(id: string, userId: string, data: Partial<Supplier>) {
-  await verifyOwnership(prisma.supplier, id, userId, 'Supplier')
+export async function updateSupplier(id: string, companyId: string, data: Partial<Supplier>) {
+  await verifyOwnership(prisma.supplier, id, companyId, 'Supplier')
   return prisma.supplier.update({ where: { id }, data: data as any })
 }
 
-export async function deleteSupplier(id: string, userId: string) {
-  await verifyOwnership(prisma.supplier, id, userId, 'Supplier')
+export async function deleteSupplier(id: string, companyId: string) {
+  await verifyOwnership(prisma.supplier, id, companyId, 'Supplier')
   return prisma.supplier.update({ where: { id }, data: { isArchived: true } })
 }
 
 // ─── Purchase Orders ──────────────────────────────────────────────────────────
 
-export async function getPurchaseOrders(userId: string) {
+export async function getPurchaseOrders(companyId: string) {
   return prisma.purchaseOrder.findMany({
-    where:   { userId },
+    where:   { companyId },
     orderBy: { createdAt: 'desc' },
     include: { lines: true, supplier: { select: { id: true, name: true } } },
   })
 }
 
-export async function createPurchaseOrder(userId: string, data: any) {
+export async function createPurchaseOrder(companyId: string, createdById: string, data: any) {
   const { lines, ...header } = data
   return prisma.purchaseOrder.create({
-    data: { userId, ...header, lines: { create: lines ?? [] } },
+    data: { companyId, createdById, ...header, lines: { create: lines ?? [] } },
     include: { lines: true },
   })
 }
 
-export async function updatePurchaseOrder(id: string, userId: string, data: any) {
-  await verifyOwnership(prisma.purchaseOrder, id, userId, 'PurchaseOrder')
+export async function updatePurchaseOrder(id: string, companyId: string, data: any) {
+  await verifyOwnership(prisma.purchaseOrder, id, companyId, 'PurchaseOrder')
   const { lines, ...header } = data
   if (lines !== undefined) {
     await prisma.$transaction([
@@ -524,31 +541,31 @@ export async function updatePurchaseOrder(id: string, userId: string, data: any)
   return prisma.purchaseOrder.update({ where: { id }, data: header, include: { lines: true } })
 }
 
-export async function deletePurchaseOrder(id: string, userId: string) {
-  await verifyOwnership(prisma.purchaseOrder, id, userId, 'PurchaseOrder')
+export async function deletePurchaseOrder(id: string, companyId: string) {
+  await verifyOwnership(prisma.purchaseOrder, id, companyId, 'PurchaseOrder')
   return prisma.purchaseOrder.delete({ where: { id } })
 }
 
 // ─── Delivery Orders ──────────────────────────────────────────────────────────
 
-export async function getDeliveryOrders(userId: string) {
+export async function getDeliveryOrders(companyId: string) {
   return prisma.deliveryOrder.findMany({
-    where:   { userId },
+    where:   { companyId },
     orderBy: { createdAt: 'desc' },
     include: { lines: true, po: { select: { id: true, ref: true, supplierName: true } } },
   })
 }
 
-export async function createDeliveryOrder(userId: string, data: any) {
+export async function createDeliveryOrder(companyId: string, createdById: string, data: any) {
   const { lines, ...header } = data
   return prisma.deliveryOrder.create({
-    data: { userId, ...header, lines: { create: lines ?? [] } },
+    data: { companyId, createdById, ...header, lines: { create: lines ?? [] } },
     include: { lines: true, po: { select: { id: true, ref: true, supplierName: true } } },
   })
 }
 
-export async function updateDeliveryOrder(id: string, userId: string, data: any) {
-  await verifyOwnership(prisma.deliveryOrder, id, userId, 'DeliveryOrder')
+export async function updateDeliveryOrder(id: string, companyId: string, data: any) {
+  await verifyOwnership(prisma.deliveryOrder, id, companyId, 'DeliveryOrder')
   const { lines, ...header } = data
   if (lines !== undefined) {
     await prisma.$transaction([
@@ -562,108 +579,108 @@ export async function updateDeliveryOrder(id: string, userId: string, data: any)
   })
 }
 
-export async function deleteDeliveryOrder(id: string, userId: string) {
-  await verifyOwnership(prisma.deliveryOrder, id, userId, 'DeliveryOrder')
+export async function deleteDeliveryOrder(id: string, companyId: string) {
+  await verifyOwnership(prisma.deliveryOrder, id, companyId, 'DeliveryOrder')
   return prisma.deliveryOrder.delete({ where: { id } })
 }
 
 // ─── Material Categories ──────────────────────────────────────────────────────
 
-export async function getMaterialCategories(userId: string) {
+export async function getMaterialCategories(companyId: string) {
   return prisma.materialCategory.findMany({
-    where:   { userId },
+    where:   { companyId },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   })
 }
 
-export async function createMaterialCategory(userId: string, data: { name: string; icon?: string }) {
+export async function createMaterialCategory(companyId: string, createdById: string, data: { name: string; icon?: string }) {
   return prisma.materialCategory.create({
-    data: { userId, name: data.name.trim().toLowerCase(), icon: data.icon ?? '📦' },
+    data: { companyId, createdById, name: data.name.trim().toLowerCase(), icon: data.icon ?? '📦' },
   })
 }
 
-export async function updateMaterialCategory(id: string, userId: string, data: { name?: string; icon?: string; sortOrder?: number }) {
-  await verifyOwnership(prisma.materialCategory, id, userId, 'MaterialCategory')
+export async function updateMaterialCategory(id: string, companyId: string, data: { name?: string; icon?: string; sortOrder?: number }) {
+  await verifyOwnership(prisma.materialCategory, id, companyId, 'MaterialCategory')
   return prisma.materialCategory.update({ where: { id }, data })
 }
 
-export async function deleteMaterialCategory(id: string, userId: string) {
-  await verifyOwnership(prisma.materialCategory, id, userId, 'MaterialCategory')
+export async function deleteMaterialCategory(id: string, companyId: string) {
+  await verifyOwnership(prisma.materialCategory, id, companyId, 'MaterialCategory')
   return prisma.materialCategory.delete({ where: { id } })
 }
 
 // ─── Material Grades ──────────────────────────────────────────────────────────
 
-export async function getMaterialGrades(userId: string) {
-  return prisma.materialGrade.findMany({ where: { userId }, orderBy: { name: 'asc' } })
+export async function getMaterialGrades(companyId: string) {
+  return prisma.materialGrade.findMany({ where: { companyId }, orderBy: { name: 'asc' } })
 }
 
-export async function createMaterialGrade(userId: string, data: { name: string; materialType?: string; standard?: string; density?: number; notes?: string }) {
+export async function createMaterialGrade(companyId: string, createdById: string, data: { name: string; materialType?: string; standard?: string; density?: number; notes?: string }) {
   return prisma.materialGrade.create({
-    data: { userId, name: data.name.trim(), materialType: data.materialType ?? null, standard: data.standard ?? null, density: data.density ?? null, notes: data.notes ?? null },
+    data: { companyId, createdById, name: data.name.trim(), materialType: data.materialType ?? null, standard: data.standard ?? null, density: data.density ?? null, notes: data.notes ?? null },
   })
 }
 
-export async function updateMaterialGrade(id: string, userId: string, data: { name?: string; materialType?: string | null; standard?: string | null; density?: number | null; notes?: string | null }) {
-  await verifyOwnership(prisma.materialGrade, id, userId, 'MaterialGrade')
+export async function updateMaterialGrade(id: string, companyId: string, data: { name?: string; materialType?: string | null; standard?: string | null; density?: number | null; notes?: string | null }) {
+  await verifyOwnership(prisma.materialGrade, id, companyId, 'MaterialGrade')
   return prisma.materialGrade.update({ where: { id }, data })
 }
 
-export async function deleteMaterialGrade(id: string, userId: string) {
-  await verifyOwnership(prisma.materialGrade, id, userId, 'MaterialGrade')
+export async function deleteMaterialGrade(id: string, companyId: string) {
+  await verifyOwnership(prisma.materialGrade, id, companyId, 'MaterialGrade')
   return prisma.materialGrade.delete({ where: { id } })
 }
 
 // ─── Manufacturers ────────────────────────────────────────────────────────────
 
-export async function getManufacturers(userId: string) {
-  return prisma.manufacturer.findMany({ where: { userId, isArchived: false }, orderBy: { name: 'asc' } })
+export async function getManufacturers(companyId: string) {
+  return prisma.manufacturer.findMany({ where: { companyId, isArchived: false }, orderBy: { name: 'asc' } })
 }
 
-export async function createManufacturer(userId: string, data: { name: string; contactPerson?: string; email?: string; phone?: string; country?: string; website?: string; notes?: string }) {
+export async function createManufacturer(companyId: string, createdById: string, data: { name: string; contactPerson?: string; email?: string; phone?: string; country?: string; website?: string; notes?: string }) {
   return prisma.manufacturer.create({
-    data: { userId, name: data.name.trim(), contactPerson: data.contactPerson ?? null, email: data.email ?? null, phone: data.phone ?? null, country: data.country ?? null, website: data.website ?? null, notes: data.notes ?? null },
+    data: { companyId, createdById, name: data.name.trim(), contactPerson: data.contactPerson ?? null, email: data.email ?? null, phone: data.phone ?? null, country: data.country ?? null, website: data.website ?? null, notes: data.notes ?? null },
   })
 }
 
-export async function updateManufacturer(id: string, userId: string, data: { name?: string; contactPerson?: string | null; email?: string | null; phone?: string | null; country?: string | null; website?: string | null; notes?: string | null }) {
-  await verifyOwnership(prisma.manufacturer, id, userId, 'Manufacturer')
+export async function updateManufacturer(id: string, companyId: string, data: { name?: string; contactPerson?: string | null; email?: string | null; phone?: string | null; country?: string | null; website?: string | null; notes?: string | null }) {
+  await verifyOwnership(prisma.manufacturer, id, companyId, 'Manufacturer')
   return prisma.manufacturer.update({ where: { id }, data })
 }
 
-export async function deleteManufacturer(id: string, userId: string) {
-  await verifyOwnership(prisma.manufacturer, id, userId, 'Manufacturer')
+export async function deleteManufacturer(id: string, companyId: string) {
+  await verifyOwnership(prisma.manufacturer, id, companyId, 'Manufacturer')
   return prisma.manufacturer.update({ where: { id }, data: { isArchived: true } })
 }
 
 // ─── Material Certifications ──────────────────────────────────────────────────
 
-export async function getCertifications(libraryItemId: string, userId: string) {
+export async function getCertifications(libraryItemId: string, companyId: string) {
   return prisma.materialCertification.findMany({
-    where:   { libraryItemId, userId },
+    where:   { libraryItemId, companyId },
     orderBy: { createdAt: 'desc' },
   })
 }
 
-export async function createCertification(userId: string, data: {
+export async function createCertification(companyId: string, createdById: string, data: {
   libraryItemId: string; type: string; certNumber?: string; issuedBy?: string
   issuedDate?: Date; expiryDate?: Date; fileUrl?: string; fileName?: string; notes?: string
 }) {
-  return prisma.materialCertification.create({ data: { userId, ...data } })
+  return prisma.materialCertification.create({ data: { companyId, createdById, ...data } })
 }
 
-export async function deleteCertification(id: string, userId: string) {
+export async function deleteCertification(id: string, companyId: string) {
   // Return the cert first so the caller can delete the file from storage
-  const cert = await prisma.materialCertification.findFirst({ where: { id, userId } })
+  const cert = await prisma.materialCertification.findFirst({ where: { id, companyId } })
   if (cert) await prisma.materialCertification.delete({ where: { id } })
   return cert
 }
 
 // ─── Tenders ──────────────────────────────────────────────────────────────────
 
-export async function getTenders(userId: string) {
+export async function getTenders(companyId: string) {
   return prisma.tender.findMany({
-    where:   { userId, isArchived: false },
+    where:   { companyId, isArchived: false },
     select:  {
       id: true, name: true, clientName: true, clientId: true,
       client: { select: { id: true, name: true } },
@@ -675,9 +692,9 @@ export async function getTenders(userId: string) {
   })
 }
 
-export async function getTender(id: string, userId: string) {
+export async function getTender(id: string, companyId: string) {
   return prisma.tender.findFirst({
-    where:   { id, userId, isArchived: false },
+    where:   { id, companyId, isArchived: false },
     include: {
       client: { select: { id: true, name: true, contactPerson: true, email: true, phone: true } },
       items: {
@@ -691,76 +708,76 @@ export async function getTender(id: string, userId: string) {
   })
 }
 
-export async function createTender(userId: string, data: {
+export async function createTender(companyId: string, createdById: string, data: {
   name: string; clientId?: string | null; clientName?: string | null;
   projectName?: string; reference?: string; submissionDate?: Date | null; notes?: string;
 }) {
-  return prisma.tender.create({ data: { userId, ...data } })
+  return prisma.tender.create({ data: { companyId, createdById, ...data } })
 }
 
-export async function updateTender(id: string, userId: string, data: Partial<{
+export async function updateTender(id: string, companyId: string, data: Partial<{
   name: string; clientId: string | null; clientName: string | null;
   projectName: string; reference: string;
   submissionDate: Date | null; status: string; notes: string;
 }>) {
-  await verifyOwnership(prisma.tender, id, userId, 'Tender')
+  await verifyOwnership(prisma.tender, id, companyId, 'Tender')
   return prisma.tender.update({ where: { id }, data: data as any })
 }
 
 // ─── Clients ──────────────────────────────────────────────────────────────────
 
-export async function getClients(userId: string) {
+export async function getClients(companyId: string) {
   return prisma.client.findMany({
-    where:   { userId, isArchived: false },
+    where:   { companyId, isArchived: false },
     select:  { id: true, name: true, contactPerson: true, email: true, phone: true, address: true, notes: true, createdAt: true, _count: { select: { tenders: true } } },
     orderBy: { name: 'asc' },
   })
 }
 
-export async function getClient(id: string, userId: string) {
-  return prisma.client.findFirst({ where: { id, userId } })
+export async function getClient(id: string, companyId: string) {
+  return prisma.client.findFirst({ where: { id, companyId } })
 }
 
-export async function createClient(userId: string, data: {
+export async function createClient(companyId: string, createdById: string, data: {
   name: string; contactPerson?: string; email?: string; phone?: string;
   address?: string; notes?: string;
 }) {
-  return prisma.client.create({ data: { userId, ...data } })
+  return prisma.client.create({ data: { companyId, createdById, ...data } })
 }
 
-export async function updateClient(id: string, userId: string, data: Partial<{
+export async function updateClient(id: string, companyId: string, data: Partial<{
   name: string; contactPerson: string | null; email: string | null; phone: string | null;
   address: string | null; notes: string | null;
 }>) {
-  await verifyOwnership(prisma.client, id, userId, 'Client')
+  await verifyOwnership(prisma.client, id, companyId, 'Client')
   return prisma.client.update({ where: { id }, data: data as any })
 }
 
-export async function archiveClient(id: string, userId: string) {
-  await verifyOwnership(prisma.client, id, userId, 'Client')
+export async function archiveClient(id: string, companyId: string) {
+  await verifyOwnership(prisma.client, id, companyId, 'Client')
   return prisma.client.update({ where: { id }, data: { isArchived: true } })
 }
 
-export async function archiveTender(id: string, userId: string) {
-  await verifyOwnership(prisma.tender, id, userId, 'Tender')
+export async function archiveTender(id: string, companyId: string) {
+  await verifyOwnership(prisma.tender, id, companyId, 'Tender')
   return prisma.tender.update({ where: { id }, data: { isArchived: true } })
 }
 
-export async function addTenderItem(userId: string, tenderId: string, data: {
+export async function addTenderItem(companyId: string, tenderId: string, data: {
   systemId?: string; jobId?: string; notes?: string; sortOrder?: number;
 }) {
   // Verify ownership
-  const tender = await prisma.tender.findFirst({ where: { id: tenderId, userId } })
+  const tender = await prisma.tender.findFirst({ where: { id: tenderId, companyId } })
   if (!tender) throw new Error('Tender not found')
   return prisma.tenderItem.create({ data: { tenderId, ...data } })
 }
 
-export async function removeTenderItem(id: string, userId: string) {
+export async function removeTenderItem(id: string, companyId: string) {
   const item = await prisma.tenderItem.findFirst({
     where: { id },
-    include: { tender: { select: { userId: true } } },
+    include: { tender: { select: { companyId: true } } },
   })
-  if (!item || item.tender.userId !== userId) throw new Error('Not found')
+  if (!item || item.tender.companyId !== companyId) throw new Error('Not found')
   return prisma.tenderItem.delete({ where: { id } })
 }
 
