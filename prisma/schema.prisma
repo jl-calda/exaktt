@@ -25,6 +25,7 @@ enum CompanyRole {
   OWNER
   ADMIN
   MEMBER
+  VIEWER
 }
 
 enum TenderStatus {
@@ -73,14 +74,33 @@ model Company {
   members     CompanyMember[]
   invitations CompanyInvite[]
 
+  // Data owned by this company
+  mtoSystems             MtoSystem[]
+  mtoJobs                MtoJob[]
+  materialSpecs          MaterialSpec[]
+  reports                Report[]
+  clients                Client[]
+  tenders                Tender[]
+  materialGrades         MaterialGrade[]
+  manufacturers          Manufacturer[]
+  libraryItems           LibraryItem[]
+  materialCertifications MaterialCertification[]
+  suppliers              Supplier[]
+  purchaseOrders         PurchaseOrder[]
+  deliveryOrders         DeliveryOrder[]
+  materialCategories     MaterialCategory[]
+  globalTags             GlobalTag[]
+  activityLibrary        ActivityLibraryItem[]
+
   @@map("companies")
 }
 
 model CompanyMember {
-  companyId String
-  userId    String
-  role      CompanyRole @default(MEMBER)
-  joinedAt  DateTime    @default(now())
+  companyId   String
+  userId      String
+  role        CompanyRole @default(MEMBER)
+  permissions Json        @default("{}")   // { systems: "write", library: "read", reports: "none", ... }
+  joinedAt    DateTime    @default(now())
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -94,6 +114,7 @@ model CompanyInvite {
   companyId   String
   email       String
   role        CompanyRole @default(MEMBER)
+  permissions Json        @default("{}")
   token       String      @unique
   invitedById String
   expiresAt   DateTime
@@ -120,22 +141,24 @@ model User {
   // Relations
   companyMembers   CompanyMember[]
   profile          Profile?
-  mtoSystems       MtoSystem[]
-  mtoJobs          MtoJob[]
-  reports          Report[]
-  tenders          Tender[]
-  clients          Client[]
-  libraryItems     LibraryItem[]
-  globalTags       GlobalTag[]
-  materialSpecs    MaterialSpec[]
-  activityLibrary  ActivityLibraryItem[]
-  suppliers              Supplier[]
-  purchaseOrders         PurchaseOrder[]
-  deliveryOrders         DeliveryOrder[]
-  materialCategories     MaterialCategory[]
-  materialGrades         MaterialGrade[]
-  manufacturers          Manufacturer[]
-  materialCertifications MaterialCertification[]
+
+  // "Created by" audit trail
+  createdSystems             MtoSystem[]             @relation("createdByUser")
+  createdJobs                MtoJob[]                @relation("createdByUser")
+  createdMaterialSpecs       MaterialSpec[]          @relation("createdByUser")
+  createdReports             Report[]                @relation("createdByUser")
+  createdClients             Client[]                @relation("createdByUser")
+  createdTenders             Tender[]                @relation("createdByUser")
+  createdMaterialGrades      MaterialGrade[]         @relation("createdByUser")
+  createdManufacturers       Manufacturer[]          @relation("createdByUser")
+  createdLibraryItems        LibraryItem[]           @relation("createdByUser")
+  createdCertifications      MaterialCertification[] @relation("createdByUser")
+  createdSuppliers           Supplier[]              @relation("createdByUser")
+  createdPurchaseOrders      PurchaseOrder[]         @relation("createdByUser")
+  createdDeliveryOrders      DeliveryOrder[]         @relation("createdByUser")
+  createdMaterialCategories  MaterialCategory[]      @relation("createdByUser")
+  createdGlobalTags          GlobalTag[]             @relation("createdByUser")
+  createdActivityLibrary     ActivityLibraryItem[]   @relation("createdByUser")
 
   @@map("users")
 }
@@ -176,8 +199,10 @@ model Profile {
 
 model MtoSystem {
   id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User     @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
 
   name        String
   shortName   String?
@@ -203,7 +228,7 @@ model MtoSystem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId])
+  @@index([companyId])
   @@map("systems")
 }
 
@@ -213,8 +238,10 @@ model MtoSystem {
 
 model MtoJob {
   id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User      @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
   mtoSystemId String    @map("systemId")
   mtoSystem   MtoSystem @relation(fields: [mtoSystemId], references: [id], onDelete: Cascade)
 
@@ -235,7 +262,7 @@ model MtoJob {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId])
+  @@index([companyId])
   @@index([mtoSystemId])
   @@map("jobs")
 }
@@ -245,9 +272,11 @@ model MtoJob {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model MaterialSpec {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String  @id @default(cuid())
+  companyId   String
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User    @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
 
   // Link to a material by product code (portable) or by material id (per-system)
   productCode   String?   // preferred — links across systems
@@ -269,8 +298,8 @@ model MaterialSpec {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([userId, productCode])
-  @@index([userId])
+  @@unique([companyId, productCode])
+  @@index([companyId])
   @@map("material_specs")
 }
 
@@ -280,8 +309,10 @@ model MaterialSpec {
 
 model Report {
   id          String  @id @default(cuid())
-  userId      String
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User    @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
   mtoSystemId String? @map("systemId")
   mtoSystem   MtoSystem? @relation(fields: [mtoSystemId], references: [id], onDelete: SetNull)
   mtoJobId    String? @map("jobId")
@@ -323,7 +354,7 @@ model Report {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId])
+  @@index([companyId])
   @@index([publicToken])
   @@map("reports")
 }
@@ -334,8 +365,10 @@ model Report {
 
 model Client {
   id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById   String
+  createdBy     User     @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
 
   name          String
   contactPerson String?
@@ -350,7 +383,7 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId])
+  @@index([companyId])
   @@map("clients")
 }
 
@@ -360,8 +393,10 @@ model Client {
 
 model Tender {
   id             String        @id @default(cuid())
-  userId         String
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId      String
+  company        Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById    String
+  createdBy      User          @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
 
   name           String
   clientId       String?
@@ -379,7 +414,7 @@ model Tender {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId])
+  @@index([companyId])
   @@map("tenders")
 }
 
@@ -407,8 +442,10 @@ model TenderItem {
 
 model MaterialGrade {
   id           String        @id @default(cuid())
-  userId       String
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId    String
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById  String
+  createdBy    User          @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
 
   name         String
   materialType String?
@@ -421,15 +458,17 @@ model MaterialGrade {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  @@unique([userId, name])
-  @@index([userId])
+  @@unique([companyId, name])
+  @@index([companyId])
   @@map("material_grades")
 }
 
 model Manufacturer {
   id         String        @id @default(cuid())
-  userId     String
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId  String
+  company    Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User         @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
 
   name          String
   contactPerson String?
@@ -445,14 +484,16 @@ model Manufacturer {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  @@index([userId])
+  @@index([companyId])
   @@map("manufacturers")
 }
 
 model LibraryItem {
   id             String         @id @default(cuid())
-  userId         String
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId      String
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById    String
+  createdBy      User           @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
 
   name           String
   unit           String         @default("each")
@@ -474,7 +515,7 @@ model LibraryItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId])
+  @@index([companyId])
   @@map("library_items")
 }
 
@@ -482,8 +523,10 @@ model MaterialCertification {
   id            String      @id @default(cuid())
   libraryItemId String
   libraryItem   LibraryItem @relation(fields: [libraryItemId], references: [id], onDelete: Cascade)
-  userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId     String
+  company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById   String
+  createdBy     User        @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
 
   type          String      // 'mill_cert' | 'ce' | 'iso' | 'test_report' | 'msds' | 'other'
   certNumber    String?
@@ -497,7 +540,7 @@ model MaterialCertification {
   createdAt     DateTime @default(now())
 
   @@index([libraryItemId])
-  @@index([userId])
+  @@index([companyId])
   @@map("material_certifications")
 }
 
@@ -507,8 +550,10 @@ model MaterialCertification {
 
 model Supplier {
   id            String  @id @default(cuid())
-  userId        String
-  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId     String
+  company       Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById   String
+  createdBy     User    @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
 
   name          String
   contactPerson String?
@@ -524,14 +569,16 @@ model Supplier {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId])
+  @@index([companyId])
   @@map("suppliers")
 }
 
 model PurchaseOrder {
   id           String              @id @default(cuid())
-  userId       String
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId    String
+  company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById  String
+  createdBy    User                @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
   supplierId   String?
   supplier     Supplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   supplierName String?
@@ -548,7 +595,7 @@ model PurchaseOrder {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId])
+  @@index([companyId])
   @@map("purchase_orders")
 }
 
@@ -571,8 +618,10 @@ model PurchaseOrderLine {
 
 model DeliveryOrder {
   id           String              @id @default(cuid())
-  userId       String
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId    String
+  company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById  String
+  createdBy    User                @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
   poId         String?
   po           PurchaseOrder?      @relation(fields: [poId], references: [id], onDelete: SetNull)
 
@@ -587,7 +636,7 @@ model DeliveryOrder {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId])
+  @@index([companyId])
   @@map("delivery_orders")
 }
 
@@ -609,9 +658,11 @@ model DeliveryOrderLine {
 }
 
 model MaterialCategory {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User     @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
 
   name      String
   icon      String   @default("📦")
@@ -619,15 +670,17 @@ model MaterialCategory {
 
   createdAt DateTime @default(now())
 
-  @@unique([userId, name])
-  @@index([userId])
+  @@unique([companyId, name])
+  @@index([companyId])
   @@map("material_categories")
 }
 
 model GlobalTag {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String  @id @default(cuid())
+  companyId   String
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User    @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
 
   name  String
   color String @default("#7c3aed")
@@ -635,7 +688,7 @@ model GlobalTag {
 
   createdAt DateTime @default(now())
 
-  @@index([userId])
+  @@index([companyId])
   @@map("global_tags")
 }
 
@@ -644,9 +697,11 @@ model GlobalTag {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model ActivityLibraryItem {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String  @id @default(cuid())
+  companyId   String
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User    @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
 
   name        String
   phase       String    // 'fabrication' | 'installation' | 'commissioning' | 'transport' | 'third_party'
@@ -667,6 +722,6 @@ model ActivityLibraryItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId])
+  @@index([companyId])
   @@map("activity_library_items")
 }

@@ -3,7 +3,7 @@
 
 export type Plan = 'FREE' | 'PRO'
 export type InputModel = 'simple_dims' | 'linear_run' | 'area'
-export type CompanyRole = 'OWNER' | 'ADMIN' | 'MEMBER'
+export type CompanyRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
 
 // ─── Company + Team ───────────────────────────────────────────────────────────
 
@@ -21,12 +21,17 @@ export interface Company {
   updatedAt:        Date
 }
 
+export type ModuleName = 'systems' | 'library' | 'reports' | 'logistics' | 'tenders'
+export type ModulePermission = 'write' | 'read' | 'none'
+
 export interface CompanyMember {
-  companyId: string
-  userId:    string
-  role:      CompanyRole
-  joinedAt:  Date
-  company?:  Company
+  companyId:    string
+  userId:       string
+  role:         CompanyRole
+  permissions:  Record<ModuleName, ModulePermission>
+  joinedAt:     Date
+  company?:     Company
+  user?:        Pick<User, 'id' | 'email' | 'name' | 'avatarUrl'>
 }
 
 export interface CompanyInvite {
@@ -34,6 +39,7 @@ export interface CompanyInvite {
   companyId:   string
   email:       string
   role:        CompanyRole
+  permissions: Record<ModuleName, ModulePermission>
   token:       string
   invitedById: string
   expiresAt:   Date
@@ -146,7 +152,8 @@ export interface Material {
 
 export interface MaterialSpec {
   id:            string
-  userId:        string
+  companyId:     string
+  createdById:   string
   productCode?:  string | null
   materialId?:   string | null
 
@@ -417,7 +424,8 @@ export interface ReportConfig {
 
 export interface Report {
   id:           string
-  userId:       string
+  companyId:    string
+  createdById:  string
   systemId?:    string | null
   jobId?:       string | null
   title:        string
@@ -471,7 +479,8 @@ export interface LibraryItem {
 
 export interface MaterialGrade {
   id:           string
-  userId:       string
+  companyId:    string
+  createdById:  string
   name:         string
   materialType?: string | null
   standard?:    string | null
@@ -483,7 +492,8 @@ export interface MaterialGrade {
 
 export interface Manufacturer {
   id:            string
-  userId:        string
+  companyId:     string
+  createdById:   string
   name:          string
   contactPerson?: string | null
   email?:        string | null
@@ -500,7 +510,8 @@ export type CertType = 'mill_cert' | 'ce' | 'iso' | 'test_report' | 'msds' | 'ot
 export interface MaterialCertification {
   id:            string
   libraryItemId: string
-  userId:        string
+  companyId:     string
+  createdById:   string
   type:          string
   certNumber?:   string | null
   issuedBy?:     string | null
@@ -513,8 +524,9 @@ export interface MaterialCertification {
 }
 
 export interface MaterialCategory {
-  id:        string
-  userId:    string
+  id:          string
+  companyId:   string
+  createdById: string
   name:      string
   icon:      string
   sortOrder: number
@@ -523,7 +535,8 @@ export interface MaterialCategory {
 
 export interface Supplier {
   id:            string
-  userId:        string
+  companyId:     string
+  createdById:   string
   name:          string
   contactPerson?: string | null
   email?:        string | null
@@ -540,7 +553,8 @@ export type PurchaseOrderStatus = 'DRAFT' | 'SENT' | 'PARTIAL' | 'RECEIVED' | 'C
 
 export interface PurchaseOrder {
   id:           string
-  userId:       string
+  companyId:    string
+  createdById:  string
   supplierId?:  string | null
   supplierName?: string | null
   supplier?:    Pick<Supplier, 'id' | 'name'> | null
@@ -570,7 +584,8 @@ export type DeliveryOrderStatus = 'PENDING' | 'PARTIAL' | 'DELIVERED' | 'CANCELL
 
 export interface DeliveryOrder {
   id:            string
-  userId:        string
+  companyId:     string
+  createdById:   string
   poId?:         string | null
   po?:           Pick<PurchaseOrder, 'id' | 'ref' | 'supplierName'> | null
   ref?:          string | null
@@ -708,7 +723,8 @@ export interface WorkActivity {
 
 export interface ActivityLibraryItem {
   id:              string
-  userId:          string
+  companyId:       string
+  createdById:     string
   name:            string
   phase:           ActivityPhase
   icon?:           string | null

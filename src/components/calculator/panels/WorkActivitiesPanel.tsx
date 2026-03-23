@@ -2,7 +2,7 @@
 'use client'
 import { useState } from 'react'
 import { nanoid } from 'nanoid'
-import { Plus, Trash2, Edit3, Check, X, Clock, Users } from 'lucide-react'
+import { Plus, Trash2, Edit3, Check, X, Clock, Users, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input, NumberInput } from '@/components/ui/Input'
@@ -58,7 +58,7 @@ const FIELD_ITEMS = [
 
 function FieldGuide() {
   return (
-    <div className="w-80 shrink-0 self-stretch bg-surface-100 border border-surface-200 px-4 py-3 space-y-3"
+    <div className="bg-surface-100 border border-surface-200 px-4 py-3 space-y-3 animate-fade-in"
       style={{ borderRadius: 'var(--radius)' }}>
       <div className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">Field guide</div>
       {FIELD_ITEMS.map(item => (
@@ -99,8 +99,10 @@ function ActivityForm({
   const allDims = PRIMITIVE_DIMS
   const isThirdParty = d.rateType?.startsWith('third_party') ?? false
 
+  const [guideOpen, setGuideOpen] = useState(false)
+
   return (
-    <div className="flex gap-6 items-start">
+    <div className="space-y-3">
     <div className="flex-1 min-w-0 space-y-4">
       <div className="flex flex-wrap gap-3">
         <IconPicker label="Icon" value={d.icon ?? ''} onChange={v => set('icon')(v)} />
@@ -206,7 +208,16 @@ function ActivityForm({
         <Button size="sm" variant="secondary" onClick={onCancel} icon={<X className="w-3.5 h-3.5" />}>Cancel</Button>
       </div>
     </div>
-    <FieldGuide />
+    {/* Field Guide toggle */}
+    <div>
+      <button onClick={() => setGuideOpen(v => !v)}
+        className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 border transition-colors ${guideOpen ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-surface-100 border-surface-200 text-ink-faint hover:text-ink-muted'}`}
+        style={{ borderRadius: 'var(--radius)' }}>
+        <BookOpen className="w-3 h-3" />
+        Field Guide
+      </button>
+      {guideOpen && <div className="mt-2"><FieldGuide /></div>}
+    </div>
     </div>
   )
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { MtoSystem, GlobalTag, Material, CustomDim } from '@/types'
 import { nanoid } from 'nanoid'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, PanelRightOpen, PanelRightClose } from 'lucide-react'
 import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
 import { ColorPicker }     from '@/components/ui/ColorPicker'
 import { IconPicker }      from '@/components/ui/IconPicker'
@@ -58,6 +58,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
   const [library,       setLibrary]       = useState<any[]>([])
   const [addingInput,   setAddingInput]   = useState(false)
   const [inputDraft,    setInputDraft]    = useState({ ...INPUT_BLANK })
+  const [showOverview,  setShowOverview]  = useState(false)
 
   const userInputDims = (sys.customDims ?? []).filter(cd => cd.derivType === 'user_input')
 
@@ -130,8 +131,27 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
   }
 
   return (
-    <div className="flex gap-6 items-start">
-    <div className="flex-1 min-w-0 space-y-4">
+    <div className="flex flex-col gap-6 items-start relative">
+    {/* Collapsible overview toggle + inline panel */}
+    <div className="w-full">
+      <button
+        onClick={() => setShowOverview(v => !v)}
+        className={`w-full flex items-center justify-between gap-2 text-xs font-semibold px-4 py-2.5 border transition-colors ${showOverview ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-white border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
+        style={{ borderRadius: 'var(--radius-card)' }}>
+        <span className="flex items-center gap-1.5">
+          {showOverview ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
+          System Overview
+        </span>
+        <span className="text-[10px] text-ink-faint">{showOverview ? 'hide' : 'show'}</span>
+      </button>
+      {showOverview && (
+        <div className="mt-2">
+          <SystemOverviewPanel sys={sys} onViewGraph={onViewGraph} />
+        </div>
+      )}
+    </div>
+
+    <div className="flex-1 min-w-0 space-y-4 w-full">
 
       {/* ── System Identity ── */}
       <div className="border border-secondary-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
@@ -352,8 +372,6 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
       </StepHeader>
     </div>
 
-    {/* Overview panel — sticky right column */}
-    <SystemOverviewPanel sys={sys} onViewGraph={onViewGraph} />
   </div>
   )
 }
