@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { MtoSystem, GlobalTag, Material, CustomDim } from '@/types'
 import { nanoid } from 'nanoid'
-import { Plus, X, PanelRightOpen, PanelRightClose } from 'lucide-react'
+import { Plus, X, PanelRightOpen, PanelRightClose, BookOpen } from 'lucide-react'
 import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
 import { ColorPicker }     from '@/components/ui/ColorPicker'
 import { IconPicker }      from '@/components/ui/IconPicker'
@@ -132,24 +132,34 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
 
   return (
     <div className="flex flex-col gap-6 items-start relative">
-    {/* Collapsible overview toggle + inline panel */}
-    <div className="w-full">
-      <button
-        onClick={() => setShowOverview(v => !v)}
-        className={`w-full flex items-center justify-between gap-2 text-xs font-semibold px-4 py-2.5 border transition-colors ${showOverview ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-white border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
-        style={{ borderRadius: 'var(--radius-card)' }}>
-        <span className="flex items-center gap-1.5">
-          {showOverview ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
-          System Overview
-        </span>
-        <span className="text-[10px] text-ink-faint">{showOverview ? 'hide' : 'show'}</span>
-      </button>
-      {showOverview && (
-        <div className="mt-2">
-          <SystemOverviewPanel sys={sys} onViewGraph={onViewGraph} />
+
+    {/* Floating overview toggle button */}
+    <button
+      onClick={() => setShowOverview(v => !v)}
+      className={`fixed bottom-4 right-4 z-40 flex items-center gap-2 text-xs font-semibold px-4 py-2.5 shadow-lg border transition-all ${showOverview ? 'bg-primary text-white border-primary' : 'bg-white border-surface-300 text-ink-muted hover:text-ink hover:bg-surface-50 hover:shadow-xl'}`}
+      style={{ borderRadius: 'var(--radius-card)' }}>
+      {showOverview ? <PanelRightClose className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
+      {showOverview ? 'Close' : 'Overview'}
+    </button>
+
+    {/* Floating sidebar overlay */}
+    {showOverview && (
+      <>
+        <div className="fixed inset-0 z-40 bg-black/20 animate-fade-in" onClick={() => setShowOverview(false)} />
+        <div className="fixed top-0 right-0 z-50 h-full w-80 max-w-[90vw] bg-surface-50 border-l border-surface-200 shadow-float overflow-y-auto animate-slide-in-right">
+          <div className="sticky top-0 z-10 bg-surface-50 border-b border-surface-200 px-4 py-3 flex items-center justify-between">
+            <span className="text-xs font-bold text-ink">System Overview</span>
+            <button onClick={() => setShowOverview(false)}
+              className="p-1 rounded-md text-ink-faint hover:text-ink hover:bg-surface-200 transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="p-3">
+            <SystemOverviewPanel sys={sys} onViewGraph={onViewGraph} />
+          </div>
         </div>
-      )}
-    </div>
+      </>
+    )}
 
     <div className="flex-1 min-w-0 space-y-4 w-full">
 
@@ -334,10 +344,12 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
         <CustomBracketsPanel
           customBrackets={sys.customBrackets ?? []}
           materials={sys.materials}
+          libraryItems={library}
           customDims={sys.customDims ?? []}
           customCriteria={sys.customCriteria ?? []}
           variants={sys.variants ?? []}
           onChange={b => onUpdate({ customBrackets: b })}
+          onAddFromLib={addFromLib}
         />
       </StepHeader>
 

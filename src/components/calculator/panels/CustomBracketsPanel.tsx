@@ -17,10 +17,12 @@ import type { CustomDim, CustomCriterion, Variant } from '@/types'
 interface Props {
   customBrackets: WorkBracket[]
   materials:      Material[]
+  libraryItems?:  any[]
   customDims:     CustomDim[]
   customCriteria: CustomCriterion[]
   variants:       Variant[]
   onChange:       (brackets: WorkBracket[]) => void
+  onAddFromLib?:  (libItem: any) => void
 }
 
 const BLANK_BRACKET: Omit<WorkBracket, 'id'> = {
@@ -41,13 +43,15 @@ const QTY_UNITS = ['pcs', 'mm', 'm', 'kg', 'L', 'each']
 const TIME_UNITS: ('min' | 'hr')[] = ['min', 'hr']
 
 function BOMItemRow({
-  item, params, materials, onChange, onRemove,
+  item, params, materials, libraryItems = [], onChange, onRemove, onAddFromLib,
 }: {
   item: BracketBOMItem
   params: BracketParameter[]
   materials: Material[]
+  libraryItems?: any[]
   onChange: (item: BracketBOMItem) => void
   onRemove: () => void
+  onAddFromLib?: (libItem: any) => void
 }) {
   const useCustom = item.customName !== undefined
   const resolvedQty = evaluateFormula(item.qtyFormula, Object.fromEntries(params.map(p => [p.key, p.default])))
@@ -60,6 +64,23 @@ function BOMItemRow({
     }
   }
 
+  // Build grouped options: system materials + library items not yet in system
+  const sysMaterialIds = new Set(materials.map(m => m.id))
+  const libRefIds = new Set(materials.map(m => m.libraryRef).filter(Boolean))
+  const availableLib = libraryItems.filter(l => !libRefIds.has(l.id))
+
+  const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value
+    if (val.startsWith('lib:') && onAddFromLib) {
+      const libId = val.slice(4)
+      const libItem = libraryItems.find(l => l.id === libId)
+      if (libItem) onAddFromLib(libItem)
+      // materialId will be set after the parent re-renders with the new material
+    } else {
+      onChange({ ...item, materialId: val })
+    }
+  }
+
   return (
     <div className="flex flex-wrap gap-2 items-end bg-surface-50 border border-surface-200 p-3" style={{ borderRadius: 'var(--radius-card)' }}>
       <div className="flex flex-col gap-1 flex-1 min-w-40">
@@ -67,14 +88,29 @@ function BOMItemRow({
           <span className="label mb-0">Material</span>
           <button type="button" onClick={toggleMode}
             className="text-[10px] text-primary hover:underline font-medium">
-            {useCustom ? 'Pick from library' : 'Enter custom name'}
+            {useCustom ? 'Pick from system' : 'Enter custom name'}
           </button>
         </div>
         {useCustom
           ? <input type="text" value={item.customName ?? ''} onChange={e => onChange({ ...item, customName: e.target.value })}
               placeholder="e.g. M12 bolt, angle iron…" className="input text-sm" />
-          : <Select value={item.materialId} onChange={e => onChange({ ...item, materialId: e.target.value })}
-              options={[{ value: '', label: '— pick material —' }, ...materials.map(m => ({ value: m.id, label: m.name }))]} />
+          : <select value={item.materialId} onChange={handleSelect} className="input text-sm">
+              <option value="">— pick material —</option>
+              {materials.length > 0 && (
+                <optgroup label="System Materials">
+                  {materials.map(m => (
+                    <option key={m.id} value={m.id}>{m.name}{m.productCode ? ` (${m.productCode})` : ''}</option>
+                  ))}
+                </optgroup>
+              )}
+              {availableLib.length > 0 && (
+                <optgroup label="Library — click to add to system">
+                  {availableLib.map(l => (
+                    <option key={`lib:${l.id}`} value={`lib:${l.id}`}>+ {l.name}{l.productCode ? ` (${l.productCode})` : ''}</option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
         }
       </div>
       <div className="flex-1 min-w-32">
@@ -123,17 +159,19 @@ function FabActivityRow({
 }
 
 function BracketForm({
-  draft, onChange, materials, customDims, customCriteria, variants, onSave, onCancel, label,
+  draft, onChange, materials, libraryItems = [], customDims, customCriteria, variants, onSave, onCancel, label, onAddFromLib,
 }: {
   draft: Partial<WorkBracket>
   onChange: (patch: Partial<WorkBracket>) => void
   materials: Material[]
+  libraryItems?: any[]
   customDims: CustomDim[]
   customCriteria: CustomCriterion[]
   variants: Variant[]
   onSave: () => void
   onCancel: () => void
   label: string
+  onAddFromLib?: (libItem: any) => void
 }) {
   const params       = draft.parameters    ?? []
   const bom          = draft.bom           ?? []
@@ -244,6 +282,7 @@ function BracketForm({
         <div className="space-y-2">
           {bom.map((item, i) => (
             <BOMItemRow key={item.id} item={item} params={params} materials={materials}
+              libraryItems={libraryItems} onAddFromLib={onAddFromLib}
               onChange={updated => updateBOM(i, updated)} onRemove={() => removeBOM(i)} />
           ))}
         </div>
@@ -277,7 +316,7 @@ function BracketForm({
   )
 }
 
-export default function CustomBracketsPanel({ customBrackets, materials, customDims, customCriteria, variants, onChange }: Props) {
+export default function CustomBracketsPanel({ customBrackets, materials, libraryItems = [], customDims, customCriteria, variants, onChange, onAddFromLib }: Props) {
   const [adding,    setAdding]    = useState(false)
   const [draft,     setDraft]     = useState<Omit<WorkBracket, 'id'>>({ ...BLANK_BRACKET })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -314,8 +353,8 @@ export default function CustomBracketsPanel({ customBrackets, materials, customD
         <div className="p-5 bg-surface-100 border-b border-secondary-200">
           <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide mb-4">New Bracket</div>
           <BracketForm draft={draft} onChange={patch => setDraft(d => ({ ...d, ...patch }))}
-            materials={materials} customDims={customDims} customCriteria={customCriteria} variants={variants}
-            onSave={add} onCancel={() => setAdding(false)} label="Add" />
+            materials={materials} libraryItems={libraryItems} customDims={customDims} customCriteria={customCriteria} variants={variants}
+            onSave={add} onCancel={() => setAdding(false)} label="Add" onAddFromLib={onAddFromLib} />
         </div>
       )}
 
@@ -428,8 +467,8 @@ export default function CustomBracketsPanel({ customBrackets, materials, customD
               {isEd && editDraft && (
                 <div className="px-5 pb-5 border-t border-primary/20 pt-4">
                   <BracketForm draft={editDraft} onChange={patch => setEditDraft(d => d ? { ...d, ...patch } : d)}
-                    materials={materials} customDims={customDims} customCriteria={customCriteria} variants={variants}
-                    onSave={saveEdit} onCancel={cancelEdit} label="Save" />
+                    materials={materials} libraryItems={libraryItems} customDims={customDims} customCriteria={customCriteria} variants={variants}
+                    onSave={saveEdit} onCancel={cancelEdit} label="Save" onAddFromLib={onAddFromLib} />
                 </div>
               )}
             </div>
