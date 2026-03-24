@@ -91,7 +91,32 @@ export interface ComputeOptions {
   substrate?:     string
 }
 
-export function computeResults(opts: ComputeOptions): MaterialResult[] {
+export interface ComputeResult {
+  materials:  MaterialResult[]
+  customVals: Record<string, number>
+}
+
+function resolveStrategy(
+  cd: CustomDim,
+  inputModel: string,
+  criteriaState: Record<string, boolean>
+): CustomDim {
+  // Layer 1: input-model override
+  const modelOverride = cd.modelStrategies?.[inputModel]
+  let resolved: CustomDim = modelOverride ? { ...cd, ...modelOverride } as CustomDim : cd
+
+  // Layer 2: criteria overrides (applied in order)
+  for (const co of cd.criteriaOverrides ?? []) {
+    const active = !!criteriaState[co.criterionKey]
+    if (active === co.whenActive) {
+      resolved = { ...resolved, ...co.params } as CustomDim
+    }
+  }
+
+  return resolved
+}
+
+export function computeResults(opts: ComputeOptions): ComputeResult {
   const { sys, criteriaState, variantState, segments = [], substrate = 'all' } = opts
   const jobDims = { ...opts.jobDims }
   const { materials, customDims = [], customCriteria = [], variants = [] } = sys
@@ -115,46 +140,48 @@ export function computeResults(opts: ComputeOptions): MaterialResult[] {
   const customVals: Record<string, number> = {}
 
   customDims.forEach(cd => {
-    switch (cd.derivType) {
+    const s = resolveStrategy(cd, sys.inputModel, criteriaState)
+
+    switch (s.derivType) {
       case 'user_input':
         customVals[cd.key] = parseFloat(jobDims[cd.key] as any) || 0
         break
       case 'spacing': {
         const spacingInputKey = '__spacing_' + cd.key
-        const userSpacing = cd.spacingMode === 'user'
-          ? parseFloat(jobDims[spacingInputKey] as any) || parseFloat(cd.spacing as any) || 1
+        const userSpacing = s.spacingMode === 'user'
+          ? parseFloat(jobDims[spacingInputKey] as any) || parseFloat(s.spacing as any) || 1
           : null
-        const actualSp = userSpacing ?? parseFloat(cd.spacing as any) ?? 1
-        const L = prim[cd.spacingTargetDim ?? 'length'] ?? customVals[cd.spacingTargetDim ?? 'length'] ?? prim.length
-        const firstGapVal = parseFloat(cd.firstGap as any) ?? 300
+        const actualSp = userSpacing ?? parseFloat(s.spacing as any) ?? 1
+        const L = prim[s.spacingTargetDim ?? 'length'] ?? customVals[s.spacingTargetDim ?? 'length'] ?? prim.length
+        const firstGapVal = parseFloat(s.firstGap as any) ?? 300
         let count = 0
         if (L > 0) {
-          if (cd.firstSupportMode === 'ground') {
+          if (s.firstSupportMode === 'ground') {
             count = Math.max(0, Math.ceil(L / actualSp) + 1)
-          } else if (cd.firstSupportMode === 'offset') {
+          } else if (s.firstSupportMode === 'offset') {
             const remaining = Math.max(0, L - firstGapVal / 1000)
             count = 1 + (remaining > 0 ? Math.max(0, Math.ceil(remaining / actualSp)) : 0)
           } else {
-            count = Math.max(0, Math.ceil(L / actualSp) + (cd.includesEndpoints ? 1 : -1))
+            count = Math.max(0, Math.ceil(L / actualSp) + (s.includesEndpoints ? 1 : -1))
           }
         }
         customVals[cd.key] = count
         break
       }
       case 'sum':
-        customVals[cd.key] = (cd.sumKeys ?? []).reduce((a, k) => a + (prim[k] ?? customVals[k] ?? 0), 0)
+        customVals[cd.key] = (s.sumKeys ?? []).reduce((a, k) => a + (prim[k] ?? customVals[k] ?? 0), 0)
         break
       case 'area':
         customVals[cd.key] = prim.length * prim.width
         break
       case 'formula':
-        customVals[cd.key] = (parseFloat(cd.formulaQty as any) || 1) * (prim[cd.formulaDimKey ?? 'length'] ?? customVals[cd.formulaDimKey ?? 'length'] ?? 0)
+        customVals[cd.key] = (parseFloat(s.formulaQty as any) || 1) * (prim[s.formulaDimKey ?? 'length'] ?? customVals[s.formulaDimKey ?? 'length'] ?? 0)
         break
       case 'stock_length': {
-        const rawTarget = parseFloat(jobDims[cd.stockTargetDim ?? 'length'] as any) || customVals[cd.stockTargetDim ?? 'length'] || 0
+        const rawTarget = parseFloat(jobDims[s.stockTargetDim ?? 'length'] as any) || customVals[s.stockTargetDim ?? 'length'] || 0
         const metreDims = new Set(['length', 'height', 'width', 'perimeter'])
-        const targetMm = metreDims.has(cd.stockTargetDim ?? 'length') ? rawTarget * 1000 : rawTarget
-        const result = solveStockLengths(targetMm, cd.stockLengths ?? [], 'min_waste', {})
+        const targetMm = metreDims.has(s.stockTargetDim ?? 'length') ? rawTarget * 1000 : rawTarget
+        const result = solveStockLengths(targetMm, s.stockLengths ?? [], 'min_waste', {})
         customVals[cd.key] = result.totalQty
         jobDims[cd.key + '_total'] = result.totalQty
         jobDims[cd.key + '_waste'] = result.cutWaste
@@ -162,24 +189,32 @@ export function computeResults(opts: ComputeOptions): MaterialResult[] {
         break
       }
       case 'sheet_cut': {
-        const partsNeeded = parseFloat(jobDims[cd.sheetPartsNeededDim ?? 'custom_a'] as any) || customVals[cd.sheetPartsNeededDim ?? 'custom_a'] || 0
-        let sheetW = (cd as any).sheetW ?? 2400
-        let sheetH = (cd as any).sheetH ?? 1200
-        if (cd.plateMaterialId) {
-          const pm = materials.find(m => m.id === cd.plateMaterialId)
+        const partsNeeded = parseFloat(jobDims[s.sheetPartsNeededDim ?? 'custom_a'] as any) || customVals[s.sheetPartsNeededDim ?? 'custom_a'] || 0
+        let sheetW = (s as any).sheetW ?? 2400
+        let sheetH = (s as any).sheetH ?? 1200
+        if (s.plateMaterialId) {
+          const pm = materials.find(m => m.id === s.plateMaterialId)
           if (pm && hasPlateProps(pm)) {
             const pd = getPlateDims(pm)
             sheetW = pd.sheetW || sheetW
             sheetH = pd.sheetH || sheetH
           }
         }
-        const result = solveSheetCut({ sheetW, sheetH, partW: cd.partW ?? 600, partH: cd.partH ?? 400, kerf: cd.kerf ?? 0, partsNeeded, allowRotation: cd.sheetAllowRotation !== false })
+        const result = solveSheetCut({ sheetW, sheetH, partW: s.partW ?? 600, partH: s.partH ?? 400, kerf: s.kerf ?? 0, partsNeeded, allowRotation: s.sheetAllowRotation !== false })
         customVals[cd.key] = result.sheetsNeeded
         jobDims[cd.key + '_sheets']        = result.sheetsNeeded
         jobDims[cd.key + '_pps']           = result.partsPerSheet
         jobDims[cd.key + '_waste_pct']     = result.waste_pct
         jobDims['__sheetresult_' + cd.key] = result as any
         break
+      }
+    }
+
+    // Layer 3: user override (#4)
+    if (cd.allowOverride) {
+      const ov = jobDims['__override_' + cd.key]
+      if (ov !== undefined && ov !== '') {
+        customVals[cd.key] = parseFloat(ov as any) || 0
       }
     }
   })
@@ -215,7 +250,7 @@ export function computeResults(opts: ComputeOptions): MaterialResult[] {
     .map(migrateMat)
     .filter(m => !bracketMatIds.has(m.id) && (matHasRule(m) || plateMaterialIds.has(m.id)))
 
-  return active.map(mat => {
+  const matResults = active.map(mat => {
     // Plate auto-qty
     const plateDriven = plateDrivenMats.get(mat.id)
     if (plateDriven) {
@@ -310,6 +345,8 @@ export function computeResults(opts: ComputeOptions): MaterialResult[] {
 
     return { ...mat, raw: parseFloat(raw.toFixed(4)), withWaste: parseFloat(withWaste.toFixed(4)), qty, blocked: false, blockedBy: [], activeRow } as MaterialResult
   })
+
+  return { materials: matResults, customVals }
 }
 
 // ─── Multi-run compute ────────────────────────────────────────────────────────
@@ -345,8 +382,8 @@ export function computeMultiRun(
       }
     }
 
-    const results = computeResults({ sys, jobDims, criteriaState, variantState, segments: run.inputMode === 'segment' ? run.segments : [] })
-    return { runId: run.id, runName: run.name, qty: run.qty || 1, results }
+    const { materials: results, customVals } = computeResults({ sys, jobDims, criteriaState, variantState, segments: run.inputMode === 'segment' ? run.segments : [] })
+    return { runId: run.id, runName: run.name, qty: run.qty || 1, results, customVals }
   })
 
   const allMats = runResults[0]?.results ?? []

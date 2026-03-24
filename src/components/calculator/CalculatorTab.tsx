@@ -942,8 +942,11 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
   const [showFieldGuide, setShowFieldGuide] = useState(false)
 
   const runsAtLimit  = limits.maxRuns !== -1 && calc.runs.length >= limits.maxRuns
-  const spacingDims  = (sys.customDims ?? []).filter(cd => cd.derivType === 'spacing' && cd.spacingMode === 'user')
-  const userInputDims = (sys.customDims ?? []).filter(cd => cd.derivType === 'user_input')
+  const resolvedDerivType = (cd: any) => cd.modelStrategies?.[sys.inputModel]?.derivType ?? cd.derivType
+  const resolvedSpacingMode = (cd: any) => cd.modelStrategies?.[sys.inputModel]?.spacingMode ?? cd.spacingMode
+  const spacingDims  = (sys.customDims ?? []).filter(cd => resolvedDerivType(cd) === 'spacing' && resolvedSpacingMode(cd) === 'user')
+  const userInputDims = (sys.customDims ?? []).filter(cd => resolvedDerivType(cd) === 'user_input')
+  const overrideDims = (sys.customDims ?? []).filter(cd => cd.allowOverride && resolvedDerivType(cd) !== 'user_input')
 
   // ── Merge bracket BOM materials into combined results ────────────────────
   const combinedWithBrackets: any[] = (() => {
@@ -1266,6 +1269,30 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                             </div>
                           </div>
                         ))}
+                        {overrideDims.map(cd => {
+                          const runCustomVals = calc.multiResults?.runResults?.find((rr: any) => rr.runId === run.id)?.customVals
+                          const computed = runCustomVals?.[cd.key]
+                          const overrideKey = '__override_' + cd.key
+                          const hasOverride = (run.job as any)[overrideKey] !== undefined && (run.job as any)[overrideKey] !== ''
+                          return (
+                            <div key={cd.key}>
+                              <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">
+                                {cd.icon} {cd.name}{cd.unit ? ` (${cd.unit})` : ''}
+                                {computed != null && <span className={`ml-1 ${hasOverride ? 'line-through opacity-50' : 'text-primary'}`}>(auto: {computed})</span>}
+                              </div>
+                              <div className="relative">
+                                <input type="number"
+                                  value={(run.job as any)[overrideKey] ?? ''}
+                                  placeholder={computed != null ? String(computed) : '0'}
+                                  min={0} step="1"
+                                  onChange={e => calc.updateRun(run.id, { job: { ...run.job, [overrideKey]: e.target.value } })}
+                                  className="input text-xs py-1.5 pr-7"
+                                  style={{ borderColor: hasOverride ? '#f59e0b' : 'var(--color-secondary-200)', borderStyle: hasOverride ? 'solid' : 'dashed' }} />
+                                {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
 
@@ -1308,6 +1335,30 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                             </div>
                           </div>
                         ))}
+                        {overrideDims.map(cd => {
+                          const runCustomVals = calc.multiResults?.runResults?.find((rr: any) => rr.runId === run.id)?.customVals
+                          const computed = runCustomVals?.[cd.key]
+                          const overrideKey = '__override_' + cd.key
+                          const hasOverride = (run.job as any)[overrideKey] !== undefined && (run.job as any)[overrideKey] !== ''
+                          return (
+                            <div key={cd.key}>
+                              <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">
+                                {cd.icon} {cd.name}{cd.unit ? ` (${cd.unit})` : ''}
+                                {computed != null && <span className={`ml-1 ${hasOverride ? 'line-through opacity-50' : 'text-primary'}`}>(auto: {computed})</span>}
+                              </div>
+                              <div className="relative">
+                                <input type="number"
+                                  value={(run.job as any)[overrideKey] ?? ''}
+                                  placeholder={computed != null ? String(computed) : '0'}
+                                  min={0} step="1"
+                                  onChange={e => calc.updateRun(run.id, { job: { ...run.job, [overrideKey]: e.target.value } })}
+                                  className="input text-xs py-1.5 pr-7"
+                                  style={{ borderColor: hasOverride ? '#f59e0b' : 'var(--color-secondary-200)', borderStyle: hasOverride ? 'solid' : 'dashed' }} />
+                                {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
 

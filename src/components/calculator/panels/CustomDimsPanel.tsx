@@ -1,8 +1,8 @@
 // src/components/calculator/panels/CustomDimsPanel.tsx
 'use client'
 import { useState } from 'react'
-import type { CustomDim, MtoSystem } from '@/types'
-import { DERIV_TYPES, PRIMITIVE_DIMS } from '@/lib/engine/constants'
+import type { CustomDim, CriteriaParamOverride, MtoSystem } from '@/types'
+import { DERIV_TYPES, PRIMITIVE_DIMS, INPUT_MODELS } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
 import { Plus, Trash2, Edit3, Check, X, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -17,6 +17,7 @@ interface Props {
   customDims: CustomDim[]
   onChange:   (dims: CustomDim[]) => void
   sysMats:    MtoSystem['materials']
+  sys?:       MtoSystem
 }
 
 const BLANK: Omit<CustomDim, 'id'> = {
@@ -113,7 +114,190 @@ function FieldGuide({ derivType, items }: { derivType: string; items: { label: s
   )
 }
 
-export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props) {
+// ─── Model Strategies Section (#5) ────────────────────────────────────────────
+
+function ModelStrategiesSection({ d, set, dimOptions }: {
+  d: any; set: (k: any) => (v: any) => void
+  dimOptions: { value: string; label: string }[]
+}) {
+  const [open, setOpen] = useState(false)
+  const strategies: Record<string, any> = (d as any).modelStrategies ?? {}
+  const activeModels = Object.keys(strategies)
+
+  const toggle = (model: string) => {
+    const next = { ...strategies }
+    if (next[model]) { delete next[model] } else { next[model] = {} }
+    set('modelStrategies')(Object.keys(next).length > 0 ? next : undefined)
+  }
+
+  const updateStrategy = (model: string, key: string, value: any) => {
+    const next = { ...strategies, [model]: { ...strategies[model], [key]: value } }
+    set('modelStrategies')(next)
+  }
+
+  return (
+    <div className="border-t border-surface-200 pt-3 mt-1">
+      <button type="button" onClick={() => setOpen(v => !v)}
+        className="text-[10px] font-semibold uppercase tracking-wide text-ink-faint hover:text-ink flex items-center gap-1">
+        {open ? '▾' : '▸'} Per-model overrides
+        {activeModels.length > 0 && <span className="text-primary ml-1">({activeModels.length})</span>}
+      </button>
+      {open && (
+        <div className="mt-2 space-y-2">
+          {INPUT_MODELS.map(m => {
+            const active = !!strategies[m.value]
+            const strat = strategies[m.value] ?? {}
+            return (
+              <div key={m.value} className={`border px-3 py-2 ${active ? 'border-primary/30 bg-primary/5' : 'border-surface-200 bg-surface-50'}`}
+                style={{ borderRadius: 'var(--radius)' }}>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={active} onChange={() => toggle(m.value)} className="w-3.5 h-3.5 accent-primary" />
+                  <span className="text-xs font-semibold">{m.icon} {m.label}</span>
+                  <span className="text-[10px] text-ink-faint">{m.desc}</span>
+                </label>
+                {active && (
+                  <div className="flex flex-wrap gap-3 mt-2 pl-5">
+                    <Select label="Derivation type" value={strat.derivType ?? d.derivType}
+                      onChange={e => updateStrategy(m.value, 'derivType', e.target.value || undefined)}
+                      options={[
+                        { value: '', label: '(inherit default)' },
+                        ...DERIV_TYPES.map(t => ({ value: t.value, label: t.icon + ' ' + t.label })),
+                      ]}
+                      className="w-48" />
+                    {(strat.derivType ?? d.derivType) === 'spacing' && (
+                      <>
+                        <NumberInput label="Spacing (m)" value={strat.spacing ?? d.spacing ?? 1} min={0.01} step={0.1}
+                          onChange={e => updateStrategy(m.value, 'spacing', parseFloat(e.target.value))} className="w-24" />
+                        <Select label="Along" value={strat.spacingTargetDim ?? d.spacingTargetDim ?? 'length'}
+                          onChange={e => updateStrategy(m.value, 'spacingTargetDim', e.target.value)}
+                          options={dimOptions} className="w-36" />
+                      </>
+                    )}
+                    {(strat.derivType ?? d.derivType) === 'formula' && (
+                      <>
+                        <NumberInput label="Multiplier" value={strat.formulaQty ?? d.formulaQty ?? 1} step={0.1}
+                          onChange={e => updateStrategy(m.value, 'formulaQty', parseFloat(e.target.value))} className="w-24" />
+                        <Select label="x Dimension" value={strat.formulaDimKey ?? d.formulaDimKey ?? 'length'}
+                          onChange={e => updateStrategy(m.value, 'formulaDimKey', e.target.value)}
+                          options={dimOptions} className="w-36" />
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Criteria Overrides Section (#1) ──────────────────────────────────────────
+
+function CriteriaOverridesSection({ d, set, criteria }: {
+  d: any; set: (k: any) => (v: any) => void
+  criteria: { id: string; key: string; name: string; type: string }[]
+}) {
+  const [open, setOpen] = useState(false)
+  const overrides: CriteriaParamOverride[] = (d as any).criteriaOverrides ?? []
+  const inputCriteria = criteria.filter(c => c.type === 'input')
+
+  const [addCritKey, setAddCritKey]     = useState('')
+  const [addWhenActive, setAddWhenActive] = useState(true)
+  const [addParamKey, setAddParamKey]   = useState('spacing')
+  const [addParamVal, setAddParamVal]   = useState('')
+
+  const addOverride = () => {
+    if (!addCritKey || !addParamKey || addParamVal === '') return
+    const val = isNaN(Number(addParamVal)) ? addParamVal : Number(addParamVal)
+    const next = [...overrides, { criterionKey: addCritKey, whenActive: addWhenActive, params: { [addParamKey]: val } }]
+    set('criteriaOverrides')(next)
+    setAddParamVal('')
+  }
+
+  const removeOverride = (i: number) => {
+    const next = overrides.filter((_, j) => j !== i)
+    set('criteriaOverrides')(next.length > 0 ? next : undefined)
+  }
+
+  if (inputCriteria.length === 0) return null
+
+  const OVERRIDABLE_PARAMS = [
+    { value: 'derivType', label: 'Derivation type' },
+    { value: 'spacing', label: 'Spacing (m)' },
+    { value: 'formulaQty', label: 'Multiplier' },
+    { value: 'formulaDimKey', label: 'Formula dim' },
+    { value: 'spacingTargetDim', label: 'Spacing dim' },
+    { value: 'includesEndpoints', label: 'Includes endpoints' },
+    { value: 'firstSupportMode', label: 'First support mode' },
+    { value: 'firstGap', label: 'First gap (mm)' },
+  ]
+
+  return (
+    <div className="border-t border-surface-200 pt-3 mt-1">
+      <button type="button" onClick={() => setOpen(v => !v)}
+        className="text-[10px] font-semibold uppercase tracking-wide text-ink-faint hover:text-ink flex items-center gap-1">
+        {open ? '▾' : '▸'} Criteria overrides
+        {overrides.length > 0 && <span className="text-primary ml-1">({overrides.length})</span>}
+      </button>
+      {open && (
+        <div className="mt-2 space-y-2">
+          {/* Existing overrides */}
+          {overrides.map((co, i) => {
+            const crit = criteria.find(c => c.key === co.criterionKey)
+            const paramEntries = Object.entries(co.params)
+            return (
+              <div key={i} className="flex items-center gap-2 text-xs bg-surface-100 border border-surface-200 px-2.5 py-1.5"
+                style={{ borderRadius: 'var(--radius)' }}>
+                <span className="font-semibold text-ink">{crit?.name ?? co.criterionKey}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 font-semibold ${co.whenActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                  style={{ borderRadius: 'var(--radius)' }}>
+                  {co.whenActive ? 'ON' : 'OFF'}
+                </span>
+                <span className="text-ink-faint">&rarr;</span>
+                {paramEntries.map(([k, v]) => (
+                  <span key={k} className="font-mono text-primary">{k}: {String(v)}</span>
+                ))}
+                <button onClick={() => removeOverride(i)} className="ml-auto text-red-400 hover:text-red-600"><X className="w-3 h-3" /></button>
+              </div>
+            )
+          })}
+
+          {/* Add new override */}
+          <div className="flex flex-wrap gap-2 items-end">
+            <Select label="Criterion" value={addCritKey}
+              onChange={e => setAddCritKey(e.target.value)}
+              options={[{ value: '', label: '— select —' }, ...inputCriteria.map(c => ({ value: c.key, label: c.name }))]}
+              className="w-36" />
+            <div className="flex flex-col gap-1">
+              <label className="label">When</label>
+              <div className="flex overflow-hidden border border-surface-300" style={{ borderRadius: 'var(--radius)' }}>
+                {[{ val: true, l: 'ON' }, { val: false, l: 'OFF' }].map((opt, i) => (
+                  <button key={String(opt.val)} type="button"
+                    onClick={() => setAddWhenActive(opt.val)}
+                    className={`px-3 py-1.5 text-xs font-semibold transition-all ${i > 0 ? 'border-l border-surface-300' : ''} ${addWhenActive === opt.val ? 'bg-ink text-surface-50' : 'bg-surface-50 text-ink-muted hover:bg-surface-100'}`}>
+                    {opt.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Select label="Param" value={addParamKey}
+              onChange={e => setAddParamKey(e.target.value)}
+              options={OVERRIDABLE_PARAMS}
+              className="w-36" />
+            <Input label="Value" value={addParamVal}
+              onChange={e => setAddParamVal(e.target.value)}
+              placeholder="e.g. 3.0" className="w-24" />
+            <Button size="sm" variant="secondary" onClick={addOverride} icon={<Plus className="w-3 h-3" />}>Add</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: Props) {
   const derivedDims = customDims.filter(cd => cd.derivType !== 'user_input')
   const [adding, setAdding]           = useState(false)
   const [draft, setDraft]             = useState<typeof BLANK>({ ...BLANK })
@@ -179,6 +363,11 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props
               onChange={e => set('derivType')(e.target.value)}
               options={DERIV_TYPES.filter(t => t.value !== 'user_input').map(t => ({ value: t.value, label: t.icon + ' ' + t.label }))}
               className="w-52" />
+            <label className="flex items-center gap-2 self-end pb-1 cursor-pointer">
+              <input type="checkbox" checked={(d as any).allowOverride ?? false}
+                onChange={e => set('allowOverride')(e.target.checked)} className="w-3.5 h-3.5 accent-primary" />
+              <span className="text-[10px] font-semibold text-ink-muted">Allow user override</span>
+            </label>
           </div>
 
           {/* Row 2: type-specific fields */}
@@ -331,6 +520,12 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats }: Props
             </FloatingPanel>
           </>
         )}
+
+        {/* Model strategy overrides (#5) */}
+        <ModelStrategiesSection d={d} set={set} dimOptions={dimOptions} />
+
+        {/* Criteria param overrides (#1) */}
+        {sys && <CriteriaOverridesSection d={d} set={set} criteria={sys.customCriteria ?? []} />}
       </div>
     )
   }

@@ -152,7 +152,7 @@ export function computeBracketQtys(
       _libSyncedAt: null, _systemSpecific: false, _createdInSystem: null,
       _createdAt: null, _updatedAt: null, _wasLibrary: null, _madeUniqueAt: null,
     }
-    const results = computeResults({
+    const { materials: results } = computeResults({
       sys:          { ...sys, materials: [syntheticMat] },
       jobDims:      dimValues,
       criteriaState,
