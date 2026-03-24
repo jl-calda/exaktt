@@ -105,14 +105,6 @@ export function evaluateFormula(formula: string, params: Record<string, number> 
   }
 }
 
-// ─── migrateSetupBrackets ─────────────────────────────────────────────────────
-// Returns existing setupBrackets or empty array. Legacy bracket data (ruleSet
-// etc. on WorkBracket) is dropped — users re-add via the Setup Step 5 dropdown.
-
-export function migrateSetupBrackets(sys: MtoSystem): SetupBracket[] {
-  return sys.setupBrackets ?? []
-}
-
 // ─── computeBracketQtys ───────────────────────────────────────────────────────
 
 export function computeBracketQtys(
@@ -133,7 +125,6 @@ export function computeBracketQtys(
       ruleSet:      sb.ruleSet,
       criteriaKeys: sb.criteriaKeys ?? [],
       variantTags:  sb.variantTags  ?? {},
-      customDimKey: null,
       notes: '', photo: null, productCode: '', category: '',
       properties: {}, tags: [], substrate: 'all', libraryRef: null,
       _libSyncedAt: null, _systemSpecific: false, _createdInSystem: null,

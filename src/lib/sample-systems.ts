@@ -27,7 +27,6 @@ interface MatOpt {
   notes?:        string
   criteriaKeys?: string[]
   variantTags?:  Record<string, string>
-  customDimKey?: string
   unitPrice?:    number
 }
 
@@ -44,7 +43,6 @@ function mat(
     tags:      [],
     substrate: 'all',
     unitPrice:     opt.unitPrice ?? null,
-    customDimKey:  opt.customDimKey ?? null,
     ruleSet:       [rr(ruleType, rp)],
     criteriaKeys:  opt.criteriaKeys ?? [],
     variantTags:   opt.variantTags  ?? {},
@@ -587,187 +585,7 @@ const EVORAIL: SampleSystem = {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// SYSTEM 4 — Solar Panel Installation
-// ══════════════════════════════════════════════════════════════════════════════
-
-const SOLAR: SampleSystem = {
-  key:      'solar_install',
-  category: 'Solar & Electrical',
-  label:    'Solar Panel Installation',
-  description:
-    'Residential / commercial rooftop PV system. Area-based input drives panel count via the ' +
-    'spacing solver. Panel wattage variant swaps product codes. Criteria gates battery storage add-on.',
-  highlights: [
-    'Panel count: spacing custom dim (1.05m pitch) over roof area',
-    'Mounting rails: linear metre rule per panel row',
-    'Mid & end clamps: ratio off panel count',
-    'Wattage variant (370W / 415W / 540W) swaps panel product code',
-    '"Battery Storage" criteria gates inverter + battery materials',
-    'Warning when panel count exceeds 30 (requires structural check)',
-  ],
-  featureTags: ['Custom Dim', 'Custom Criteria', 'Warning', 'Variant'],
-  template: {
-    name: 'Solar Panel Installation (Sample)',
-    icon: '☀️', color: '#d97706',
-    inputModel: 'area',
-    description: 'Rooftop PV system — panel count from roof area with wattage variants',
-    customDims: [
-      dim({ id: 'cd_sol_panels', key: 'cd_sol_panels', name: 'Panel Count', unit: 'panels',
-        icon: '🔲', color: '#d97706', derivType: 'spacing',
-        spacing: 1.05, spacingMode: 'fixed', spacingTargetDim: 'length',
-        includesEndpoints: false, firstSupportMode: 'none', firstGap: 0 }),
-      dim({ id: 'cd_sol_rows', key: 'cd_sol_rows', name: 'Panel Rows', unit: 'rows',
-        icon: '↔️', color: '#b45309', derivType: 'spacing',
-        spacing: 2.1, spacingMode: 'fixed', spacingTargetDim: 'width',
-        includesEndpoints: false, firstSupportMode: 'none', firstGap: 0 }),
-    ],
-    customCriteria: [
-      crit('crit_battery', 'cr_battery', 'With Battery Storage',
-        'Adds hybrid inverter and battery bank to the BOM', '🔋', '#16a34a'),
-    ],
-    warnings: [
-      warn('w_sol_load', 'w_sol_load', 'cd_sol_panels', 30,
-        'Panel count >30 — structural roof load assessment required before proceeding'),
-    ],
-    variants: [
-      variant('var_sol_watt', 'Panel Wattage', '⚡', '#d97706', [
-        { key: 'w370', label: '370W' },
-        { key: 'w415', label: '415W' },
-        { key: 'w540', label: '540W' },
-      ]),
-    ],
-    materials: [
-      mat('sol_panel',   'Solar Panel',              'each', 'SOL-PANEL',  'ratio',       { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_sol_panels' }, { variantTags: { var_sol_watt: 'w370' }, unitPrice: 320.00 }),
-      mat('sol_rail',    'Mounting Rail 4.4m',        'each', 'SOL-RAIL',   'ratio',       { ruleQty: 2, ruleDivisor: 1, ruleDimKey: 'cd_sol_rows'   }, { unitPrice: 42.00 }),
-      mat('sol_midclamp','Mid Clamp',                 'each', 'SOL-MCLAMP', 'ratio',       { ruleQty: 2, ruleDivisor: 1, ruleDimKey: 'cd_sol_panels' }, { unitPrice: 8.50 }),
-      mat('sol_endclamp','End Clamp',                 'each', 'SOL-ECLAMP', 'ratio',       { ruleQty: 4, ruleDivisor: 1, ruleDimKey: 'cd_sol_rows'   }, { unitPrice: 6.50 }),
-      mat('sol_splice',  'Rail Splice Connector',     'each', 'SOL-SPLICE', 'ratio',       { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_sol_rows'   }, { unitPrice: 14.00 }),
-      mat('sol_l_foot',  'L-Foot Roof Mount',         'each', 'SOL-LFOOT',  'ratio',       { ruleQty: 4, ruleDivisor: 1, ruleDimKey: 'cd_sol_rows'   }, { unitPrice: 12.00 }),
-      mat('sol_inv',     'String Inverter',           'each', 'SOL-INV',    'fixed_qty',   { ruleQty: 1 },                                              { unitPrice: 2200.00 }),
-      mat('sol_dc_cable','DC Cable 6mm² (m)',          'm',    'SOL-DC6',    'ratio',       { ruleQty: 3, ruleDimKey: '__area' },                                              { unitPrice: 3.20 }),
-      mat('sol_ac_cable','AC Cable 6mm² (m)',          'm',    'SOL-AC6',    'fixed_qty',   { ruleQty: 6 },                                              { unitPrice: 2.80 }),
-      mat('sol_battery', 'Battery Module 10kWh',      'each', 'SOL-BAT',    'fixed_qty',   { ruleQty: 1 }, { criteriaKeys: ['cr_battery'],               unitPrice: 3800.00 }),
-      mat('sol_hyb_inv', 'Hybrid Inverter',           'each', 'SOL-HINV',   'fixed_qty',   { ruleQty: 1 }, { criteriaKeys: ['cr_battery'],               unitPrice: 2200.00 }),
-    ],
-  },
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// SYSTEM 5 — Paint Contractor
-// ══════════════════════════════════════════════════════════════════════════════
-
-const PAINT: SampleSystem = {
-  key:      'paint_contractor',
-  category: 'Coating & Finishing',
-  label:    'Paint Contractor',
-  description:
-    'Interior / exterior painting take-off. Area input drives paint litres. A "Solvent Volume (L)" ' +
-    'user input directly controls thinner quantity. Finish variant changes product codes. "New Surface" criteria adds primer.',
-  highlights: [
-    'Solvent / Thinner qty: ratio rule × user-entered volume (L) — direct volume input demo',
-    'Paint qty: coverage rule (12 m² per litre)',
-    'Finish variant (Flat / Eggshell / Satin / Semi-Gloss) swaps product codes',
-    '"New Surface" criterion adds primer to BOM',
-    'Warning when area exceeds 300m² (multi-crew planning)',
-  ],
-  featureTags: ['Custom Dim', 'Custom Criteria', 'Warning', 'Variant'],
-  template: {
-    name: 'Paint Contractor (Sample)',
-    icon: '🎨', color: '#be185d',
-    inputModel: 'area',
-    description: 'Interior / exterior painting — coverage-based material take-off',
-    customDims: [
-      dim({ id: 'cd_pt_vol', key: 'cd_pt_vol', name: 'Solvent / Thinner (L)', unit: 'L',
-        icon: '🧴', color: '#be185d', derivType: 'user_input', inputStep: 1 }),
-    ],
-    customCriteria: [
-      crit('crit_primer', 'cr_primer', 'New / Bare Surface',
-        'Unpainted surface — adds primer coat to BOM', '🪣', '#b45309'),
-    ],
-    warnings: [
-      warn('w_pt_area', 'w_pt_area', 'length', 300,
-        'Area >300m² — consider multi-crew scheduling and phased delivery'),
-    ],
-    variants: [
-      variant('var_pt_finish', 'Paint Finish', '🎨', '#be185d', [
-        { key: 'flat',      label: 'Flat / Matt' },
-        { key: 'eggshell',  label: 'Eggshell' },
-        { key: 'satin',     label: 'Satin' },
-        { key: 'semigloss', label: 'Semi-Gloss' },
-      ]),
-    ],
-    materials: [
-      mat('pt_primer',   'Primer 10L',             'tin',  'PT-PRIMER',   'coverage_per_item', { ruleQty: 1, ruleDivisor: 8 }, { criteriaKeys: ['cr_primer'],              unitPrice: 68.00 }),
-      mat('pt_paint',    'Topcoat Paint 15L',       'tin',  'PT-TOPCOAT',  'coverage_per_item', { ruleQty: 1, ruleDivisor: 12 }, { variantTags: { var_pt_finish: 'flat' },  unitPrice: 95.00 }),
-      mat('pt_solvent',  'Thinner / Solvent 5L',    'tin',  'PT-SOLVENT',  'ratio',             { ruleQty: 1, ruleDivisor: 5, ruleDimKey: 'cd_pt_vol' },                  { unitPrice: 24.00 }),
-      mat('pt_roller',   'Roller Frame + Cover',    'each', 'PT-ROLLER',   'fixed_qty',         { ruleQty: 4 },                                                                               { unitPrice: 18.00 }),
-      mat('pt_brush',    'Paint Brush Set',         'each', 'PT-BRUSH',    'fixed_qty',         { ruleQty: 2 },                                                                               { unitPrice: 22.00 }),
-      mat('pt_tape',     'Masking Tape 50m',        'roll', 'PT-TAPE',     'ratio',             { ruleQty: 1, ruleDivisor: 50, ruleDimKey: 'length' },                                                              { unitPrice: 8.50 }),
-      mat('pt_drop',     'Drop Cloth 4×3m',         'each', 'PT-DROP',     'fixed_qty',         { ruleQty: 2 },                                                                               { unitPrice: 14.00 }),
-      mat('pt_tray',     'Roller Tray',             'each', 'PT-TRAY',     'fixed_qty',         { ruleQty: 2 },                                                                               { unitPrice: 6.50 }),
-    ],
-  },
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// SYSTEM 6 — Tiler Contractor
-// ══════════════════════════════════════════════════════════════════════════════
-
-const TILER: SampleSystem = {
-  key:      'tiler_contractor',
-  category: 'Coating & Finishing',
-  label:    'Tiler Contractor',
-  description:
-    'Floor and wall tiling take-off. Tile size variant drives sheet count. ' +
-    'Adhesive and grout quantities derived from area. "Wet Area" criterion adds waterproofing.',
-  highlights: [
-    'Tile count: sheet_size rule — sheet dimensions from variant (300×300, 600×600, 300×600)',
-    'Adhesive: coverage rule (4 kg/m²)',
-    'Grout: coverage rule (0.4 kg/m²) × joint width',
-    '"Wet Area" criterion adds waterproofing membrane to BOM',
-    'Wastage factor applied across all area rules',
-    'Warning when area >100m² (bulk adhesive delivery)',
-  ],
-  featureTags: ['Custom Dim', 'Custom Criteria', 'Warning', 'Variant'],
-  template: {
-    name: 'Tiler Contractor (Sample)',
-    icon: '🟫', color: '#92400e',
-    inputModel: 'area',
-    description: 'Floor & wall tiling — tile count, adhesive and grout from area',
-    customDims: [
-      dim({ id: 'cd_tl_perimeter', key: 'cd_tl_perimeter', name: 'Perimeter (for trim)', unit: 'm',
-        icon: '⬜', color: '#92400e', derivType: 'sum', sumKeys: ['length', 'width', 'length', 'width'] }),
-    ],
-    customCriteria: [
-      crit('crit_wetarea', 'cr_wetarea', 'Wet Area / Shower',
-        'Requires waterproofing membrane under tiles (AS 3740)', '🚿', '#0284c7'),
-    ],
-    warnings: [
-      warn('w_tl_bulk', 'w_tl_bulk', 'length', 100,
-        'Area >100m² — arrange bulk adhesive delivery and on-site storage'),
-    ],
-    variants: [
-      variant('var_tl_size', 'Tile Size', '🟫', '#92400e', [
-        { key: 't300x300', label: '300×300mm' },
-        { key: 't600x600', label: '600×600mm' },
-        { key: 't300x600', label: '300×600mm' },
-        { key: 't600x1200', label: '600×1200mm' },
-      ]),
-    ],
-    materials: [
-      mat('tl_tile',       'Floor Tile (m²)',           'm²',   'TL-TILE',    'sheet_size',         { ruleTileW: 300, ruleTileH: 300, waste: 10 }, { variantTags: { var_tl_size: 't300x300' }, unitPrice: 45.00 }),
-      mat('tl_adhesive',   'Tile Adhesive 20kg',        'bag',  'TL-ADH',     'kg_per_sqm',        { ruleQty: 4, waste: 5 },                            { unitPrice: 28.00 }),
-      mat('tl_grout',      'Grout 5kg',                 'bag',  'TL-GROUT',   'kg_per_sqm',        { ruleQty: 0.4, waste: 5 },                            { unitPrice: 18.00 }),
-      mat('tl_spacer',     'Tile Spacers 2mm (bag 100)','bag',  'TL-SPACER',  'ratio',             { ruleQty: 20, ruleDimKey: '__area' },                                                                            { unitPrice: 6.00 }),
-      mat('tl_trim',       'Edge Trim (m)',              'm',    'TL-TRIM',    'linear_metre',      { ruleQty: 1 },                                                                             { unitPrice: 12.00 }),
-      mat('tl_membrane',   'Waterproof Membrane 1L',    'tin',  'TL-MEMBRANE','coverage_per_item', { ruleQty: 1, ruleDivisor: 1.5,  }, { criteriaKeys: ['cr_wetarea'],      unitPrice: 38.00 }),
-      mat('tl_primer',     'Substrate Primer 5L',       'tin',  'TL-PRIMER',  'coverage_per_item', { ruleQty: 1, ruleDivisor: 6,    }, { criteriaKeys: ['cr_wetarea'],      unitPrice: 32.00 }),
-    ],
-  },
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// SYSTEM 7 — Kitchen Cabinetry
+// SYSTEM 4 — Kitchen Cabinetry (linear)
 // ══════════════════════════════════════════════════════════════════════════════
 
 const CABINETRY: SampleSystem = {
@@ -830,7 +648,7 @@ const CABINETRY: SampleSystem = {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// SYSTEM 8 — Bridge Bearings
+// SYSTEM 5 — Bridge Bearings (linear)
 // ══════════════════════════════════════════════════════════════════════════════
 
 const BRIDGE_BEARINGS: SampleSystem = {
@@ -888,78 +706,9 @@ const BRIDGE_BEARINGS: SampleSystem = {
   },
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SYSTEM 9 — Cladding & Roofing Contractor
-// ══════════════════════════════════════════════════════════════════════════════
-
-const CLADDING: SampleSystem = {
-  key:      'cladding_roofing',
-  category: 'Cladding & Roofing',
-  label:    'Cladding & Roofing',
-  description:
-    'Metal cladding / roofing sheet take-off. Stock-length solver minimises sheet waste. ' +
-    'Wind zone criterion increases fastener density. Profile variant swaps sheet product code.',
-  highlights: [
-    'Sheet count: stock-length solver — cover runs from standard lengths (3m, 4.5m, 6m)',
-    'Fastener count: spacing dim at 300mm (High Wind zone: 200mm via criteria)',
-    'Profile variant (Corrugated / Trapezoidal / Standing Seam) swaps sheet code',
-    '"High Wind Zone" criterion triggers closer fastener spacing',
-    'Ridge cap, flashing, sealant: linear metre rules',
-    'Warning when run >30m (thermal expansion joint required)',
-  ],
-  featureTags: ['Custom Dim', 'Custom Criteria', 'Warning', 'Variant'],
-  template: {
-    name: 'Cladding & Roofing (Sample)',
-    icon: '🏠', color: '#0891b2',
-    inputModel: 'area',
-    description: 'Metal roofing / wall cladding — sheet count via stock solver, profile variants',
-    customDims: [
-      dim({ id: 'cd_cl_sheets', key: 'cd_cl_sheets', name: 'Sheet Count (solver)', unit: 'sheets',
-        icon: '📦', color: '#0891b2', derivType: 'stock_length',
-        stockTargetDim: 'length', stockLengths: [3000, 4500, 6000], stockOptimMode: 'min_waste' }),
-      dim({ id: 'cd_cl_fast', key: 'cd_cl_fast', name: 'Fasteners', unit: 'fasteners',
-        icon: '🔩', color: '#0369a1', derivType: 'spacing',
-        spacing: 0.3, spacingMode: 'fixed', spacingTargetDim: 'length',
-        includesEndpoints: true, firstSupportMode: 'none', firstGap: 0 }),
-    ],
-    customCriteria: [
-      crit('crit_highwind', 'cr_highwind', 'High Wind Zone (N3+)',
-        'Increases fastener count — 200mm centres instead of 300mm', '💨', '#dc2626'),
-      crit('crit_insulation', 'cr_insulation', 'With Insulation',
-        'Adds insulation batts and double-sided tape to BOM', '🧱', '#16a34a'),
-    ],
-    warnings: [
-      warn('w_cl_exp', 'w_cl_exp', 'length', 30,
-        'Run >30m — thermal expansion joint required per AS 1562'),
-    ],
-    variants: [
-      variant('var_cl_profile', 'Sheet Profile', '🏠', '#0891b2', [
-        { key: 'corrugated',   label: 'Corrugated' },
-        { key: 'trapezoidal',  label: 'Trapezoidal' },
-        { key: 'standing_seam',label: 'Standing Seam' },
-      ]),
-      variant('var_cl_colour', 'Colour', '🎨', '#475569', [
-        { key: 'monument',    label: 'Monument' },
-        { key: 'colorbond',   label: 'Colorbond Grey' },
-        { key: 'zincalume',   label: 'Zincalume' },
-      ]),
-    ],
-    materials: [
-      mat('cl_sheet',    'Roofing Sheet',           'each', 'CL-SHEET',   'ratio',        { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_cl_sheets' }, { variantTags: { var_cl_profile: 'corrugated' }, unitPrice: 48.00 }),
-      mat('cl_fastener', 'Tek Screw 12-14×35 (pk50)','pk',  'CL-SCREW',   'ratio',        { ruleQty: 1, ruleDivisor: 50, ruleDimKey: 'cd_cl_fast' },                                 { unitPrice: 18.00 }),
-      mat('cl_ridge',    'Ridge Cap (m)',             'm',   'CL-RIDGE',   'linear_metre', { ruleQty: 1 },                                                                             { unitPrice: 24.00 }),
-      mat('cl_flash',    'Flashing 300mm (m)',        'm',   'CL-FLASH',   'linear_metre', { ruleQty: 2 },                                                                             { unitPrice: 16.00 }),
-      mat('cl_seal',     'Butyl Sealant Tape 10m',  'roll', 'CL-SEAL',    'ratio', { ruleQty: 1, ruleDivisor: 10, ruleDimKey: 'length' },                                                            { unitPrice: 28.00 }),
-      mat('cl_foam',     'Foam Closure Strip (m)',    'm',   'CL-FOAM',    'linear_metre', { ruleQty: 2 },                                                                             { unitPrice: 8.50 }),
-      mat('cl_insul',    'Insulation Batt R2.0',    'each', 'CL-INSUL',   'ratio',        { ruleQty: 1, ruleDimKey: '__area' },    { criteriaKeys: ['cr_insulation'],                                       unitPrice: 35.00 }),
-      mat('cl_tape',     'Double-Sided Tape 30m',   'roll', 'CL-TAPE',    'ratio',        { ruleQty: 0.05, ruleDimKey: '__area' }, { criteriaKeys: ['cr_insulation'],                                       unitPrice: 12.00 }),
-    ],
-  },
-}
-
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
-export const SAMPLE_SYSTEMS: SampleSystem[] = [HLL, VECTALADDER, EVORAIL, SOLAR, PAINT, TILER, CABINETRY, BRIDGE_BEARINGS, CLADDING]
+export const SAMPLE_SYSTEMS: SampleSystem[] = [HLL, VECTALADDER, EVORAIL, CABINETRY, BRIDGE_BEARINGS]
 
 export function getSampleSystem(key: string): SampleSystem | undefined {
   return SAMPLE_SYSTEMS.find(s => s.key === key)

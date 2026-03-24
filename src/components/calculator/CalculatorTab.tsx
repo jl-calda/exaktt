@@ -10,9 +10,12 @@ import { getLimits } from '@/lib/limits'
 import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
-import { computeWorkSchedule, computeBracketQtys, computeBracketBOM, resolveBracketParams, migrateSetupBrackets } from '@/lib/engine/work'
+import { computeWorkSchedule, computeBracketQtys, computeBracketBOM, resolveBracketParams } from '@/lib/engine/work'
 import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, getDimLabel, getDimUnit } from '@/lib/engine/constants'
-import { normalizeInputModel } from '@/types'
+import { getRunDims, getRelevantKeys } from '@/lib/engine/run-dims'
+import { getFormulaDef, getVariantLeafLabel, type FormulaDef } from '@/lib/engine/formula'
+import { buildLastResults } from '@/lib/engine/results-snapshot'
+import { openPrintWindow } from '@/lib/print/print-builder'
 import SystemOverviewPanel from './SystemOverviewPanel'
 
 interface Props {
@@ -24,191 +27,7 @@ interface Props {
   plan?:      Plan
 }
 
-function buildLastResults(
-  sys: MtoSystem,
-  runs: Run[],
-  multiResults: any,
-  workSchedule: WorkScheduleSummary | null,
-): JobLastResults {
-  const priceMap = Object.fromEntries(sys.materials.map((m: any) => [m.id, m.unitPrice ?? null]))
-  const combined = (multiResults?.combined ?? [])
-
-  const bom = combined.filter((m: any) => !m.allBlocked).map((m: any) => {
-    const unitPrice = priceMap[m.id] as number | null
-    return {
-      id: m.id, name: m.name, productCode: m.productCode ?? '', unit: m.unit ?? '',
-      unitPrice,
-      grandTotal: m.grandTotal,
-      lineTotal: unitPrice != null ? unitPrice * m.grandTotal : null,
-      perRun: (m.perRun ?? []).map((pr: any) => ({
-        runName: pr.runName, runQty: pr.runQty, unitQty: pr.unitQty, totalQty: pr.totalQty,
-      })),
-    }
-  })
-
-  const gated = combined.filter((m: any) => m.allBlocked).map((m: any) => ({ id: m.id, name: m.name }))
-
-  const breakdown = runs.map((run, ri) => {
-    const dims = getRunDims(run, sys)
-    return {
-      runName: run.name, qty: run.qty,
-      dims,
-      criteriaState: run.criteriaState ?? {},
-      variantState:  run.variantState  ?? {},
-      materials: combined.filter((m: any) => !m.allBlocked).map((m: any) => {
-        const pr = m.perRun?.[ri]
-        const ar = pr?.activeRow
-        const isBracketOnly = m._isBracketMat && (!pr || pr.unitQty === 0)
-        const unitPrice = priceMap[m.id] as number | null
-        const unitQty = isBracketOnly ? (ri === 0 ? (m._bracketQty ?? m.grandTotal) : 0) : (pr?.unitQty ?? 0)
-        return {
-          id: m.id, name: m.name,
-          ruleType: isBracketOnly ? 'bracket' : (ar?.ruleType ?? ''),
-          formula: isBracketOnly ? 'from bracket BOM' : (pr ? formulaTextForPrint(ar, dims, sys) : ''),
-          raw: isBracketOnly ? 0 : (pr?.raw ?? 0), unitQty,
-          unitPrice,
-          lineTotal: unitPrice != null ? unitPrice * unitQty : null,
-        }
-      }),
-    }
-  })
-
-  const materialCost = bom.reduce((a: number, m: any) => a + (m.lineTotal ?? 0), 0)
-  const labourCost   = workSchedule?.totalLabourCost ?? 0
-  const thirdCost    = workSchedule?.totalThirdPartyCost ?? 0
-
-  return {
-    runs: runs.map(r => ({ id: r.id, name: r.name, qty: r.qty })),
-    bom, gated, breakdown,
-    workSchedule: workSchedule ?? null,
-    totals: {
-      materialCost,
-      labourCost,
-      thirdPartyCost: thirdCost,
-      grandTotal: materialCost + labourCost + thirdCost,
-    },
-  }
-}
-
-// ─── Breakdown helpers ────────────────────────────────────────────────────────
-
-function getRelevantKeys(sys: MtoSystem): Set<string> {
-  const keys = new Set<string>()
-  const dimKeys = DIMS_FOR_INPUT_MODEL[sys.inputModel]
-  if (dimKeys) {
-    for (const k of dimKeys) keys.add(k)
-  } else {
-    // fallback: only dims actively referenced
-    for (const k of PRIMITIVE_DIMS.map(d => d.key)) {
-      const cds = sys.customDims ?? []
-      if (cds.some(cd => cd.derivType === 'stock_length' && cd.stockTargetDim === k)
-        || cds.some(cd => cd.derivType === 'spacing'     && cd.spacingTargetDim === k)
-        || cds.some(cd => cd.derivType === 'formula'     && cd.formulaDimKey === k)
-        || sys.materials.some(m => (m.ruleSet ?? []).some(r => r.ruleDimKey === k)))
-        keys.add(k)
-    }
-  }
-  for (const cd of (sys.customDims ?? []))
-    if (cd.derivType === 'user_input') keys.add(cd.key)
-  return keys
-}
-
-function getRunDims(run: Run, sys: MtoSystem): Record<string, number> {
-  const relevant = getRelevantKeys(sys)
-  const dims: Record<string, number> = {}
-  if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple') {
-    dims.length  = parseFloat(run.simpleJob?.length  as any) || 0
-    dims.corners   = 0
-    dims.end1      = 1
-    dims.end2      = 1
-    dims.both_ends = 2
-  }
-  for (const [k, v] of Object.entries(run.job ?? {})) {
-    if (!relevant.has(k)) continue          // ignore keys from other systems
-    const n = parseFloat(String(v))
-    if (!isNaN(n)) dims[k] = n
-  }
-  return dims
-}
-
-interface FormulaDef { leftTags: string[]; core: string; rightTags: string[] }
-
-function getFormulaDef(activeRow: any, dims: Record<string, number>, sys: MtoSystem): FormulaDef {
-  if (!activeRow) return { leftTags: [], core: '—', rightTags: [] }
-  const fmt  = (n: number) => parseFloat(n.toFixed(3)).toString()
-  const qty_ = parseFloat(activeRow.ruleQty)    || 0
-  const div  = parseFloat(activeRow.ruleDivisor) || 1
-  const key  = activeRow.ruleDimKey ?? ''
-  const L    = dims.length ?? 0
-  const W    = dims.width  ?? 0
-  const dimV = key === '__area' ? L * W : (dims[key] ?? 0)
-  const cd   = (sys.customDims ?? []).find(c => c.key === key)
-  const dimLabel = key === '__area' ? 'area' : key ? (cd?.name ?? key) : ''
-  const dimUnit  = key === '__area' ? 'm²' : key ? (cd?.unit  ?? '') : ''
-  const waste = parseFloat(activeRow.waste) || 0
-
-  let leftTags: string[] = []
-  let core = ''
-  let rightTags: string[] = []
-
-  switch (activeRow.ruleType) {
-    case 'fixed_qty':
-      core = `Fixed: ${qty_}`
-      break
-    case 'ratio':
-      leftTags = [dimLabel]
-      core = div !== 1
-        ? `${fmt(dimV)}${dimUnit} × (${qty_} ÷ ${div})`
-        : `${fmt(dimV)}${dimUnit} × ${qty_}`
-      rightTags = div !== 1 ? ['factor'] : []
-      break
-    case 'linear_metre':
-      leftTags = ['length']
-      core = `${fmt(L)}m × ${qty_}`
-      break
-    case 'coverage_per_item':
-      leftTags = ['area']
-      core = `${fmt(L)}m × ${fmt(W)}m ÷ ${div}`
-      rightTags = ['m²/item']
-      break
-    case 'kg_per_sqm':
-      leftTags = ['area']
-      core = `${fmt(L)}m × ${fmt(W)}m × ${qty_}`
-      rightTags = ['kg/m²']
-      break
-    case 'kg_per_metre':
-      leftTags = ['length']
-      core = `${fmt(L)}m × ${qty_}`
-      rightTags = ['kg/m']
-      break
-    case 'kg_per_item':
-      leftTags = [dimLabel]
-      core = `${fmt(dimV)} × ${qty_}`
-      rightTags = ['kg/item']
-      break
-    case 'sheet_size': {
-      const tw = activeRow.ruleTileW || 600
-      const th = activeRow.ruleTileH || 600
-      leftTags = ['area']
-      core = `${fmt(L)} × ${fmt(W)} ÷ (${tw} × ${th})`
-      rightTags = [`${tw}×${th}mm`]
-      break
-    }
-    default:
-      core = activeRow.ruleType
-  }
-
-  if (waste > 0) rightTags = [...rightTags, `+${waste}% waste`]
-  return { leftTags, core, rightTags }
-}
-
-// Text version for print window
-function formulaTextForPrint(activeRow: any, dims: Record<string, number>, sys: MtoSystem): string {
-  const { leftTags, core, rightTags } = getFormulaDef(activeRow, dims, sys)
-  const parts = [...leftTags.map(t => `[${t}]`), core, ...rightTags.map(t => `[${t}]`)]
-  return parts.join(' ')
-}
-
+// Tag + FormulaCell: small JSX helpers kept inline
 function Tag({ label }: { label: string }) {
   return (
     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-surface-100 text-ink-faint border border-surface-200 leading-none whitespace-nowrap">
@@ -228,179 +47,8 @@ function FormulaCell({ activeRow, dims, sys }: { activeRow: any; dims: Record<st
   )
 }
 
-function getVariantLeafLabel(sys: MtoSystem, variantId: string, leafKey: string): string {
-  const v = (sys.variants ?? []).find(v => v.id === variantId)
-  if (!v) return leafKey
-  const find = (nodes: any[]): string | null => {
-    for (const n of nodes) {
-      if (n.key === leafKey) return n.label
-      if (n.children?.length) { const r = find(n.children); if (r) return r }
-    }
-    return null
-  }
-  return find(v.nodes) ?? leafKey
-}
+// ─── Breakdown helpers ────────────────────────────────────────────────────────
 
-function openPrintWindow(
-  sys: MtoSystem, runs: Run[], multiResults: any,
-  workSchedule?: WorkScheduleSummary | null,
-) {
-  const combined = (multiResults?.combined ?? []).filter((m: any) => !m.allBlocked)
-  const activeCriteria = (sys.customCriteria ?? []).filter(c => c.type === 'input')
-  const variants       = sys.variants ?? []
-  const hasPrice       = combined.some((m: any) => (m.unitPrice ?? 0) > 0)
-
-  const PHASE_LABELS: Record<string, string> = {
-    fabrication: 'Fabrication', installation: 'Installation',
-    commissioning: 'Commissioning', transport: 'Transport', third_party: 'Third Party',
-  }
-
-  const runBlocks = runs.map((run, ri) => {
-    const dims         = getRunDims(run, sys)
-    const criteriaState = run.criteriaState ?? {}
-    const variantState  = run.variantState  ?? {}
-
-    const inputRow = Object.entries(dims)
-      .filter(([k, v]) => !k.startsWith('__') && v > 0)
-      .map(([k, v]) => {
-        const cd    = (sys.customDims ?? []).find(c => c.key === k)
-        const label = cd?.name ?? k
-        const unit  = cd?.unit ?? (['length','width','height','perimeter'].includes(k) ? 'm' : '')
-        return `<span class="badge">${label}: <b>${v}${unit}</b></span>`
-      }).join(' ')
-
-    const criteriaRow = activeCriteria.length
-      ? activeCriteria.map(cr => {
-          const on = criteriaState[cr.key] === true
-          return `<span class="badge ${on ? 'badge-on' : 'badge-off'}">${cr.icon ?? ''} ${cr.name}: <b>${on ? 'YES' : 'NO'}</b></span>`
-        }).join(' ')
-      : ''
-
-    const variantRow = variants.length
-      ? variants.map(v => {
-          const sel = variantState[v.id]
-          const label = sel ? getVariantLeafLabel(sys, v.id, sel) : '—'
-          return `<span class="badge">${v.icon ?? ''} ${v.name}: <b>${label}</b></span>`
-        }).join(' ')
-      : ''
-
-    let runTotal = 0
-    const matRows = combined.map((mat: any) => {
-      const pr = mat.perRun?.[ri]
-      if (!pr) return ''
-      const ar      = pr.activeRow
-      const formula = formulaTextForPrint(ar, dims, sys)
-      const lineTotal = mat.unitPrice != null ? mat.unitPrice * pr.unitQty : null
-      if (lineTotal != null) runTotal += lineTotal
-      const priceCells = hasPrice
-        ? `<td class="mono right">${mat.unitPrice != null ? '$' + mat.unitPrice.toFixed(2) : '—'}</td>
-           <td class="mono right bold-price">${lineTotal != null ? '$' + lineTotal.toFixed(2) : '—'}</td>`
-        : ''
-      return `<tr>
-        <td class="name">${mat.name}</td>
-        <td>${mat.productCode || '—'}</td>
-        <td class="mono">${ar?.ruleType ?? '—'}</td>
-        <td class="mono">${formula}</td>
-        <td class="mono right">${pr.raw}</td>
-        <td class="mono right bold">${pr.unitQty} ${mat.unit}</td>
-        ${priceCells}
-      </tr>`
-    }).join('')
-
-    const matFooter = hasPrice ? `<tfoot><tr>
-      <td colspan="6" class="right muted" style="font-size:10px">Run total</td>
-      <td></td>
-      <td class="mono right bold">${runTotal > 0 ? '$' + runTotal.toFixed(2) : '—'}</td>
-    </tr></tfoot>` : ''
-
-    const priceHeaders = hasPrice ? '<th>Unit Price</th><th>Total</th>' : ''
-
-    return `<div class="run-block">
-      <h3>Run #${ri + 1}: ${run.name}${run.qty > 1 ? ' <span class="muted">×' + run.qty + '</span>' : ''}</h3>
-      <table class="vars-table">
-        ${inputRow    ? `<tr><td class="var-label">Inputs</td><td class="var-vals">${inputRow}</td></tr>`    : ''}
-        ${criteriaRow ? `<tr><td class="var-label">Criteria</td><td class="var-vals">${criteriaRow}</td></tr>` : ''}
-        ${variantRow  ? `<tr><td class="var-label">Variants</td><td class="var-vals">${variantRow}</td></tr>`  : ''}
-      </table>
-      <table>
-        <thead><tr><th>Material</th><th>Code</th><th>Rule</th><th>Formula</th><th>Raw</th><th>Qty</th>${priceHeaders}</tr></thead>
-        <tbody>${matRows}</tbody>
-        ${matFooter}
-      </table>
-    </div>`
-  }).join('')
-
-  const workScheduleBlock = workSchedule ? (() => {
-    const phases = Object.entries(workSchedule.byPhase)
-    if (!phases.length) return ''
-    const rows = phases.flatMap(([phase, items]) =>
-      (items as WorkScheduleResult[]).map(item =>
-        `<tr>
-          <td>${PHASE_LABELS[phase] ?? phase}</td>
-          <td class="name">${item.activityName}</td>
-          <td class="mono right">${item.sourceQty} ${item.sourceUnit}</td>
-          <td class="mono right">${item.timePerUnit.toFixed(1)} min</td>
-          <td class="mono right">${item.totalHours.toFixed(2)} hr</td>
-          ${item.labourCost != null ? `<td class="mono right bold-price">$${item.labourCost.toFixed(2)}</td>` : '<td>—</td>'}
-        </tr>`
-      )
-    ).join('')
-    const totalLabour = workSchedule.totalLabourCost != null ? `$${workSchedule.totalLabourCost.toFixed(2)}` : '—'
-    const totalThird  = workSchedule.totalThirdPartyCost != null ? `$${workSchedule.totalThirdPartyCost.toFixed(2)}` : null
-    return `<div class="run-block">
-      <h3>Work Schedule</h3>
-      <table>
-        <thead><tr><th>Phase</th><th>Activity</th><th>Qty</th><th>Time/Unit</th><th>Total Hours</th><th>Labour Cost</th></tr></thead>
-        <tbody>${rows}</tbody>
-        <tfoot>
-          <tr><td colspan="4" class="right muted" style="font-size:10px">Total hours</td>
-              <td class="mono right bold">${workSchedule.totalElapsedHours.toFixed(2)} hr</td><td></td></tr>
-          <tr><td colspan="4" class="right muted" style="font-size:10px">Total labour cost</td>
-              <td></td><td class="mono right bold-price">${totalLabour}</td></tr>
-          ${totalThird ? `<tr><td colspan="4" class="right muted" style="font-size:10px">Third party cost</td>
-              <td></td><td class="mono right bold-price">${totalThird}</td></tr>` : ''}
-        </tfoot>
-      </table>
-    </div>`
-  })() : ''
-
-  const html = `<!DOCTYPE html><html><head>
-    <title>Calculation Breakdown — ${sys.name}</title>
-    <style>
-      body        { font-family: -apple-system, sans-serif; font-size: 12px; padding: 24px; color: #1e293b; }
-      h1          { font-size: 18px; margin: 0 0 2px; }
-      .meta       { font-size: 12px; color: #64748b; margin-bottom: 20px; }
-      h3          { font-size: 13px; font-weight: 700; margin: 0 0 8px; }
-      .run-block  { margin-bottom: 28px; }
-      .vars-table { width: auto; border-collapse: collapse; margin-bottom: 10px; font-size: 11px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
-      .var-label  { padding: 4px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing:.05em; color: #94a3b8; background: #f8fafc; border-right: 1px solid #e2e8f0; white-space: nowrap; }
-      .var-vals   { padding: 4px 8px; background: #fff; }
-      .badge      { display: inline-block; font-size: 10px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1px 6px; margin: 1px 2px; color: #475569; }
-      .badge-on   { background: #dcfce7; border-color: #bbf7d0; color: #166534; }
-      .badge-off  { background: #f1f5f9; color: #94a3b8; }
-      table       { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11px; }
-      th          { background: #f1f5f9; text-align: left; padding: 5px 8px; font-size: 10px; text-transform: uppercase; letter-spacing:.04em; color:#64748b; border-bottom: 2px solid #e2e8f0; }
-      td          { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; }
-      td.name     { font-size: 12px; font-weight: 500; }
-      td.mono     { font-family: 'Courier New', monospace; }
-      td.right    { text-align: right; }
-      td.bold     { font-weight: 700; color: #7c3aed; }
-      td.bold-price { font-weight: 700; color: #059669; }
-      .muted      { color: #94a3b8; font-weight: normal; }
-      footer      { font-size: 10px; color: #94a3b8; margin-top: 24px; }
-      @media print { body { padding: 12px; } }
-    </style>
-  </head><body>
-    <h1>${sys.name}</h1>
-    <p class="meta">Calculation Breakdown &nbsp;·&nbsp; ${new Date().toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
-    ${runBlocks}
-    ${workScheduleBlock}
-    <footer>Generated by MaterialMTO &nbsp;·&nbsp; Quantities rounded up to nearest whole unit per run</footer>
-  </body></html>`
-
-  const w = window.open('', '_blank', 'width=900,height=700')
-  if (w) { w.document.write(html); w.document.close(); w.print() }
-}
 
 // ─── Breakdown panel (inline) ─────────────────────────────────────────────────
 
@@ -939,7 +587,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
   // ── Merge bracket BOM materials into combined results ────────────────────
   const combinedWithBrackets: any[] = (() => {
     const combined = [...(calc.multiResults?.combined ?? [])]
-    const setupBrackets = (sys.setupBrackets?.length ? sys.setupBrackets : migrateSetupBrackets(sys))
+    const setupBrackets = (sys.setupBrackets?.length ? sys.setupBrackets : (sys.setupBrackets ?? []))
     const templates = sys.customBrackets ?? []
     const templateMap = new Map(templates.map(t => [t.id, t]))
     const activeBrackets = setupBrackets.map(sb => templateMap.get(sb.bracketId)).filter(Boolean) as WorkBracket[]
@@ -955,8 +603,8 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
       for (const [k, v] of Object.entries(job)) {
         jobDims[k] = parseFloat(String(v)) || 0
       }
-      // Handle linear_run simple mode dims
-      if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple') {
+      // Handle linear simple mode dims
+      if (sys.inputModel === 'linear' && run.inputMode === 'simple') {
         jobDims.length    = parseFloat(run.simpleJob?.length as any) || 0
         jobDims.corners   = 0
         const isLoop      = !!(run.criteriaState ?? {} as any)['loop']
@@ -1038,7 +686,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     const mergedVariants = calc.runs.reduce((acc: Record<string, string>, r: Run) => {
       return { ...acc, ...(r.variantState ?? {}) }
     }, {} as Record<string, string>)
-    const wsSetupBrackets = (sys.setupBrackets?.length ? sys.setupBrackets : migrateSetupBrackets(sys))
+    const wsSetupBrackets = (sys.setupBrackets?.length ? sys.setupBrackets : (sys.setupBrackets ?? []))
     const wsTemplates     = sys.customBrackets ?? []
     const wsTemplateMap   = new Map(wsTemplates.map(t => [t.id, t]))
     const wsActiveBrackets = wsSetupBrackets.map(sb => wsTemplateMap.get(sb.bracketId)).filter(Boolean) as WorkBracket[]
@@ -1060,7 +708,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
   // Total run length for rate calculations
   const totalRunLength = calc.runs.reduce((sum: number, run: Run) => {
-    if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear')) {
+    if (sys.inputModel === 'linear') {
       if (run.inputMode === 'segment') {
         return sum + (run.segments ?? []).reduce((s: number, seg: Segment) => s + (parseFloat(seg.length) || 0), 0) * run.qty
       }
@@ -1171,7 +819,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                       <VariantSelector sys={sys} run={run} onUpdate={patch => calc.updateRun(run.id, patch)} />
                     )}
 
-                    {(sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && (
+                    {sys.inputModel === 'linear' && (
                       <div className="flex gap-0 rounded-lg overflow-hidden border border-secondary-200">
                         {([['simple', '📐 Simple'], ['segment', '🗺 Segments']] as const).map(([mode, label], i) => (
                           <button key={mode} onClick={() => calc.updateRun(run.id, { inputMode: mode })}
@@ -1213,7 +861,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                       </div>
                     )}
 
-                    {!['linear_run','linear','area'].includes(sys.inputModel) && (
+                    {!['linear','area'].includes(sys.inputModel) && (
                       <div className="grid grid-cols-2 gap-2">
                         {(DIMS_FOR_INPUT_MODEL[sys.inputModel] ?? PRIMITIVE_DIMS.map(p => p.key)).filter(key => {
                           // Always show dims defined by the input model
@@ -1294,7 +942,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                       </div>
                     )}
 
-                    {(sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple' && (
+                    {sys.inputModel === 'linear' && run.inputMode === 'simple' && (
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{getDimLabel('length', sys.dimOverrides)}</div>
@@ -1359,7 +1007,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                       </div>
                     )}
 
-                    {(sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'segment' && (
+                    {sys.inputModel === 'linear' && run.inputMode === 'segment' && (
                       <>
                         <SegmentEditor
                           segments={run.segments ?? []}

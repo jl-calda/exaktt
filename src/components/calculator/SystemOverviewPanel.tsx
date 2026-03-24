@@ -4,7 +4,6 @@
 import { useState } from 'react'
 import type { MtoSystem } from '@/types'
 import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, INPUT_MODELS, getDimLabel, getDimUnit } from '@/lib/engine/constants'
-import { normalizeInputModel } from '@/types'
 import { ChevronDown, ChevronUp, GitBranch } from 'lucide-react'
 
 interface Props { sys: MtoSystem; onViewGraph?: () => void }
@@ -66,7 +65,7 @@ function getCalculatorInputs(sys: MtoSystem): string[] {
   const mats = sys.materials ?? []
 
   const dimKeys = DIMS_FOR_INPUT_MODEL[sys.inputModel]
-  if (dimKeys) return dimKeys
+  if (dimKeys) return [...dimKeys]
 
   // fallback: only dims that are actively referenced
   const ALL = PRIMITIVE_DIMS.map(d => d.key)
@@ -129,7 +128,7 @@ export default function SystemOverviewPanel({ sys, onViewGraph }: Props) {
           </div>
           <span className="badge text-[10px] font-bold"
             style={{ background: sys.color + '18', color: sys.color }}>
-            {INPUT_MODELS.find(m => m.value === normalizeInputModel(sys.inputModel))?.label ?? sys.inputModel}
+            {INPUT_MODELS.find(m => m.value === sys.inputModel)?.label ?? sys.inputModel}
           </span>
         </div>
 

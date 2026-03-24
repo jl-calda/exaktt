@@ -1,11 +1,10 @@
 // src/components/calculator/SetupTab.tsx
 'use client'
 import { useState, useEffect } from 'react'
-import type { MtoSystem, GlobalTag, Material } from '@/types'
-import { nanoid } from 'nanoid'
+import type { MtoSystem, GlobalTag } from '@/types'
 import { BookOpen } from 'lucide-react'
+import { useMaterialMutations } from '@/lib/hooks/useMaterialMutations'
 import { PRIMITIVE_DIMS, INPUT_MODELS, DIMS_FOR_INPUT_MODEL, LINEAR_UNITS, UNIT_SELECTABLE_DIMS } from '@/lib/engine/constants'
-import { normalizeInputModel } from '@/types'
 import { Button }          from '@/components/ui/Button'
 import { ColorPicker }     from '@/components/ui/ColorPicker'
 import { IconPicker }      from '@/components/ui/IconPicker'
@@ -63,47 +62,8 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
     fetch('/api/mto/library').then(r => r.json()).then(({ data }) => { if (data) setLibrary(data) })
   }, [])
 
-  const saveMat = (updated: Material) =>
-    onUpdate({ materials: sys.materials.map(m => m.id === updated.id ? { ...updated, _updatedAt: Date.now() } : m) })
-
-  const deleteMat = (id: string) => {
-    if (!confirm('Delete this material?')) return
-    onUpdate({ materials: sys.materials.filter(m => m.id !== id) })
-  }
-
-  const addMat = (mat: Material) =>
-    onUpdate({ materials: [...sys.materials, mat] })
-
-  const makeUnique = (id: string) =>
-    onUpdate({ materials: sys.materials.map(m =>
-      m.id === id ? { ...m, libraryRef: null, _madeUniqueAt: Date.now(), _systemSpecific: true } : m
-    )})
-
-  const syncFromLib = (id: string) => {
-    const mat     = sys.materials.find(m => m.id === id)
-    const libItem = mat?.libraryRef ? library.find((l: any) => l.id === mat.libraryRef) : null
-    if (!libItem) return
-    onUpdate({ materials: sys.materials.map(m =>
-      m.id === id
-        ? { ...m, name: libItem.name, unit: libItem.unit, productCode: libItem.productCode ?? m.productCode, properties: libItem.properties ?? m.properties, _libSyncedAt: Date.now() }
-        : m
-    )})
-  }
-
-  const addFromLib = (libItem: any) => {
-    const newMat: Material = {
-      id: nanoid(), name: libItem.name, unit: libItem.unit,
-      notes: libItem.notes ?? '', photo: libItem.photo ?? null,
-      productCode: libItem.productCode ?? '', category: libItem.category ?? 'other',
-      properties: libItem.properties ?? {}, tags: libItem.tags ?? [],
-      spec: libItem.spec ?? null, customDimKey: null, ruleSet: [],
-      criteriaKeys: [], variantTags: {}, libraryRef: libItem.id,
-      _libSyncedAt: Date.now(), _createdAt: Date.now(), _updatedAt: Date.now(),
-      substrate: 'all', _systemSpecific: false, _createdInSystem: null,
-      _wasLibrary: null, _madeUniqueAt: null,
-    }
-    onUpdate({ materials: [...sys.materials, newMat] })
-  }
+  const { saveMat, deleteMat, addMat, makeUnique, syncFromLib, addFromLib } =
+    useMaterialMutations({ sys, library, onUpdate })
 
   return (
     <div className="flex flex-col gap-6 items-start relative">
@@ -168,11 +128,10 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
           <div className="flex gap-3 flex-wrap">
             {/* Built-in model cards */}
             {INPUT_MODELS.map(opt => {
-              const normalized = normalizeInputModel(sys.inputModel)
               return (
                 <button key={opt.value} type="button" onClick={() => onUpdate({ inputModel: opt.value as any })}
                   className={`flex-1 min-w-36 text-left p-4 border transition-all ${
-                    normalized === opt.value
+                    sys.inputModel === opt.value
                       ? 'border-primary bg-primary/10'
                       : 'border-surface-300 bg-surface-100 hover:border-surface-300 hover:bg-surface-100'
                   }`}
@@ -188,7 +147,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
 
           {/* Primitive dim pills — split into user-entered (editable labels) and auto-counted */}
           {(() => {
-            const dimKeys = DIMS_FOR_INPUT_MODEL[sys.inputModel] ?? DIMS_FOR_INPUT_MODEL[normalizeInputModel(sys.inputModel)] ?? []
+            const dimKeys = DIMS_FOR_INPUT_MODEL[sys.inputModel] ?? []
             const available = PRIMITIVE_DIMS.filter(d => dimKeys.includes(d.key))
             const autoCounted = new Set(['corners', 'end1', 'end2', 'both_ends', 'perimeter'])
             const userEntered = available.filter(d => !autoCounted.has(d.key))

@@ -7,27 +7,15 @@ import type {
 } from '@/types'
 import { solveStockLengths, solveSheetCut } from './solver'
 import { resolveSegments } from './segments'
-import { UNIT_SELECTABLE_DIMS, getUnitFactor } from './constants'
-
-// ─── Primitive dimensions ────────────────────────────────────────────────────
-
-export const PRIMITIVE_DIMS = [
-  { key: 'length',    label: 'Length',       unit: 'm',       icon: '📏', step: '0.1' },
-  { key: 'width',     label: 'Width',        unit: 'm',       icon: '↔️',  step: '0.1' },
-  { key: 'height',    label: 'Height',       unit: 'm',       icon: '↕️',  step: '0.1' },
-  { key: 'perimeter', label: 'Perimeter',    unit: 'm',       icon: '⬜', step: '0.1' },
-  { key: 'corners',   label: 'Corners',      unit: 'corners', icon: '🔲', step: '1'   },
-  { key: 'end1',      label: 'End 1',        unit: 'end',     icon: '🔚', step: '1'   },
-  { key: 'end2',      label: 'End 2',        unit: 'end',     icon: '🔚', step: '1'   },
-  { key: 'both_ends', label: 'Both Ends',    unit: 'ends',    icon: '🔚', step: '1'   },
-  { key: 'workers',   label: 'Workers',      unit: 'workers', icon: '👷', step: '1'   },
-  { key: 'levels',    label: 'Levels/Floors',unit: 'levels',  icon: '🏢', step: '1'   },
-  { key: 'openings',  label: 'Openings',     unit: 'openings',icon: '🚪', step: '1'   },
-  { key: 'custom_a',  label: 'Custom A',     unit: '',        icon: '🔧', step: '1'   },
-  { key: 'custom_b',  label: 'Custom B',     unit: '',        icon: '⚙️',  step: '1'   },
-]
+import { PRIMITIVE_DIMS, UNIT_SELECTABLE_DIMS, getUnitFactor } from './constants'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Safely parse a value that may be string, number, null, or undefined to a number */
+function toNum(v: string | number | undefined | null): number {
+  if (v == null) return 0
+  return typeof v === 'number' ? v : parseFloat(v) || 0
+}
 
 function hasPlateProps(mat: Material): boolean {
   const p = mat.properties ?? {}
@@ -37,31 +25,12 @@ function hasPlateProps(mat: Material): boolean {
 function getPlateDims(mat: Material) {
   const p = mat.properties ?? {}
   return {
-    sheetW:  parseFloat(p.width_mm  as any) || 0,
-    sheetH:  parseFloat(p.length_mm as any) || 0,
-    thk:     parseFloat(p.thk_mm    as any) || 0,
+    sheetW:  toNum(p.width_mm),
+    sheetH:  toNum(p.length_mm),
+    thk:     toNum(p.thk_mm),
     grade:   p.grade    as string ?? '',
     matType: p.material_type as string ?? '',
   }
-}
-
-function migrateMat(mat: any): Material {
-  if (mat.ruleSet) return mat
-  if (!mat.ruleType) return { ...mat, ruleSet: [], customDimKey: mat.customDimKey ?? null, criteriaKeys: mat.criteriaKeys ?? [], variantTags: mat.variantTags ?? {} }
-  const row: RuleRow = {
-    id: 'r_' + Math.random().toString(36).slice(2, 7),
-    condition:    null,
-    ruleType:     mat.ruleType,
-    ruleQty:      mat.ruleQty      ?? 1,
-    ruleDivisor:  mat.ruleDivisor  ?? 1,
-    ruleDimKey:   mat.ruleDimKey   ?? '',
-    ruleTileW:    mat.ruleTileW    ?? 600,
-    ruleTileH:    mat.ruleTileH    ?? 600,
-    waste:        mat.waste        ?? 0,
-    ruleStockDimKey: '',
-    ruleStockLength: 0,
-  }
-  return { ...mat, ruleSet: [row], criteriaKeys: mat.criteriaKeys ?? [], variantTags: mat.variantTags ?? {} }
 }
 
 function matHasRule(mat: Material): boolean {
@@ -130,7 +99,7 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
 
   // Build prim values and normalize linear dims to meters
   const prim: Record<string, number> = {}
-  PRIMITIVE_DIMS.forEach(d => { prim[d.key] = parseFloat(jobDims[d.key] as any) || 0 })
+  PRIMITIVE_DIMS.forEach(d => { prim[d.key] = toNum(jobDims[d.key]) })
   if (sys.dimOverrides) {
     for (const [key, ov] of Object.entries(sys.dimOverrides)) {
       if (UNIT_SELECTABLE_DIMS.has(key) && ov.unit && prim[key] !== 0) {
@@ -147,7 +116,7 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
 
     switch (s.derivType) {
       case 'user_input':
-        customVals[cd.key] = parseFloat(jobDims[cd.key] as any) || 0
+        customVals[cd.key] = toNum(jobDims[cd.key])
         break
       case 'spacing': {
         const spacingInputKey = '__spacing_' + cd.key
@@ -155,11 +124,11 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
         const spacingUnit = sys.dimOverrides?.[spacingDimKey]?.unit
         const spacingFactor = spacingUnit ? getUnitFactor(spacingUnit) : 1
         const userSpacing = s.spacingMode === 'user'
-          ? parseFloat(jobDims[spacingInputKey] as any) || parseFloat(s.spacing as any) || 1
+          ? toNum(jobDims[spacingInputKey]) || toNum(s.spacing) || 1
           : null
-        const actualSp = (userSpacing ?? parseFloat(s.spacing as any) ?? 1) * spacingFactor
+        const actualSp = (userSpacing ?? (toNum(s.spacing) || 1)) * spacingFactor
         const L = prim[spacingDimKey] ?? customVals[spacingDimKey] ?? prim.length
-        const firstGapVal = parseFloat(s.firstGap as any) ?? 300
+        const firstGapVal = toNum(s.firstGap) || 300
         const firstGapMeters = firstGapVal * spacingFactor
         let count = 0
         if (L > 0) {
@@ -182,7 +151,7 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
         customVals[cd.key] = prim.length * prim.width
         break
       case 'formula':
-        customVals[cd.key] = (parseFloat(s.formulaQty as any) || 1) * (prim[s.formulaDimKey ?? 'length'] ?? customVals[s.formulaDimKey ?? 'length'] ?? 0)
+        customVals[cd.key] = (toNum(s.formulaQty) || 1) * (prim[s.formulaDimKey ?? 'length'] ?? customVals[s.formulaDimKey ?? 'length'] ?? 0)
         break
       case 'stock_length': {
         const stockDimKey = s.stockTargetDim ?? 'length'
@@ -198,7 +167,7 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
         break
       }
       case 'sheet_cut': {
-        const partsNeeded = parseFloat(jobDims[s.sheetPartsNeededDim ?? 'custom_a'] as any) || customVals[s.sheetPartsNeededDim ?? 'custom_a'] || 0
+        const partsNeeded = toNum(jobDims[s.sheetPartsNeededDim ?? 'custom_a']) || customVals[s.sheetPartsNeededDim ?? 'custom_a'] || 0
         let sheetW = (s as any).sheetW ?? 2400
         let sheetH = (s as any).sheetH ?? 1200
         if (s.plateMaterialId) {
@@ -223,7 +192,7 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
     if (cd.allowOverride) {
       const ov = jobDims['__override_' + cd.key]
       if (ov !== undefined && ov !== '') {
-        customVals[cd.key] = parseFloat(ov as any) || 0
+        customVals[cd.key] = toNum(ov)
       }
     }
   })
@@ -233,7 +202,7 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
     if (key in prim) return prim[key]
     if (key in customVals) return customVals[key]
     const jv = jobDims[key]
-    if (jv !== undefined) return parseFloat(jv as any) || 0
+    if (jv !== undefined) return toNum(jv)
     return 0
   }
 
@@ -259,7 +228,6 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
 
   const active = materials
     .filter(m => m.substrate === 'all' || substrate === 'all' || m.substrate === substrate)
-    .map(migrateMat)
     .filter(m => !bracketMatIds.has(m.id) && (matHasRule(m) || plateMaterialIds.has(m.id)))
 
   const matResults = active.map(mat => {
@@ -298,7 +266,7 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
     for (const cr of (customCriteria ?? [])) {
       if (cr.type !== 'derived') continue
       const dv = getDimVal(cr.dimKey)  // already in meters (normalized)
-      const threshold = parseFloat(cr.threshold as any)
+      const threshold = toNum(cr.threshold)
       const crUnit = sys.dimOverrides?.[cr.dimKey]?.unit
       const crFactor = crUnit ? getUnitFactor(crUnit) : 1
       const thresholdMeters = threshold * crFactor
@@ -327,8 +295,8 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
 
     // Calculate qty
     let raw = 0
-    const qty_  = parseFloat(activeRow.ruleQty as any) || 0
-    const div   = parseFloat(activeRow.ruleDivisor as any) || 1
+    const qty_  = toNum(activeRow.ruleQty)
+    const div   = toNum(activeRow.ruleDivisor) || 1
     const dimV  = getDimVal(activeRow.ruleDimKey)
 
     switch (activeRow.ruleType) {
@@ -346,7 +314,7 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
       case 'fixed_qty':         raw = qty_; break
       case 'stock_length_qty': {
         const solverResult = jobDims['__solver_' + activeRow.ruleStockDimKey] as any
-        const item = solverResult?.items?.find((i: any) => i.length === parseFloat(activeRow.ruleStockLength as any))
+        const item = solverResult?.items?.find((i: any) => i.length === toNum(activeRow.ruleStockLength))
         raw = item?.qty ?? 0
         break
       }
@@ -377,9 +345,9 @@ export function computeMultiRun(
     const variantState  = run.variantState  ?? {}
     const jobDims: Record<string, number | string> = { ...(run.job ?? {}) }
 
-    if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear')) {
+    if (sys.inputModel === 'linear') {
       if (run.inputMode === 'simple') {
-        jobDims.length    = parseFloat(run.simpleJob?.length as any) || 0
+        jobDims.length    = toNum(run.simpleJob?.length)
         jobDims.corners   = 0
         const isLoop      = !!criteriaState['loop']
         jobDims.end1      = isLoop ? 0 : 1

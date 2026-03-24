@@ -211,7 +211,7 @@ model MtoSystem {
   description String?
   icon        String   @default("📦")
   color       String   @default("#7917de")
-  inputModel  String   @default("simple_dims")
+  inputModel  String   @default("linear")
   isArchived  Boolean  @default(false)
 
   // All nested config stored as JSON

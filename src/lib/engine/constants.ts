@@ -64,13 +64,10 @@ export function getDimUnit(key: string, dimOverrides?: Record<string, DimOverrid
   return PRIMITIVE_DIMS.find(d => d.key === key)?.unit ?? ''
 }
 
-/** Map every inputModel value (incl. legacy) to its available primitive dim keys */
-export const DIMS_FOR_INPUT_MODEL: Record<string, string[]> = Object.fromEntries([
-  ...INPUT_MODELS.map(m => [m.value, m.dims]),
-  // legacy aliases
-  ['linear_run',  INPUT_MODELS[0].dims],
-  ['simple_dims', PRIMITIVE_DIMS.filter(d => !['end1','end2','both_ends'].includes(d.key)).map(d => d.key)],
-])
+/** Map every inputModel value to its available primitive dim keys */
+export const DIMS_FOR_INPUT_MODEL: Record<string, readonly string[]> = Object.fromEntries(
+  INPUT_MODELS.map(m => [m.value, m.dims])
+)
 
 export const LIBRARY_CATEGORIES = [
   { id: 'plates',      label: 'Plates & Sections', icon: '⬛' },
