@@ -375,11 +375,9 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
               options={DERIV_TYPES.filter(t => {
                 if (t.value === 'user_input') return false
                 const modelDims = new Set(DIMS_FOR_INPUT_MODEL[sys?.inputModel ?? 'linear'] ?? [])
-                // area needs length+width; sheet_cut needs area dims; spacing/stock need length
+                // area needs length+width; spacing needs length
                 if (t.value === 'area' && (!modelDims.has('length') || !modelDims.has('width'))) return false
-                if (t.value === 'sheet_cut' && (!modelDims.has('length') || !modelDims.has('width'))) return false
                 if (t.value === 'spacing' && !modelDims.has('length')) return false
-                if (t.value === 'stock_length' && !modelDims.has('length')) return false
                 return true
               }).map(t => ({ value: t.value, label: t.icon + ' ' + t.label }))}
               className="w-52" />
