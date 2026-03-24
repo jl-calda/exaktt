@@ -7,7 +7,7 @@ import { ColorPicker } from '@/components/ui/ColorPicker'
 import { IconPicker }  from '@/components/ui/IconPicker'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
-import { Input, NumberInput } from '@/components/ui/Input'
+import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import type { WorkBracket, BracketParameter, BracketBOMItem, BracketFabActivity, Material } from '@/types'
 import { evaluateFormula } from '@/lib/engine/work'
@@ -226,7 +226,7 @@ function BracketForm({
                     options={[{ value: 'input', label: 'Input' }, { value: 'stock_length', label: 'Stock length' }]} className="w-32" />
                   <Button size="xs" variant="danger" onClick={() => removeParam(i)} icon={<Trash2 className="w-3 h-3" />} className="mb-1" />
                 </div>
-                {isStockLen ? (
+                {isStockLen && (
                   <div className="flex flex-wrap gap-2 items-end pl-3 border-l-2 border-primary/30">
                     <div className="flex flex-col gap-1 min-w-48">
                       <span className="label mb-0">Material (stock length source)</span>
@@ -252,10 +252,6 @@ function BracketForm({
                         No stock length set on this material
                       </div>
                     )}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2 items-end pl-3 border-l-2 border-surface-300">
-                    <NumberInput label="Default" value={p.default} step="any" onChange={e => updateParam(i, { ...p, default: parseFloat(e.target.value) || 0 })} className="w-24" />
                   </div>
                 )}
               </div>
