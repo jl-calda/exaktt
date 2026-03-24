@@ -202,7 +202,6 @@ function buildGraph(sys: MtoSystem) {
       if (ps.has(r.ruleDimKey))     edge('prim_' + r.ruleDimKey, 'mat_' + m.id, 'prim')
       if (cdKeys.has(r.ruleDimKey)) edge('cd_' + r.ruleDimKey,   'mat_' + m.id, 'custom')
     }
-    if (m.customDimKey && cdKeys.has(m.customDimKey)) edge('cd_' + m.customDimKey, 'mat_' + m.id, 'custom')
   }
   // Criteria/Variant → Material
   for (const m of mats) {
