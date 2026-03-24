@@ -145,7 +145,6 @@ function CriteriaOverridesSection({ d, set, criteria }: {
   if (inputCriteria.length === 0) return null
 
   const OVERRIDABLE_PARAMS = [
-    { value: 'derivType',          label: 'Derivation type' },
     { value: 'spacing',            label: 'Spacing value' },
     { value: 'formulaQty',         label: 'Multiplier' },
     { value: 'formulaDimKey',      label: 'Formula dim' },
