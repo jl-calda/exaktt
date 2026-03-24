@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import type { Material, CustomDim, CustomCriterion, Variant, GlobalTag, RuleRow, InputModel } from '@/types'
 import { PRIMITIVE_DIMS, RULE_TYPES, RULE_GROUPS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
-import { Trash2, Edit3, Check, X, ChevronUp, ChevronDown, Plus, AlertTriangle, ArrowRight, GitBranch, RefreshCw } from 'lucide-react'
+import { Trash2, Edit3, Check, X, ChevronUp, ChevronDown, Plus, AlertTriangle, GitBranch, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { NumberInput } from '@/components/ui/Input'
@@ -179,11 +179,10 @@ const RULE_IMPLICIT_DIMS: Record<string, string[]> = {
   stock_length_qty:  [],           // via ruleStockDimKey (custom dim)
 }
 
-function DependencyChain({ mat, ruleSet, criteriaKeys, customDimKey, customDims, customCriteria, variants, variantTags }: {
+function DependencyChain({ mat, ruleSet, criteriaKeys, customDims, customCriteria, variants, variantTags }: {
   mat: Material
   ruleSet: RuleRow[]
   criteriaKeys: string[]
-  customDimKey: string | null
   customDims: CustomDim[]
   customCriteria: CustomCriterion[]
   variants: Variant[]
@@ -209,7 +208,6 @@ function DependencyChain({ mat, ruleSet, criteriaKeys, customDimKey, customDims,
   }
 
   const hasRules     = ruleSet.some(r => r.ruleType)
-  const producedDim  = customDimKey ? customDims.find(cd => cd.key === customDimKey) : null
   const hasGates     = criteriaKeys.length > 0
   const hasConditions = conditionCriteriaKeys.size > 0
   const hasVariants  = Object.values(variantTags).some(Boolean)
@@ -337,12 +335,6 @@ function DependencyChain({ mat, ruleSet, criteriaKeys, customDimKey, customDims,
             <div className="font-semibold text-ink text-[11px]">{mat.name}</div>
             <div className="text-[10px] text-ink-faint">{mat.unit}</div>
           </div>
-          {producedDim && (
-            <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-primary font-semibold">
-              <ArrowRight className="w-3 h-3" />
-              feeds <span className="font-bold">{producedDim.icon ?? '🔗'} {producedDim.name}</span>
-            </div>
-          )}
         </div>
       )}
     </div>
@@ -350,14 +342,12 @@ function DependencyChain({ mat, ruleSet, criteriaKeys, customDimKey, customDims,
 }
 
 // ─── InlineRuleEditor ─────────────────────────────────────────────────────────
-export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCriteria, variants, hideDimOutput = false, embedded = false, inputModel = 'linear' }: {
+export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCriteria, variants, embedded = false, inputModel = 'linear' }: {
   mat: Material; onSave: (m: Material) => void; onClose: () => void
   customDims: CustomDim[]; customCriteria: CustomCriterion[]; variants: Variant[]
-  hideDimOutput?: boolean
   embedded?: boolean   // when true: auto-saves on every change, hides header/footer buttons
   inputModel?: InputModel
 }) {
-  const [customDimKey, setCustomDimKey] = useState(mat.customDimKey ?? null)
   const [ruleSet, setRuleSet]           = useState<RuleRow[]>(mat.ruleSet ?? [])
   const [criteriaKeys, setCriteriaKeys] = useState<string[]>(mat.criteriaKeys ?? [])
   const [variantTags, setVariantTags]   = useState<Record<string, string>>(mat.variantTags ?? {})
@@ -369,7 +359,7 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
   useEffect(() => {
     if (!embedded) return
     if (isFirstRender.current) { isFirstRender.current = false; return }
-    onSave({ ...mat, customDimKey, ruleSet, criteriaKeys, variantTags })
+    onSave({ ...mat, ruleSet, criteriaKeys, variantTags })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ruleSet, criteriaKeys, variantTags, embedded])
 
@@ -388,8 +378,8 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
   const moveUp    = (id: string) => setRuleSet(rs => { const i = rs.findIndex(r => r.id === id); if (i <= 0) return rs; const n = [...rs]; [n[i-1], n[i]] = [n[i], n[i-1]]; return n })
   const moveDown  = (id: string) => setRuleSet(rs => { const i = rs.findIndex(r => r.id === id); if (i >= rs.length-1) return rs; const n = [...rs]; [n[i], n[i+1]] = [n[i+1], n[i]]; return n })
 
-  const save = () => onSave({ ...mat, customDimKey, ruleSet, criteriaKeys, variantTags })
-  const clear = () => onSave({ ...mat, customDimKey: null, ruleSet: [], criteriaKeys: [], variantTags: {} })
+  const save = () => onSave({ ...mat, ruleSet, criteriaKeys, variantTags })
+  const clear = () => onSave({ ...mat, ruleSet: [], criteriaKeys: [], variantTags: {} })
 
   // Flat list of all variant leaves for tag dropdowns
   const getLeaves = (nodes: any[], path: string[] = []): { key: string; label: string }[] =>
@@ -412,21 +402,6 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
 
       <div>
         <div className="flex-1 min-w-0 space-y-5">
-
-          {/* Produces dim */}
-          {!hideDimOutput && (
-          <div>
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="label mb-0">Produces Dim</span>
-              <span className="text-[10px] text-ink-faint">(feeds a custom dim as a source quantity)</span>
-            </div>
-            <select value={customDimKey ?? ''} onChange={e => setCustomDimKey(e.target.value || null)}
-              className="input text-sm">
-              <option value="">— none —</option>
-              {customDims.map(cd => <option key={cd.key} value={cd.key}>{cd.icon ?? '🔗'} {cd.name}</option>)}
-            </select>
-          </div>
-          )}
 
           {/* Rule rows */}
           <div className="space-y-3">
@@ -642,7 +617,6 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
             mat={mat}
             ruleSet={ruleSet}
             criteriaKeys={criteriaKeys}
-            customDimKey={customDimKey}
             customDims={customDims}
             customCriteria={customCriteria}
             variants={variants}

@@ -229,7 +229,6 @@ function BracketForm({
             _createdAt: null, _updatedAt: null, _wasLibrary: null, _madeUniqueAt: null,
           } as Material}
           embedded
-          hideDimOutput
           customDims={customDims}
           customCriteria={customCriteria}
           variants={variants}
