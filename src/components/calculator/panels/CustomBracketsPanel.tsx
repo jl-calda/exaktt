@@ -1,6 +1,6 @@
 // src/components/calculator/panels/CustomBracketsPanel.tsx
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { nanoid } from 'nanoid'
 import { Plus, Trash2, Edit3, Check, X, ChevronDown, ChevronUp } from 'lucide-react'
 import { ColorPicker } from '@/components/ui/ColorPicker'
@@ -34,6 +34,126 @@ const BLANK_BRACKET: Omit<WorkBracket, 'id'> = {
 
 const QTY_UNITS = ['pcs', 'mm', 'm', 'kg', 'L', 'each']
 const TIME_UNITS: ('min' | 'hr')[] = ['min', 'hr']
+
+/* ── Formula input with parameter key autocomplete ── */
+function FormulaInput({
+  label, value, onChange, placeholder, params,
+}: {
+  label: string
+  value: string
+  onChange: (val: string) => void
+  placeholder?: string
+  params: BracketParameter[]
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [open, setOpen] = useState(false)
+  const [selIdx, setSelIdx] = useState(0)
+
+  // Extract the "word" fragment at the cursor (letters/digits/underscores after an operator or start)
+  const getFragment = useCallback(() => {
+    const el = inputRef.current
+    if (!el) return { fragment: '', start: 0, end: 0 }
+    const pos = el.selectionStart ?? value.length
+    // walk backwards from cursor to find start of current token
+    let start = pos
+    while (start > 0 && /[\w]/.test(value[start - 1])) start--
+    const fragment = value.slice(start, pos)
+    return { fragment, start, end: pos }
+  }, [value])
+
+  const getMatches = useCallback(() => {
+    const { fragment } = getFragment()
+    if (!fragment || /^\d+$/.test(fragment)) return [] // don't suggest for pure numbers
+    return params.filter(p => p.key.toLowerCase().includes(fragment.toLowerCase()))
+  }, [getFragment, params])
+
+  const insertKey = useCallback((key: string) => {
+    const { start, end } = getFragment()
+    const before = value.slice(0, start)
+    const after = value.slice(end)
+    const newVal = before + key + after
+    onChange(newVal)
+    setOpen(false)
+    // restore cursor after the inserted key
+    requestAnimationFrame(() => {
+      const el = inputRef.current
+      if (el) {
+        const cursor = start + key.length
+        el.setSelectionRange(cursor, cursor)
+        el.focus()
+      }
+    })
+  }, [getFragment, value, onChange])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const matches = getMatches()
+    if (!open || matches.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelIdx(i => (i + 1) % matches.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelIdx(i => (i - 1 + matches.length) % matches.length)
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault()
+      insertKey(matches[selIdx].key)
+    } else if (e.key === 'Escape') {
+      setOpen(false)
+    }
+  }
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value)
+    setSelIdx(0)
+    // open dropdown if there's a non-numeric fragment
+    requestAnimationFrame(() => {
+      const matches = params.filter(p => {
+        const el = inputRef.current
+        if (!el) return false
+        const pos = el.selectionStart ?? e.target.value.length
+        let s = pos
+        while (s > 0 && /[\w]/.test(e.target.value[s - 1])) s--
+        const frag = e.target.value.slice(s, pos)
+        return frag && !/^\d+$/.test(frag) && p.key.toLowerCase().includes(frag.toLowerCase())
+      })
+      setOpen(matches.length > 0)
+    })
+  }
+
+  const matches = getMatches()
+
+  return (
+    <div className="relative flex flex-col gap-1">
+      <label className="label">{label}</label>
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={handleInput}
+        onKeyDown={handleKeyDown}
+        onFocus={() => { const m = getMatches(); setOpen(m.length > 0) }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={placeholder}
+        className="input"
+      />
+      {open && matches.length > 0 && (
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface border border-surface-200 rounded shadow-lg max-h-32 overflow-y-auto">
+          {matches.map((p, i) => (
+            <button
+              key={p.key}
+              type="button"
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-surface-100 ${i === selIdx ? 'bg-surface-100' : ''}`}
+              onMouseDown={e => { e.preventDefault(); insertKey(p.key) }}
+            >
+              <span className="font-mono font-medium text-primary">{p.key}</span>
+              <span className="text-ink-faint ml-2">{p.label}{p.unit ? ` (${p.unit})` : ''}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function BOMItemRow({
   item, params, materials, libraryItems = [], onChange, onRemove, onAddFromLib,
@@ -107,8 +227,8 @@ function BOMItemRow({
         }
       </div>
       <div className="flex-1 min-w-32">
-        <Input label="Qty formula" value={item.qtyFormula} onChange={e => onChange({ ...item, qtyFormula: e.target.value })}
-          placeholder="e.g. 2 or projection_mm + 50" />
+        <FormulaInput label="Qty formula" value={item.qtyFormula} onChange={val => onChange({ ...item, qtyFormula: val })}
+          placeholder="e.g. 2 or projection_mm + 50" params={params} />
         {params.length > 0 && <div className="text-[10px] text-ink-faint mt-0.5">= {resolvedQty} (at defaults)</div>}
       </div>
       <Select label="Unit" value={item.qtyUnit} onChange={e => onChange({ ...item, qtyUnit: e.target.value })}
@@ -134,8 +254,8 @@ function FabActivityRow({
       <Input label="Activity name" value={item.name} onChange={e => onChange({ ...item, name: e.target.value })}
         placeholder="e.g. Cut angle iron" className="flex-1 min-w-40" />
       <div className="flex-1 min-w-32">
-        <Input label="Time formula" value={item.timeFormula} onChange={e => onChange({ ...item, timeFormula: e.target.value })}
-          placeholder="e.g. 5 or 3 + projection_mm / 100" />
+        <FormulaInput label="Time formula" value={item.timeFormula} onChange={val => onChange({ ...item, timeFormula: val })}
+          placeholder="e.g. 5 or 3 + projection_mm / 100" params={params} />
         {params.length > 0 && <div className="text-[10px] text-ink-faint mt-0.5">= {resolvedTime.toFixed(1)} (at defaults)</div>}
       </div>
       <Select label="Unit" value={item.timeUnit} onChange={e => onChange({ ...item, timeUnit: e.target.value as 'min' | 'hr' })}
