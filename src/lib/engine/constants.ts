@@ -32,6 +32,12 @@ export const INPUT_MODELS = [
   { value: 'time',    label: 'Time',       icon: '⏱️',  desc: 'Duration-based',                  dims: ['duration'] },
 ] as const
 
+/** Resolve a primitive dim label — uses system override if set, otherwise the default from PRIMITIVE_DIMS */
+export function getDimLabel(key: string, dimLabels?: Record<string, string>): string {
+  if (dimLabels?.[key]) return dimLabels[key]
+  return PRIMITIVE_DIMS.find(d => d.key === key)?.label ?? key
+}
+
 /** Map every inputModel value (incl. legacy) to its available primitive dim keys */
 export const DIMS_FOR_INPUT_MODEL: Record<string, string[]> = Object.fromEntries([
   ...INPUT_MODELS.map(m => [m.value, m.dims]),

@@ -11,7 +11,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
 import { computeWorkSchedule, computeBracketQtys, computeBracketBOM } from '@/lib/engine/work'
-import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, getDimLabel } from '@/lib/engine/constants'
 import { normalizeInputModel } from '@/types'
 import SystemOverviewPanel from './SystemOverviewPanel'
 
@@ -1189,9 +1189,9 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
                     {sys.inputModel === 'area' && (
                       <div className="grid grid-cols-2 gap-2">
-                        {[{ key: 'length', label: 'Length', unit: 'm' }, { key: 'width', label: 'Width', unit: 'm' }].map(f => (
+                        {[{ key: 'length', unit: 'm' }, { key: 'width', unit: 'm' }].map(f => (
                           <div key={f.key}>
-                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{f.label}</div>
+                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{getDimLabel(f.key, sys.dimLabels)}</div>
                             <div className="relative">
                               <input type="number" value={(run.job as any)[f.key] ?? ''} min={0} step="0.1" placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [f.key]: e.target.value } })}
@@ -1234,7 +1234,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                           const dimDef = PRIMITIVE_DIMS.find(p => p.key === key)
                           return (
                           <div key={key}>
-                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{dimDef?.icon} {dimDef?.label ?? key}</div>
+                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{dimDef?.icon} {getDimLabel(key, sys.dimLabels)}</div>
                             <div className="relative">
                               <input type="number" value={(run.job as any)[key] ?? ''} min={0} step="0.1" placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [key]: e.target.value } })}
@@ -1302,7 +1302,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                     {(sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple' && (
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">Length</div>
+                          <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{getDimLabel('length', sys.dimLabels)}</div>
                           <div className="relative">
                             <input type="number" value={run.simpleJob?.length ?? ''} min={0} step="0.1" placeholder="0"
                               onChange={e => calc.updateRun(run.id, { simpleJob: { ...run.simpleJob, length: e.target.value } as any })}

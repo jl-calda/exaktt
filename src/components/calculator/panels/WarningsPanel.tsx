@@ -2,7 +2,7 @@
 'use client'
 import { useState } from 'react'
 import type { Warning, CustomDim } from '@/types'
-import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, getDimLabel } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
 import { Plus, Trash2, Edit3, Check, X, AlertTriangle, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -16,6 +16,7 @@ interface Props {
   customDims: CustomDim[]
   onChange:   (warnings: Warning[]) => void
   inputModel?: string
+  dimLabels?:  Record<string, string>
 }
 
 const OPS   = [{ value: '>', label: '>' }, { value: '>=', label: '≥' }, { value: '<', label: '<' }, { value: '<=', label: '≤' }]
@@ -105,7 +106,7 @@ function WarnForm({ dimOptions, d, onField, onSubmit, onCancel, submitLabel }: W
   )
 }
 
-export default function WarningsPanel({ warnings, customDims, onChange, inputModel }: Props) {
+export default function WarningsPanel({ warnings, customDims, onChange, inputModel, dimLabels }: Props) {
   const [adding,    setAdding]    = useState(false)
   const [draft,     setDraft]     = useState({ ...BLANK })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -118,7 +119,7 @@ export default function WarningsPanel({ warnings, customDims, onChange, inputMod
   const filteredPrims = PRIMITIVE_DIMS.filter(p => allowedKeys.has(p.key))
 
   const dimOptions = [
-    ...filteredPrims.map(p => ({ value: p.key, label: p.icon + ' ' + p.label, group: 'Primitive' })),
+    ...filteredPrims.map(p => ({ value: p.key, label: p.icon + ' ' + getDimLabel(p.key, dimLabels), group: 'Primitive' })),
     ...customDims.flatMap(cd => {
       const base = { value: cd.key, label: (cd.icon ?? '🔗') + ' ' + cd.name + ' — computed count (' + cd.unit + ')', group: 'Custom Dimensions' }
       if (cd.derivType === 'spacing' && cd.spacingMode === 'user') {
@@ -186,7 +187,7 @@ export default function WarningsPanel({ warnings, customDims, onChange, inputMod
                 <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <div className="font-mono text-xs text-amber-700 font-semibold mb-0.5">
-                    {(dimInfo as any)?.label ?? (dimInfo as any)?.name ?? cdKey}
+                    {PRIMITIVE_DIMS.some(p => p.key === cdKey) ? getDimLabel(cdKey, dimLabels) : (dimInfo as any)?.name ?? cdKey}
                     {isSpacingInput ? ' spacing' : ''} {w.operator} {w.threshold}
                   </div>
                   <div className="text-sm text-ink">{w.message}</div>
