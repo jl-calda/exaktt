@@ -290,6 +290,7 @@ export interface MtoSystem {
   variants:       Variant[]
   warnings:       Warning[]
   customBrackets?: WorkBracket[]
+  setupBrackets?:  SetupBracket[]
   workActivities?: WorkActivity[]
   createdAt?:     Date
   updatedAt?:     Date
@@ -651,6 +652,25 @@ export interface BracketParameter {
   stockMaterialId?: string            // when source='stock_length', which BOM material to read spec from
 }
 
+// Setup-specific parameter configuration (lives on SetupBracket, not the template)
+export interface SetupBracketParam {
+  key:              string
+  source:           'input' | 'stock_length'
+  value:            number
+  min?:             number
+  max?:             number
+  stockMaterialId?: string    // when source='stock_length', which material to read spec from
+}
+
+// Instance of a bracket in Setup — references a WorkBracket template
+export interface SetupBracket {
+  bracketId:    string
+  params:       SetupBracketParam[]
+  ruleSet:      RuleRow[]
+  criteriaKeys: string[]
+  variantTags:  Record<string, string>
+}
+
 export interface BracketBOMItem {
   id:          string
   materialId:  string    // references Material in system; empty string when using customName
@@ -675,14 +695,9 @@ export interface WorkBracket {
   description?:  string
   icon:          string
   color:         string
-  ruleSet:       RuleRow[]                // qty rules — same format as Material
-  criteriaKeys:  string[]                 // global gate: skip if any criterion OFF
-  variantTags:   Record<string, string>   // skip if variant doesn't match
   parameters:    BracketParameter[]       // drive BOM item formulas (parametric dims)
   bom:           BracketBOMItem[]
   fabActivities: BracketFabActivity[]
-  setupEnabled?:   boolean                  // true = included in Setup Step 5
-  paramOverrides?: Record<string, number>   // setup-specific param values (override defaults)
 }
 
 // ─── Work Activities ──────────────────────────────────────────────────────────

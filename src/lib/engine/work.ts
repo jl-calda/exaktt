@@ -2,7 +2,7 @@
 // Engine functions for work activities, bracket BOMs, and cut lists
 
 import type {
-  WorkActivity, WorkBracket, WorkScheduleResult, WorkScheduleSummary,
+  WorkActivity, WorkBracket, SetupBracket, WorkScheduleResult, WorkScheduleSummary,
   MultiRunMaterial, CutListResult, CutListBar, CutItem, OffcutItem,
   BracketBOMItem, Material, MtoSystem, RuleRow,
 } from '@/types'
@@ -105,49 +105,79 @@ export function evaluateFormula(formula: string, params: Record<string, number> 
   }
 }
 
-// ─── migrateBracket ───────────────────────────────────────────────────────────
+// ─── migrateSetupBrackets ─────────────────────────────────────────────────────
+// Backward compat: if system has legacy ruleSet/criteriaKeys/variantTags on
+// WorkBracket but no setupBrackets array, create SetupBrackets from them.
 
-export function migrateBracket(b: any): WorkBracket {
-  // Backward compat: existing brackets default to setupEnabled: true
-  if (b.setupEnabled === undefined) b.setupEnabled = true
-  if (!b.paramOverrides) b.paramOverrides = {}
-  if (b.ruleSet) return b as WorkBracket
-  // Legacy bracket with qtyFormula — convert to a fixed_qty rule row
-  const row: RuleRow = {
-    id:              'r_' + Math.random().toString(36).slice(2, 7),
-    condition:       null,
-    ruleType:        b.qtyFormula ? 'ratio' : 'fixed_qty',
-    ruleQty:         1,
-    ruleDivisor:     1,
-    ruleDimKey:      '',
-    ruleTileW:       600,
-    ruleTileH:       600,
-    waste:           0,
-    ruleStockDimKey: '',
-    ruleStockLength: 0,
+export function migrateSetupBrackets(sys: MtoSystem): SetupBracket[] {
+  if (sys.setupBrackets?.length) return sys.setupBrackets
+  // Build from legacy WorkBracket fields (ruleSet etc. may still be on the object)
+  const brackets = sys.customBrackets ?? []
+  const result: SetupBracket[] = []
+  for (const raw of brackets) {
+    const b = raw as any
+    // Only migrate brackets that had rules or were setupEnabled
+    const hadRules = (b.ruleSet ?? []).length > 0
+    const wasEnabled = b.setupEnabled !== false
+    if (!hadRules && !wasEnabled) continue
+    // Build legacy rule row if needed
+    let ruleSet = b.ruleSet ?? []
+    if (!ruleSet.length && b.qtyFormula) {
+      ruleSet = [{
+        id:              'r_' + Math.random().toString(36).slice(2, 7),
+        condition:       null,
+        ruleType:        'ratio',
+        ruleQty:         1,
+        ruleDivisor:     1,
+        ruleDimKey:      '',
+        ruleTileW:       600,
+        ruleTileH:       600,
+        waste:           0,
+        ruleStockDimKey: '',
+        ruleStockLength: 0,
+      }]
+    }
+    // Migrate parameter values from BracketParameter defaults and overrides
+    const paramOverrides = b.paramOverrides ?? {}
+    const params = (b.parameters ?? []).map((p: any) => ({
+      key:             p.key,
+      source:          p.source ?? 'input',
+      value:           paramOverrides[p.key] ?? p.default ?? 0,
+      min:             p.min,
+      max:             p.max,
+      stockMaterialId: p.stockMaterialId,
+    }))
+    result.push({
+      bracketId:    b.id,
+      params,
+      ruleSet,
+      criteriaKeys: b.criteriaKeys ?? [],
+      variantTags:  b.variantTags  ?? {},
+    })
   }
-  return { ...b, ruleSet: [row], criteriaKeys: b.criteriaKeys ?? [], variantTags: b.variantTags ?? {} }
+  return result
 }
 
 // ─── computeBracketQtys ───────────────────────────────────────────────────────
 
 export function computeBracketQtys(
-  brackets:      WorkBracket[],
+  setupBrackets: SetupBracket[],
+  templates:     WorkBracket[],
   dimValues:     Record<string, number>,
   sys?:          MtoSystem,
   criteriaState: Record<string, boolean> = {},
   variantState:  Record<string, string>  = {},
 ): Record<string, number> {
+  const templateMap = new Map(templates.map(t => [t.id, t]))
   const result: Record<string, number> = {}
-  for (const raw of brackets) {
-    const b = migrateBracket(raw)
-    if (!b.ruleSet?.length || !sys) { result[b.id] = 0; continue }
-    // Build a synthetic MtoSystem with just this bracket as a material
+  for (const sb of setupBrackets) {
+    const tmpl = templateMap.get(sb.bracketId)
+    if (!tmpl || !sb.ruleSet?.length || !sys) { result[sb.bracketId] = 0; continue }
     const syntheticMat: any = {
-      id: b.id, name: b.name, unit: 'bracket',
-      ruleSet:      b.ruleSet,
-      criteriaKeys: b.criteriaKeys ?? [],
-      variantTags:  b.variantTags  ?? {},
+      id: sb.bracketId, name: tmpl.name, unit: 'bracket',
+      ruleSet:      sb.ruleSet,
+      criteriaKeys: sb.criteriaKeys ?? [],
+      variantTags:  sb.variantTags  ?? {},
       customDimKey: null,
       notes: '', photo: null, productCode: '', category: '',
       properties: {}, tags: [], substrate: 'all', libraryRef: null,
@@ -160,7 +190,7 @@ export function computeBracketQtys(
       criteriaState,
       variantState,
     })
-    result[b.id] = results[0]?.qty ?? 0
+    result[sb.bracketId] = results[0]?.qty ?? 0
   }
   return result
 }
@@ -168,22 +198,27 @@ export function computeBracketQtys(
 // ─── computeWorkSchedule ──────────────────────────────────────────────────────
 
 export function computeWorkSchedule(
-  activities:    WorkActivity[],
-  materials:     MultiRunMaterial[],
-  dimValues:     Record<string, number>,
-  criteriaState: Record<string, boolean>,
-  runCount:      number,
-  showCost:      boolean,
-  brackets:      WorkBracket[] = [],
-  bracketQtys:   Record<string, number> = {},
-  dimOverrides?: Record<string, { label?: string; unit?: string }>,
+  activities:      WorkActivity[],
+  materials:       MultiRunMaterial[],
+  dimValues:       Record<string, number>,
+  criteriaState:   Record<string, boolean>,
+  runCount:        number,
+  showCost:        boolean,
+  brackets:        WorkBracket[] = [],
+  bracketQtys:     Record<string, number> = {},
+  dimOverrides?:   Record<string, { label?: string; unit?: string }>,
+  setupBrackets:   SetupBracket[] = [],
+  sysMaterials:    Material[] = [],
 ): WorkScheduleSummary {
   // Roll up bracket fab activities as auto-generated fabrication results
+  const setupMap = new Map(setupBrackets.map(sb => [sb.bracketId, sb]))
   const bracketFabResults: WorkScheduleResult[] = []
   for (const bracket of brackets) {
     const bQty = bracketQtys[bracket.id] ?? 0
     if (bQty <= 0) continue
-    const params = resolveBracketParams(bracket, bracket.paramOverrides ?? {}, [])
+    const sb = setupMap.get(bracket.id)
+    const overrides = Object.fromEntries((sb?.params ?? []).map(p => [p.key, p.value]))
+    const params = resolveBracketParams(bracket, overrides, sysMaterials)
     for (const fa of bracket.fabActivities ?? []) {
       const timePerBracket = evaluateFormula(fa.timeFormula, params)
       const totalMinutes   = timePerBracket * bQty
@@ -376,19 +411,25 @@ function getStockLengthMm(mat: Material): number {
   return mat.spec?.stockLengthMm ?? 0
 }
 
-// Resolve bracket parameters — stock_length params pull from the material's spec
+// Resolve bracket parameters using SetupBracket params for source/value,
+// falling back to BracketParameter defaults for unmapped params
 export function resolveBracketParams(
-  bracket:   WorkBracket,
-  overrides: Record<string, number> = {},
-  materials: Material[] = [],
+  bracket:       WorkBracket,
+  overrides:     Record<string, number> = {},
+  materials:     Material[] = [],
+  setupParams?:  SetupBracket['params'],
 ): Record<string, number> {
+  const spMap = new Map((setupParams ?? []).map(sp => [sp.key, sp]))
   const resolved: Record<string, number> = {}
   for (const p of bracket.parameters ?? []) {
-    if (p.source === 'stock_length' && p.stockMaterialId) {
-      const mat = materials.find(m => m.id === p.stockMaterialId)
-      resolved[p.key] = mat?.spec?.stockLengthMm ?? p.default
+    const sp = spMap.get(p.key)
+    const source          = sp?.source ?? p.source ?? 'input'
+    const stockMaterialId = sp?.stockMaterialId ?? p.stockMaterialId
+    if (source === 'stock_length' && stockMaterialId) {
+      const mat = materials.find(m => m.id === stockMaterialId)
+      resolved[p.key] = mat?.spec?.stockLengthMm ?? sp?.value ?? p.default
     } else {
-      resolved[p.key] = overrides[p.key] ?? p.default
+      resolved[p.key] = overrides[p.key] ?? sp?.value ?? p.default
     }
   }
   return resolved
@@ -449,15 +490,19 @@ export interface BracketBOMGroup {
 }
 
 export function computeAllBracketBOM(
-  brackets:    WorkBracket[],
-  bracketQtys: Record<string, number>,
-  sys:         MtoSystem,
+  brackets:      WorkBracket[],
+  bracketQtys:   Record<string, number>,
+  sys:           MtoSystem,
+  setupBrackets: SetupBracket[] = [],
 ): BracketBOMGroup[] {
+  const setupMap = new Map(setupBrackets.map(sb => [sb.bracketId, sb]))
   const groups: BracketBOMGroup[] = []
   for (const bracket of brackets) {
     const qty = bracketQtys[bracket.id] ?? 0
     if (qty <= 0) continue
-    const params = resolveBracketParams(bracket, bracket.paramOverrides ?? {}, sys.materials)
+    const sb = setupMap.get(bracket.id)
+    const overrides = Object.fromEntries((sb?.params ?? []).map(p => [p.key, p.value]))
+    const params = resolveBracketParams(bracket, overrides, sys.materials, sb?.params)
     const expanded = computeBracketBOM(bracket, qty, params, sys.materials)
     const items = expanded.map((item, idx) => {
       const sysMat    = item.materialId ? sys.materials.find(m => m.id === item.materialId) : null

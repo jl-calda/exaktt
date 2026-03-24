@@ -249,10 +249,12 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
     customDims.filter(cd => cd.derivType === 'sheet_cut' && cd.plateMaterialId).map(cd => cd.plateMaterialId)
   )
 
-  // Materials used as bracket BOM components get their quantities from bracket
-  // expansion only — exclude them from direct rule evaluation to avoid doubling
+  // Materials used as bracket BOM components (only for brackets in setup) get
+  // their quantities from bracket expansion — exclude from direct rule evaluation
+  const effectiveSetup = sys.setupBrackets?.length ? sys.setupBrackets : []
+  const setupBracketIds = new Set(effectiveSetup.map(sb => sb.bracketId))
   const bracketMatIds = new Set(
-    (sys.customBrackets ?? []).filter((b: any) => b.setupEnabled !== false).flatMap((b: any) => (b.bom ?? []).map((item: any) => item.materialId).filter(Boolean))
+    (sys.customBrackets ?? []).filter((b: any) => setupBracketIds.has(b.id)).flatMap((b: any) => (b.bom ?? []).map((item: any) => item.materialId).filter(Boolean))
   )
 
   const active = materials

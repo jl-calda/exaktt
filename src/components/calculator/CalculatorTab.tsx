@@ -3,14 +3,14 @@
 import { useState } from 'react'
 import { Plus, Copy, Trash2, Play, Save, AlertTriangle, Lock, ChevronDown, ChevronUp, Clock, Printer, TableProperties, PanelRightOpen, PanelRightClose, BookOpen, X } from 'lucide-react'
 import { nanoid } from 'nanoid'
-import type { MtoSystem, GlobalTag, Run, Segment, WorkScheduleSummary, WorkScheduleResult, ActivityPhase, JobLastResults } from '@/types'
+import type { MtoSystem, GlobalTag, Run, Segment, WorkScheduleSummary, WorkScheduleResult, ActivityPhase, JobLastResults, WorkBracket } from '@/types'
 import type { Plan } from '@prisma/client'
 import { useCalcStore } from '@/store'
 import { getLimits } from '@/lib/limits'
 import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
-import { computeWorkSchedule, computeBracketQtys, computeBracketBOM, resolveBracketParams } from '@/lib/engine/work'
+import { computeWorkSchedule, computeBracketQtys, computeBracketBOM, resolveBracketParams, migrateSetupBrackets } from '@/lib/engine/work'
 import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, getDimLabel, getDimUnit } from '@/lib/engine/constants'
 import { normalizeInputModel } from '@/types'
 import SystemOverviewPanel from './SystemOverviewPanel'
@@ -939,11 +939,14 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
   // ── Merge bracket BOM materials into combined results ────────────────────
   const combinedWithBrackets: any[] = (() => {
     const combined = [...(calc.multiResults?.combined ?? [])]
-    const brackets = (sys.customBrackets ?? []).filter(b => b.setupEnabled !== false)
-    if (!calc.multiResults || brackets.length === 0) return combined
+    const setupBrackets = (sys.setupBrackets?.length ? sys.setupBrackets : migrateSetupBrackets(sys))
+    const templates = sys.customBrackets ?? []
+    const templateMap = new Map(templates.map(t => [t.id, t]))
+    const activeBrackets = setupBrackets.map(sb => templateMap.get(sb.bracketId)).filter(Boolean) as WorkBracket[]
+    if (!calc.multiResults || activeBrackets.length === 0) return combined
 
     // Compute bracket quantities per-run so run.qty multipliers are respected
-    const perRunBracketBOM: { runIndex: number; runQty: number; materialId: string; qty: number; unit: string; bracket: typeof brackets[0] }[] = []
+    const perRunBracketBOM: { runIndex: number; runQty: number; materialId: string; qty: number; unit: string; bracket: WorkBracket }[] = []
     for (let ri = 0; ri < calc.runs.length; ri++) {
       const run = calc.runs[ri]
       const runQty = run.qty || 1
@@ -963,11 +966,13 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
       }
       const criteriaState = run.criteriaState ?? {}
       const variantState  = run.variantState  ?? {}
-      const bracketQtys = computeBracketQtys(brackets, jobDims, sys, criteriaState, variantState)
-      for (const bracket of brackets) {
+      const bracketQtys = computeBracketQtys(setupBrackets, templates, jobDims, sys, criteriaState, variantState)
+      for (const bracket of activeBrackets) {
         const bQty = bracketQtys[bracket.id] ?? 0
         if (bQty <= 0) continue
-        const params = resolveBracketParams(bracket, bracket.paramOverrides ?? {}, sys.materials)
+        const sb = setupBrackets.find(s => s.bracketId === bracket.id)
+        const overrides = Object.fromEntries((sb?.params ?? []).map(p => [p.key, p.value]))
+        const params = resolveBracketParams(bracket, overrides, sys.materials, sb?.params)
         const expanded = computeBracketBOM(bracket, bQty, params, sys.materials)
         for (const item of expanded) {
           if (!item.materialId) continue
@@ -1033,8 +1038,11 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     const mergedVariants = calc.runs.reduce((acc: Record<string, string>, r: Run) => {
       return { ...acc, ...(r.variantState ?? {}) }
     }, {} as Record<string, string>)
-    const brackets    = (sys.customBrackets ?? []).filter(b => b.setupEnabled !== false)
-    const bracketQtys = computeBracketQtys(brackets, dimValues, sys, mergedCriteria, mergedVariants)
+    const wsSetupBrackets = (sys.setupBrackets?.length ? sys.setupBrackets : migrateSetupBrackets(sys))
+    const wsTemplates     = sys.customBrackets ?? []
+    const wsTemplateMap   = new Map(wsTemplates.map(t => [t.id, t]))
+    const wsActiveBrackets = wsSetupBrackets.map(sb => wsTemplateMap.get(sb.bracketId)).filter(Boolean) as WorkBracket[]
+    const bracketQtys = computeBracketQtys(wsSetupBrackets, wsTemplates, dimValues, sys, mergedCriteria, mergedVariants)
     return computeWorkSchedule(
       sys.workActivities ?? [],
       combinedWithBrackets,
@@ -1042,9 +1050,11 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
       mergedCriteria,
       calc.runs.length,
       limits.pricing ?? false,
-      brackets,
+      wsActiveBrackets,
       bracketQtys,
       sys.dimOverrides,
+      wsSetupBrackets,
+      sys.materials,
     )
   })()
 

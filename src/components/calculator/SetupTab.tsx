@@ -295,11 +295,13 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
       {/* ── Step 5: Sub-assembly Rules ── */}
       <StepHeader step={STEPS[4]}>
         <BracketRulesPanel
-          brackets={sys.customBrackets ?? []}
+          templates={sys.customBrackets ?? []}
+          setupBrackets={sys.setupBrackets ?? []}
+          materials={sys.materials}
           customDims={sys.customDims ?? []}
           customCriteria={sys.customCriteria ?? []}
           variants={sys.variants ?? []}
-          onChange={b => onUpdate({ customBrackets: b })}
+          onChange={sb => onUpdate({ setupBrackets: sb })}
         />
       </StepHeader>
 

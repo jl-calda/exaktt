@@ -2,25 +2,27 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, ChevronUp, Search, Trash2, Plus } from 'lucide-react'
-import type { WorkBracket, Material, CustomDim, CustomCriterion, Variant } from '@/types'
+import type { WorkBracket, SetupBracket, SetupBracketParam, Material, CustomDim, CustomCriterion, Variant } from '@/types'
 import { InlineRuleEditor } from './MatRow'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 interface Props {
-  brackets:       WorkBracket[]
+  templates:      WorkBracket[]         // all declared sub-assemblies (from Materials)
+  setupBrackets:  SetupBracket[]        // sub-assemblies added to setup
+  materials:      Material[]            // system materials (for stock_length picker)
   customDims:     CustomDim[]
   customCriteria: CustomCriterion[]
   variants:       Variant[]
-  onChange:        (brackets: WorkBracket[]) => void
+  onChange:        (setupBrackets: SetupBracket[]) => void
 }
 
 /* ── Jump-to dropdown (searches active brackets) ────────────────────────────── */
 function BracketDropdown({
-  brackets,
+  items,
   expandedId,
   onSelect,
 }: {
-  brackets:   WorkBracket[]
+  items:      { template: WorkBracket; setup: SetupBracket }[]
   expandedId: string | null
   onSelect:   (id: string) => void
 }) {
@@ -38,8 +40,8 @@ function BracketDropdown({
 
   const q = query.toLowerCase().trim()
   const filtered = q
-    ? brackets.filter(b => b.name.toLowerCase().includes(q) || (b.code ?? '').toLowerCase().includes(q))
-    : brackets
+    ? items.filter(i => i.template.name.toLowerCase().includes(q) || (i.template.code ?? '').toLowerCase().includes(q))
+    : items
 
   return (
     <div ref={wrapRef} className="relative">
@@ -60,8 +62,8 @@ function BracketDropdown({
           className="absolute z-50 top-full mt-1 right-0 w-64 bg-surface-50 border border-surface-200 shadow-float max-h-52 overflow-y-auto py-1"
           style={{ borderRadius: 'var(--radius-card)' }}
         >
-          {filtered.map(b => {
-            const hasRules = (b.ruleSet ?? []).some(r => r.ruleType)
+          {filtered.map(({ template: b, setup: sb }) => {
+            const hasRules = (sb.ruleSet ?? []).some(r => r.ruleType)
             const isActive = expandedId === b.id
             return (
               <li key={b.id}>
@@ -96,7 +98,7 @@ function BracketDropdown({
   )
 }
 
-/* ── Add-to-setup dropdown (shows available brackets) ───────────────────────── */
+/* ── Add-to-setup dropdown (shows available templates) ──────────────────────── */
 function AddBracketDropdown({
   available,
   onAdd,
@@ -156,92 +158,171 @@ function AddBracketDropdown({
   )
 }
 
-/* ── Parameter override inputs ──────────────────────────────────────────────── */
-function ParameterOverrides({
-  bracket,
+/* ── Parameter configuration (source, value, min/max) ───────────────────────── */
+function ParameterConfig({
+  template,
+  setupParams,
+  materials,
   onUpdate,
 }: {
-  bracket:  WorkBracket
-  onUpdate: (overrides: Record<string, number>) => void
+  template:    WorkBracket
+  setupParams: SetupBracketParam[]
+  materials:   Material[]
+  onUpdate:    (params: SetupBracketParam[]) => void
 }) {
-  const inputParams = (bracket.parameters ?? []).filter(p => (p as any).source !== 'stock_length')
-  const stockParams = (bracket.parameters ?? []).filter(p => (p as any).source === 'stock_length')
-  if (inputParams.length === 0 && stockParams.length === 0) return null
+  if (!template.parameters?.length) return null
 
-  const overrides = bracket.paramOverrides ?? {}
+  const spMap = new Map(setupParams.map(sp => [sp.key, sp]))
+
+  const updateParam = (key: string, patch: Partial<SetupBracketParam>) => {
+    const updated = template.parameters.map(p => {
+      const existing = spMap.get(p.key) ?? {
+        key: p.key, source: p.source ?? 'input', value: p.default ?? 0,
+        min: p.min, max: p.max, stockMaterialId: p.stockMaterialId,
+      }
+      return p.key === key ? { ...existing, ...patch } : existing
+    })
+    onUpdate(updated)
+  }
 
   return (
     <div className="mb-3">
-      <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-2">Parameter Values</div>
-      <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
-        {inputParams.map(p => (
-          <label key={p.key} className="flex items-center gap-2">
-            <span className="text-xs text-ink-muted whitespace-nowrap">{p.label}</span>
-            <input
-              type="number"
-              value={overrides[p.key] ?? p.default}
-              min={(p as any).min}
-              max={(p as any).max}
-              step="any"
-              onChange={e => {
-                const val = parseFloat(e.target.value)
-                if (!isNaN(val)) {
-                  onUpdate({ ...overrides, [p.key]: val })
-                }
-              }}
-              className="input text-xs py-1 px-2 w-20"
-            />
-            {p.unit && <span className="text-[10px] text-ink-faint">{p.unit}</span>}
-          </label>
-        ))}
-        {stockParams.map(p => (
-          <label key={p.key} className="flex items-center gap-2 opacity-60">
-            <span className="text-xs text-ink-muted whitespace-nowrap">{p.label}</span>
-            <span className="text-xs text-ink-faint italic">auto (stock length)</span>
-          </label>
-        ))}
+      <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-2">Parameters</div>
+      <div className="flex flex-col gap-2">
+        {template.parameters.map(p => {
+          const sp = spMap.get(p.key) ?? {
+            key: p.key, source: p.source ?? 'input', value: p.default ?? 0,
+            min: p.min, max: p.max, stockMaterialId: p.stockMaterialId,
+          }
+          const isStock = sp.source === 'stock_length'
+
+          return (
+            <div key={p.key} className="rounded border border-surface-200 bg-surface-50 px-3 py-2" style={{ borderRadius: 'var(--radius)' }}>
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-xs font-medium text-ink min-w-[80px]">{p.label}</span>
+                <select
+                  value={sp.source}
+                  onChange={e => updateParam(p.key, { source: e.target.value as 'input' | 'stock_length' })}
+                  className="input text-xs py-1 px-2 w-32"
+                >
+                  <option value="input">Input</option>
+                  <option value="stock_length">Stock Length</option>
+                </select>
+
+                {isStock ? (
+                  <select
+                    value={sp.stockMaterialId ?? ''}
+                    onChange={e => updateParam(p.key, { stockMaterialId: e.target.value })}
+                    className="input text-xs py-1 px-2 flex-1 min-w-[140px]"
+                  >
+                    <option value="">— select material —</option>
+                    {materials.filter(m => m.spec?.stockLengthMm).map(m => (
+                      <option key={m.id} value={m.id}>{m.name} ({m.spec!.stockLengthMm}mm)</option>
+                    ))}
+                  </select>
+                ) : (
+                  <>
+                    <label className="flex items-center gap-1">
+                      <span className="text-[10px] text-ink-faint">Value</span>
+                      <input
+                        type="number"
+                        value={sp.value}
+                        min={sp.min}
+                        max={sp.max}
+                        step="any"
+                        onChange={e => {
+                          const val = parseFloat(e.target.value)
+                          if (!isNaN(val)) updateParam(p.key, { value: val })
+                        }}
+                        className="input text-xs py-1 px-2 w-16"
+                      />
+                    </label>
+                    <label className="flex items-center gap-1">
+                      <span className="text-[10px] text-ink-faint">Min</span>
+                      <input
+                        type="number"
+                        value={sp.min ?? ''}
+                        step="any"
+                        onChange={e => {
+                          const val = e.target.value ? parseFloat(e.target.value) : undefined
+                          updateParam(p.key, { min: val })
+                        }}
+                        className="input text-xs py-1 px-2 w-14"
+                      />
+                    </label>
+                    <label className="flex items-center gap-1">
+                      <span className="text-[10px] text-ink-faint">Max</span>
+                      <input
+                        type="number"
+                        value={sp.max ?? ''}
+                        step="any"
+                        onChange={e => {
+                          const val = e.target.value ? parseFloat(e.target.value) : undefined
+                          updateParam(p.key, { max: val })
+                        }}
+                        className="input text-xs py-1 px-2 w-14"
+                      />
+                    </label>
+                  </>
+                )}
+                {p.unit && <span className="text-[10px] text-ink-faint">{p.unit}</span>}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
 }
 
 /* ── Main panel ─────────────────────────────────────────────────────────────── */
-export default function BracketRulesPanel({ brackets, customDims, customCriteria, variants, onChange }: Props) {
-  const active    = brackets.filter(b => b.setupEnabled !== false)
-  const available = brackets.filter(b => b.setupEnabled === false)
+export default function BracketRulesPanel({ templates, setupBrackets, materials, customDims, customCriteria, variants, onChange }: Props) {
+  const templateMap = new Map(templates.map(t => [t.id, t]))
+  const setupIds    = new Set(setupBrackets.map(sb => sb.bracketId))
+  const available   = templates.filter(t => !setupIds.has(t.id))
 
-  const [expandedId, setExpandedId] = useState<string | null>(active.length === 1 ? active[0]?.id ?? null : null)
+  // Pair each setup bracket with its template
+  const active = setupBrackets
+    .map(sb => ({ template: templateMap.get(sb.bracketId)!, setup: sb }))
+    .filter(pair => pair.template)
+
+  const [expandedId, setExpandedId] = useState<string | null>(active.length === 1 ? active[0]?.template.id ?? null : null)
   const [removeId,   setRemoveId]   = useState<string | null>(null)
 
   const addToSetup = (bracketId: string) => {
-    onChange(brackets.map(b =>
-      b.id === bracketId ? { ...b, setupEnabled: true } : b
-    ))
+    const tmpl = templateMap.get(bracketId)
+    if (!tmpl) return
+    // Create SetupBracket with defaults from template parameters
+    const params: SetupBracketParam[] = (tmpl.parameters ?? []).map(p => ({
+      key:             p.key,
+      source:          p.source ?? 'input',
+      value:           p.default ?? 0,
+      min:             p.min,
+      max:             p.max,
+      stockMaterialId: p.stockMaterialId,
+    }))
+    onChange([...setupBrackets, { bracketId, params, ruleSet: [], criteriaKeys: [], variantTags: {} }])
     setExpandedId(bracketId)
   }
 
   const removeFromSetup = (bracketId: string) => {
-    onChange(brackets.map(b =>
-      b.id === bracketId
-        ? { ...b, setupEnabled: false, ruleSet: [], criteriaKeys: [], variantTags: {}, paramOverrides: {} }
-        : b
-    ))
+    onChange(setupBrackets.filter(sb => sb.bracketId !== bracketId))
     if (expandedId === bracketId) setExpandedId(null)
     setRemoveId(null)
   }
 
-  const saveBracketRules = (bracketId: string, mat: Material) => {
-    onChange(brackets.map(b =>
-      b.id === bracketId
-        ? { ...b, ruleSet: mat.ruleSet, criteriaKeys: mat.criteriaKeys, variantTags: mat.variantTags }
-        : b
+  const updateSetupBracket = (bracketId: string, patch: Partial<SetupBracket>) => {
+    onChange(setupBrackets.map(sb =>
+      sb.bracketId === bracketId ? { ...sb, ...patch } : sb
     ))
   }
 
-  const updateParamOverrides = (bracketId: string, overrides: Record<string, number>) => {
-    onChange(brackets.map(b =>
-      b.id === bracketId ? { ...b, paramOverrides: overrides } : b
-    ))
+  const saveBracketRules = (bracketId: string, mat: Material) => {
+    updateSetupBracket(bracketId, {
+      ruleSet:      mat.ruleSet,
+      criteriaKeys: mat.criteriaKeys,
+      variantTags:  mat.variantTags,
+    })
   }
 
   return (
@@ -249,19 +330,19 @@ export default function BracketRulesPanel({ brackets, customDims, customCriteria
       <div className="px-5 py-3 border-b flex items-center justify-between gap-3" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
         <div>
           <h3 className="font-semibold text-sm text-ink">Sub-assembly Quantity Rules</h3>
-          <p className="text-xs text-ink-muted mt-0.5">Select sub-assemblies, fill parameters, and set quantity rules.</p>
+          <p className="text-xs text-ink-muted mt-0.5">Select sub-assemblies, configure parameters, and set quantity rules.</p>
         </div>
         <div className="flex items-center gap-2">
           <AddBracketDropdown available={available} onAdd={addToSetup} />
           {active.length > 1 && (
-            <BracketDropdown brackets={active} expandedId={expandedId} onSelect={id => setExpandedId(expandedId === id ? null : id)} />
+            <BracketDropdown items={active} expandedId={expandedId} onSelect={id => setExpandedId(expandedId === id ? null : id)} />
           )}
         </div>
       </div>
 
       {active.length === 0 && (
         <div className="py-8 text-center">
-          {brackets.length === 0 ? (
+          {templates.length === 0 ? (
             <>
               <p className="text-sm text-ink-faint">No sub-assemblies defined.</p>
               <p className="text-xs text-ink-faint mt-1">Define sub-assemblies in the Materials &rarr; Sub-assemblies tab.</p>
@@ -276,20 +357,20 @@ export default function BracketRulesPanel({ brackets, customDims, customCriteria
       )}
 
       <div className="divide-y divide-surface-200">
-        {active.map(bracket => {
-          const isExp = expandedId === bracket.id
-          const hasRules = (bracket.ruleSet ?? []).some(r => r.ruleType)
+        {active.map(({ template, setup }) => {
+          const isExp = expandedId === template.id
+          const hasRules = (setup.ruleSet ?? []).some(r => r.ruleType)
           return (
-            <div key={bracket.id} className="relative">
+            <div key={template.id} className="relative">
               <button
-                onClick={() => setExpandedId(isExp ? null : bracket.id)}
+                onClick={() => setExpandedId(isExp ? null : template.id)}
                 className="w-full px-5 py-3 pr-10 flex items-center gap-3 text-left hover:bg-surface-100 transition-colors"
               >
-                <span className="text-lg flex-shrink-0">{bracket.icon}</span>
+                <span className="text-lg flex-shrink-0">{template.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm text-ink">{bracket.name}</span>
-                    {bracket.code && <span className="font-mono text-xs text-ink-faint">{bracket.code}</span>}
+                    <span className="font-semibold text-sm text-ink">{template.name}</span>
+                    {template.code && <span className="font-mono text-xs text-ink-faint">{template.code}</span>}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     {hasRules ? (
@@ -302,7 +383,7 @@ export default function BracketRulesPanel({ brackets, customDims, customCriteria
                 {isExp ? <ChevronUp className="w-4 h-4 text-ink-faint" /> : <ChevronDown className="w-4 h-4 text-ink-faint" />}
               </button>
               <button
-                onClick={e => { e.stopPropagation(); setRemoveId(bracket.id) }}
+                onClick={e => { e.stopPropagation(); setRemoveId(template.id) }}
                 className="absolute right-3 top-3 p-1 rounded text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors"
                 title="Remove from setup"
               >
@@ -312,19 +393,21 @@ export default function BracketRulesPanel({ brackets, customDims, customCriteria
               {isExp && (
                 <div className="px-5 pb-4 border-t border-surface-200">
                   <div className="pt-3">
-                    <ParameterOverrides
-                      bracket={bracket}
-                      onUpdate={overrides => updateParamOverrides(bracket.id, overrides)}
+                    <ParameterConfig
+                      template={template}
+                      setupParams={setup.params}
+                      materials={materials}
+                      onUpdate={params => updateSetupBracket(template.id, { params })}
                     />
                   </div>
                   <InlineRuleEditor
                     mat={{
-                      id: bracket.id,
-                      name: bracket.name,
+                      id: template.id,
+                      name: template.name,
                       unit: 'bracket',
-                      ruleSet:      bracket.ruleSet      ?? [],
-                      criteriaKeys: bracket.criteriaKeys ?? [],
-                      variantTags:  bracket.variantTags  ?? {},
+                      ruleSet:      setup.ruleSet      ?? [],
+                      criteriaKeys: setup.criteriaKeys ?? [],
+                      variantTags:  setup.variantTags  ?? {},
                       customDimKey: null,
                       notes: '', photo: null, productCode: '', category: '',
                       properties: {}, tags: [], substrate: 'all', libraryRef: null,
@@ -336,7 +419,7 @@ export default function BracketRulesPanel({ brackets, customDims, customCriteria
                     customDims={customDims}
                     customCriteria={customCriteria}
                     variants={variants}
-                    onSave={m => saveBracketRules(bracket.id, m)}
+                    onSave={m => saveBracketRules(template.id, m)}
                     onClose={() => {}}
                   />
                 </div>

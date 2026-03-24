@@ -175,7 +175,6 @@ const HLL: SampleSystem = {
         id: 'brk_hll_ea', name: 'HLL Cable End Assembly',
         code: 'HLL-CEA', icon: '⚓', color: '#0284c7',
         description: 'Wire rope swaging kit per anchor point (2 crimping rings + termination)',
-        ruleSet: [], criteriaKeys: [], variantTags: {}, setupEnabled: true, paramOverrides: {},
         parameters: [
           { key: 'anchor_qty', label: 'Anchor Points in Set', unit: 'pcs', default: 2, min: 1, max: 10 },
         ],
@@ -189,6 +188,9 @@ const HLL: SampleSystem = {
             labourCategory: 'rope access technician' },
         ],
       },
+    ],
+    setupBrackets: [
+      { bracketId: 'brk_hll_ea', params: [{ key: 'anchor_qty', source: 'input' as const, value: 2, min: 1, max: 10 }], ruleSet: [], criteriaKeys: [], variantTags: {} },
     ],
 
     // ── Work Activities ───────────────────────────────────────────────────────
@@ -322,7 +324,6 @@ const VECTALADDER: SampleSystem = {
         id: 'brk_vl_hoop', name: 'Cage Hoop Fixing Kit',
         code: 'VL-HFKIT', icon: '🔩', color: '#7c3aed',
         description: 'M10 coach bolt kit for fixing cage hoops to wall — 4 bolts per hoop',
-        ruleSet: [], criteriaKeys: [], variantTags: {}, setupEnabled: true, paramOverrides: {},
         parameters: [
           { key: 'hoop_qty', label: 'No. of Hoops in Set', unit: 'hoops', default: 5, min: 1, max: 50 },
         ],
@@ -336,6 +337,9 @@ const VECTALADDER: SampleSystem = {
             labourCategory: 'aluminium fabricator' },
         ],
       },
+    ],
+    setupBrackets: [
+      { bracketId: 'brk_vl_hoop', params: [{ key: 'hoop_qty', source: 'input' as const, value: 5, min: 1, max: 50 }], ruleSet: [], criteriaKeys: [], variantTags: {} },
     ],
 
     // ── Work Activities ───────────────────────────────────────────────────────
@@ -494,7 +498,6 @@ const EVORAIL: SampleSystem = {
         id: 'brk_er_post', name: 'Post Base Assembly',
         code: 'ER-PBASE', icon: '🏗️', color: '#dc2626',
         description: 'Counterbalance-weighted base kit — upright + counterbalance weight + clamps per bay',
-        ruleSet: [], criteriaKeys: [], variantTags: {}, setupEnabled: true, paramOverrides: {},
         parameters: [
           { key: 'bays', label: 'No. of Bays', unit: 'bays', default: 4, min: 1, max: 100 },
         ],
@@ -512,6 +515,9 @@ const EVORAIL: SampleSystem = {
             labourCategory: 'guardrail installer' },
         ],
       },
+    ],
+    setupBrackets: [
+      { bracketId: 'brk_er_post', params: [{ key: 'bays', source: 'input' as const, value: 4, min: 1, max: 100 }], ruleSet: [], criteriaKeys: [], variantTags: {} },
     ],
 
     // ── Work Activities ───────────────────────────────────────────────────────
