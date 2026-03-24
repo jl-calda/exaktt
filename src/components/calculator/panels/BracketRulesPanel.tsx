@@ -178,7 +178,7 @@ function ParameterConfig({
     const updated = template.parameters.map(p => {
       const existing = spMap.get(p.key) ?? {
         key: p.key, source: p.source ?? 'input', value: p.default ?? 0,
-        min: p.min, max: p.max, stockMaterialId: p.stockMaterialId,
+        stockMaterialId: p.stockMaterialId,
       }
       return p.key === key ? { ...existing, ...patch } : existing
     })
@@ -192,7 +192,7 @@ function ParameterConfig({
         {template.parameters.map(p => {
           const sp = spMap.get(p.key) ?? {
             key: p.key, source: p.source ?? 'input', value: p.default ?? 0,
-            min: p.min, max: p.max, stockMaterialId: p.stockMaterialId,
+            stockMaterialId: p.stockMaterialId,
           }
           const isStock = sp.source === 'stock_length'
 
@@ -227,8 +227,6 @@ function ParameterConfig({
                       <input
                         type="number"
                         value={sp.value}
-                        min={sp.min}
-                        max={sp.max}
                         step="any"
                         onChange={e => {
                           const val = parseFloat(e.target.value)
@@ -236,36 +234,10 @@ function ParameterConfig({
                         }}
                         className="input text-xs py-1 px-2 w-16"
                       />
-                    </label>
-                    <label className="flex items-center gap-1">
-                      <span className="text-[10px] text-ink-faint">Min</span>
-                      <input
-                        type="number"
-                        value={sp.min ?? ''}
-                        step="any"
-                        onChange={e => {
-                          const val = e.target.value ? parseFloat(e.target.value) : undefined
-                          updateParam(p.key, { min: val })
-                        }}
-                        className="input text-xs py-1 px-2 w-14"
-                      />
-                    </label>
-                    <label className="flex items-center gap-1">
-                      <span className="text-[10px] text-ink-faint">Max</span>
-                      <input
-                        type="number"
-                        value={sp.max ?? ''}
-                        step="any"
-                        onChange={e => {
-                          const val = e.target.value ? parseFloat(e.target.value) : undefined
-                          updateParam(p.key, { max: val })
-                        }}
-                        className="input text-xs py-1 px-2 w-14"
-                      />
+                      {p.unit && <span className="text-[10px] text-ink-faint">{p.unit}</span>}
                     </label>
                   </>
                 )}
-                {p.unit && <span className="text-[10px] text-ink-faint">{p.unit}</span>}
               </div>
             </div>
           )
@@ -297,8 +269,6 @@ export default function BracketRulesPanel({ templates, setupBrackets, materials,
       key:             p.key,
       source:          p.source ?? 'input',
       value:           p.default ?? 0,
-      min:             p.min,
-      max:             p.max,
       stockMaterialId: p.stockMaterialId,
     }))
     onChange([...setupBrackets, { bracketId, params, ruleSet: [], criteriaKeys: [], variantTags: {} }])

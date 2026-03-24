@@ -176,7 +176,7 @@ const HLL: SampleSystem = {
         code: 'HLL-CEA', icon: '⚓', color: '#0284c7',
         description: 'Wire rope swaging kit per anchor point (2 crimping rings + termination)',
         parameters: [
-          { key: 'anchor_qty', label: 'Anchor Points in Set', unit: 'pcs', default: 2, min: 1, max: 10 },
+          { key: 'anchor_qty', label: 'Anchor Points in Set', unit: 'pcs', default: 2 },
         ],
         bom: [
           { id: 'bom_crimp', materialId: 'mat_ll_crimp', qtyFormula: 'anchor_qty * 2', qtyUnit: 'pcs',
@@ -190,7 +190,7 @@ const HLL: SampleSystem = {
       },
     ],
     setupBrackets: [
-      { bracketId: 'brk_hll_ea', params: [{ key: 'anchor_qty', source: 'input' as const, value: 2, min: 1, max: 10 }], ruleSet: [], criteriaKeys: [], variantTags: {} },
+      { bracketId: 'brk_hll_ea', params: [{ key: 'anchor_qty', source: 'input' as const, value: 2 }], ruleSet: [], criteriaKeys: [], variantTags: {} },
     ],
 
     // ── Work Activities ───────────────────────────────────────────────────────
@@ -325,7 +325,7 @@ const VECTALADDER: SampleSystem = {
         code: 'VL-HFKIT', icon: '🔩', color: '#7c3aed',
         description: 'M10 coach bolt kit for fixing cage hoops to wall — 4 bolts per hoop',
         parameters: [
-          { key: 'hoop_qty', label: 'No. of Hoops in Set', unit: 'hoops', default: 5, min: 1, max: 50 },
+          { key: 'hoop_qty', label: 'No. of Hoops in Set', unit: 'hoops', default: 5 },
         ],
         bom: [
           { id: 'bom_bolt', materialId: 'mat_vl_bolt', qtyFormula: 'hoop_qty * 4', qtyUnit: 'pcs',
@@ -339,7 +339,7 @@ const VECTALADDER: SampleSystem = {
       },
     ],
     setupBrackets: [
-      { bracketId: 'brk_vl_hoop', params: [{ key: 'hoop_qty', source: 'input' as const, value: 5, min: 1, max: 50 }], ruleSet: [], criteriaKeys: [], variantTags: {} },
+      { bracketId: 'brk_vl_hoop', params: [{ key: 'hoop_qty', source: 'input' as const, value: 5 }], ruleSet: [], criteriaKeys: [], variantTags: {} },
     ],
 
     // ── Work Activities ───────────────────────────────────────────────────────
@@ -499,7 +499,7 @@ const EVORAIL: SampleSystem = {
         code: 'ER-PBASE', icon: '🏗️', color: '#dc2626',
         description: 'Counterbalance-weighted base kit — upright + counterbalance weight + clamps per bay',
         parameters: [
-          { key: 'bays', label: 'No. of Bays', unit: 'bays', default: 4, min: 1, max: 100 },
+          { key: 'bays', label: 'No. of Bays', unit: 'bays', default: 4 },
         ],
         bom: [
           { id: 'bom_post',    materialId: 'mat_er_post_galv', qtyFormula: 'bays',      qtyUnit: 'each',
@@ -517,7 +517,7 @@ const EVORAIL: SampleSystem = {
       },
     ],
     setupBrackets: [
-      { bracketId: 'brk_er_post', params: [{ key: 'bays', source: 'input' as const, value: 4, min: 1, max: 100 }], ruleSet: [], criteriaKeys: [], variantTags: {} },
+      { bracketId: 'brk_er_post', params: [{ key: 'bays', source: 'input' as const, value: 4 }], ruleSet: [], criteriaKeys: [], variantTags: {} },
     ],
 
     // ── Work Activities ───────────────────────────────────────────────────────

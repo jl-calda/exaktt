@@ -645,8 +645,6 @@ export interface BracketParameter {
   label:   string    // e.g. "Projection"
   unit:    string    // e.g. "mm"
   default: number
-  min?:    number
-  max?:    number
   dimKey?: string    // optional: pull value from a system dim at calc time instead of using default
   source?: 'input' | 'stock_length'   // where the value comes from
   stockMaterialId?: string            // when source='stock_length', which BOM material to read spec from
@@ -657,8 +655,6 @@ export interface SetupBracketParam {
   key:              string
   source:           'input' | 'stock_length'
   value:            number
-  min?:             number
-  max?:             number
   stockMaterialId?: string    // when source='stock_length', which material to read spec from
 }
 
