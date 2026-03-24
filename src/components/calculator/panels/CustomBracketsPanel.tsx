@@ -208,12 +208,8 @@ function BracketForm({
         </div>
         {params.length === 0 && <p className="text-xs text-ink-faint">No parameters — bracket quantities are fixed. Add parameters for adjustable assemblies (e.g. length).</p>}
         <div className="space-y-2">
-          {params.map((p, i) => {
-            const isStockLen = p.source === 'stock_length'
-            const stockMat   = isStockLen && p.stockMaterialId ? materials.find(m => m.id === p.stockMaterialId) : null
-            const stockMm    = stockMat?.spec?.stockLengthMm ?? 0
-            return (
-              <div key={i} className="bg-surface-50 rounded-lg border border-surface-200 p-3 space-y-2">
+          {params.map((p, i) => (
+              <div key={i} className="bg-surface-50 rounded-lg border border-surface-200 p-3">
                 <div className="flex flex-wrap gap-2 items-end">
                   <Input label="Key" value={p.key} onChange={e => updateParam(i, { ...p, key: e.target.value.replace(/\s+/g, '_').toLowerCase() })}
                     placeholder="length" className="w-36" />
@@ -221,42 +217,10 @@ function BracketForm({
                     placeholder="Length" className="w-36" />
                   <Input label="Unit" value={p.unit} onChange={e => updateParam(i, { ...p, unit: e.target.value })}
                     placeholder="mm" className="w-20" />
-                  <Select label="Source" value={p.source ?? 'input'}
-                    onChange={e => updateParam(i, { ...p, source: e.target.value as 'input' | 'stock_length', ...(e.target.value === 'input' ? { stockMaterialId: undefined } : {}) })}
-                    options={[{ value: 'input', label: 'Input' }, { value: 'stock_length', label: 'Stock length' }]} className="w-32" />
                   <Button size="xs" variant="danger" onClick={() => removeParam(i)} icon={<Trash2 className="w-3 h-3" />} className="mb-1" />
                 </div>
-                {isStockLen && (
-                  <div className="flex flex-wrap gap-2 items-end pl-3 border-l-2 border-primary/30">
-                    <div className="flex flex-col gap-1 min-w-48">
-                      <span className="label mb-0">Material (stock length source)</span>
-                      <select value={p.stockMaterialId ?? ''} onChange={e => {
-                          const matId = e.target.value
-                          const mat = materials.find(m => m.id === matId)
-                          const sl = mat?.spec?.stockLengthMm ?? 0
-                          updateParam(i, { ...p, stockMaterialId: matId || undefined, default: sl })
-                        }} className="input text-sm">
-                        <option value="">— pick material —</option>
-                        {materials.map(m => (
-                          <option key={m.id} value={m.id}>{m.name}{m.spec?.stockLengthMm ? ` (${m.spec.stockLengthMm} mm)` : ''}</option>
-                        ))}
-                      </select>
-                    </div>
-                    {stockMm > 0 && (
-                      <div className="text-xs text-primary font-semibold px-2 py-1 bg-primary/10 rounded">
-                        Stock length: {stockMm} mm
-                      </div>
-                    )}
-                    {p.stockMaterialId && stockMm === 0 && (
-                      <div className="text-xs text-amber-700 font-semibold px-2 py-1 bg-amber-50 rounded">
-                        No stock length set on this material
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
-            )
-          })}
+          ))}
         </div>
       </div>
 
