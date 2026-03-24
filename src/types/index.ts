@@ -212,8 +212,6 @@ export interface CustomDim {
   spacingTargetDim:  string
   firstSupportMode:  string
   firstGap:          number
-  firstGapLabel:     string
-  firstGapMode:      string
   includesEndpoints: boolean
   sumKeys:           string[]
   formulaQty:        number
