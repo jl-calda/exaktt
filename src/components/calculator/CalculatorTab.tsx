@@ -968,7 +968,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
         const bQty = bracketQtys[bracket.id] ?? 0
         if (bQty <= 0) continue
         const params = Object.fromEntries((bracket.parameters ?? []).map(p => [p.key, p.default]))
-        const expanded = computeBracketBOM(bracket, bQty, params)
+        const expanded = computeBracketBOM(bracket, bQty, params, sys.materials)
         for (const item of expanded) {
           if (!item.materialId) continue
           perRunBracketBOM.push({ runIndex: ri, runQty, materialId: item.materialId, qty: Math.ceil(item.qty), unit: item.unit, bracket })
