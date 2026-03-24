@@ -236,36 +236,38 @@ function ParameterConfig({
                         }}
                         className="input text-xs py-1 px-2 w-16"
                       />
+                      {p.unit && <span className="text-[10px] text-ink-faint">{p.unit}</span>}
                     </label>
-                    <label className="flex items-center gap-1">
-                      <span className="text-[10px] text-ink-faint">Min</span>
+                    <span className="text-[10px] text-ink-faint/60 mx-1">|</span>
+                    <label className="flex items-center gap-1" title="Allowed input range per project">
+                      <span className="text-[10px] text-ink-faint">Range</span>
                       <input
                         type="number"
                         value={sp.min ?? ''}
                         step="any"
+                        placeholder="min"
                         onChange={e => {
                           const val = e.target.value ? parseFloat(e.target.value) : undefined
                           updateParam(p.key, { min: val })
                         }}
                         className="input text-xs py-1 px-2 w-14"
                       />
-                    </label>
-                    <label className="flex items-center gap-1">
-                      <span className="text-[10px] text-ink-faint">Max</span>
+                      <span className="text-[10px] text-ink-faint">–</span>
                       <input
                         type="number"
                         value={sp.max ?? ''}
                         step="any"
+                        placeholder="max"
                         onChange={e => {
                           const val = e.target.value ? parseFloat(e.target.value) : undefined
                           updateParam(p.key, { max: val })
                         }}
                         className="input text-xs py-1 px-2 w-14"
                       />
+                      {p.unit && <span className="text-[10px] text-ink-faint">{p.unit}</span>}
                     </label>
                   </>
                 )}
-                {p.unit && <span className="text-[10px] text-ink-faint">{p.unit}</span>}
               </div>
             </div>
           )
