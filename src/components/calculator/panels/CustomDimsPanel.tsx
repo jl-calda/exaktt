@@ -116,9 +116,10 @@ function FieldGuide({ derivType, items }: { derivType: string; items: { label: s
 
 // ─── Criteria Overrides Section (#1) ──────────────────────────────────────────
 
-function CriteriaOverridesSection({ d, set, criteria }: {
+function CriteriaOverridesSection({ d, set, criteria, sys }: {
   d: any; set: (k: any) => (v: any) => void
   criteria: { id: string; key: string; name: string; type: string }[]
+  sys?: MtoSystem | null
 }) {
   const [open, setOpen] = useState(false)
   const overrides: CriteriaParamOverride[] = (d as any).criteriaOverrides ?? []
@@ -158,23 +159,25 @@ function CriteriaOverridesSection({ d, set, criteria }: {
 
   if (inputCriteria.length === 0) return null
 
-  const OVERRIDABLE_PARAMS: { value: string; label: string; type: 'number' | 'boolean' | 'select' | 'text'; options?: { value: string; label: string }[] }[] = [
-    { value: 'spacing',            label: 'Spacing value',       type: 'number' },
-    { value: 'formulaQty',         label: 'Multiplier',          type: 'number' },
+  const spacingUnit = getDimUnit((d as any).spacingTargetDim ?? 'length', sys?.dimOverrides)
+
+  const OVERRIDABLE_PARAMS: { value: string; label: string; type: 'number' | 'boolean' | 'select' | 'text'; unit?: string; options?: { value: string; label: string }[] }[] = [
+    { value: 'spacing',            label: 'Spacing value',       type: 'number', unit: spacingUnit },
+    { value: 'formulaQty',         label: 'Multiplier',          type: 'number', unit: '×' },
     { value: 'formulaDimKey',      label: 'Formula dim',         type: 'select', options: PRIMITIVE_DIMS.map(p => ({ value: p.key, label: p.icon + ' ' + p.label })) },
     { value: 'spacingTargetDim',   label: 'Spacing dim',         type: 'select', options: PRIMITIVE_DIMS.map(p => ({ value: p.key, label: p.icon + ' ' + p.label })) },
     { value: 'includesEndpoints',  label: 'Includes endpoints',  type: 'boolean' },
     { value: 'firstSupportMode',   label: 'First support mode',  type: 'select', options: [{ value: 'none', label: 'None' }, { value: 'ground', label: 'At ground' }, { value: 'offset', label: 'Offset' }] },
-    { value: 'firstGap',           label: 'First gap',           type: 'number' },
+    { value: 'firstGap',           label: 'First gap',           type: 'number', unit: spacingUnit },
     // stock_length
     { value: 'stockTargetDim',     label: 'Stock target dim',    type: 'select', options: PRIMITIVE_DIMS.map(p => ({ value: p.key, label: p.icon + ' ' + p.label })) },
-    { value: 'stockLengths',       label: 'Stock lengths',       type: 'text' },
+    { value: 'stockLengths',       label: 'Stock lengths',       type: 'text', unit: 'mm' },
     { value: 'stockOptimMode',     label: 'Stock optim mode',    type: 'select', options: [{ value: 'min_waste', label: 'Min waste' }, { value: 'min_sections', label: 'Min sections' }] },
     // sheet_cut
     { value: 'plateMaterialId',    label: 'Plate material',      type: 'text' },
-    { value: 'partW',              label: 'Part width',           type: 'number' },
-    { value: 'partH',              label: 'Part height',          type: 'number' },
-    { value: 'kerf',               label: 'Kerf',                type: 'number' },
+    { value: 'partW',              label: 'Part width',           type: 'number', unit: 'mm' },
+    { value: 'partH',              label: 'Part height',          type: 'number', unit: 'mm' },
+    { value: 'kerf',               label: 'Kerf',                type: 'number', unit: 'mm' },
     { value: 'sheetAllowRotation', label: 'Allow rotation',      type: 'boolean' },
   ]
   const selectedParam = OVERRIDABLE_PARAMS.find(p => p.value === addParamKey)
@@ -250,11 +253,13 @@ function CriteriaOverridesSection({ d, set, criteria }: {
                 options={[{ value: '', label: '— select —' }, ...(selectedParam.options ?? [])]}
                 className="w-36" />
             ) : selectedParam?.type === 'number' ? (
-              <Input label="Value" type="number" value={addParamVal}
-                onChange={e => setAddParamVal(e.target.value)}
-                placeholder="e.g. 3.0" className="w-24" />
+              <div className="flex items-end gap-1">
+                <Input label={`Value${selectedParam.unit ? ` (${selectedParam.unit})` : ''}`} type="number" value={addParamVal}
+                  onChange={e => setAddParamVal(e.target.value)}
+                  placeholder="e.g. 3.0" className="w-24" />
+              </div>
             ) : (
-              <Input label="Value" value={addParamVal}
+              <Input label={`Value${selectedParam?.unit ? ` (${selectedParam.unit})` : ''}`} value={addParamVal}
                 onChange={e => setAddParamVal(e.target.value)}
                 placeholder="e.g. 3.0" className="w-24" />
             )}
@@ -509,7 +514,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
         )}
 
         {/* Criteria param overrides (#1) */}
-        {sys && <CriteriaOverridesSection d={d} set={set} criteria={sys.customCriteria ?? []} />}
+        {sys && <CriteriaOverridesSection d={d} set={set} criteria={sys.customCriteria ?? []} sys={sys} />}
       </div>
     )
   }
