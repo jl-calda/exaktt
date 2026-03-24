@@ -371,7 +371,6 @@ export function computeMultiRun(
         jobDims.end1      = isLoop ? 0 : 1
         jobDims.end2      = isLoop ? 0 : 1
         jobDims.both_ends = isLoop ? 0 : 2
-        jobDims['__spacing_int_brackets'] = parseFloat(run.simpleJob?.spacing as any) || 10
       } else if (run.inputMode === 'segment' && run.segments?.length) {
         const res = resolveSegments(run.segments)
         jobDims.length    = res.length

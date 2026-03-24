@@ -137,7 +137,7 @@ const makeRun = (name = 'Run 1'): Run => ({
   name,
   inputMode: 'simple',
   job: {},
-  simpleJob: { length: '', corners: '', spacing: '' },
+  simpleJob: { length: '', corners: '' },
   segments: [],
   stockOverrides: {},
   qty: 1,
