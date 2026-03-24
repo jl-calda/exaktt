@@ -13,11 +13,12 @@ import type { WorkBracket, BracketParameter, BracketBOMItem, BracketFabActivity,
 import { evaluateFormula } from '@/lib/engine/work'
 
 interface Props {
-  customBrackets: WorkBracket[]
-  materials:      Material[]
-  libraryItems?:  any[]
-  onChange:       (brackets: WorkBracket[]) => void
-  onAddFromLib?:  (libItem: any) => void
+  customBrackets:   WorkBracket[]
+  materials:        Material[]
+  libraryItems?:    any[]
+  setupBracketIds?: Set<string>   // IDs of brackets currently in setup (for deletion warning)
+  onChange:         (brackets: WorkBracket[]) => void
+  onAddFromLib?:    (libItem: any) => void
 }
 
 const BLANK_BRACKET: Omit<WorkBracket, 'id'> = {
@@ -26,9 +27,6 @@ const BLANK_BRACKET: Omit<WorkBracket, 'id'> = {
   description:   '',
   icon:          '🔩',
   color:         '#7c3aed',
-  ruleSet:       [],
-  criteriaKeys:  [],
-  variantTags:   {},
   parameters:    [],
   bom:           [],
   fabActivities: [],
@@ -310,7 +308,7 @@ function BracketForm({
   )
 }
 
-export default function CustomBracketsPanel({ customBrackets, materials, libraryItems = [], onChange, onAddFromLib }: Props) {
+export default function CustomBracketsPanel({ customBrackets, materials, libraryItems = [], setupBracketIds, onChange, onAddFromLib }: Props) {
   const [adding,    setAdding]    = useState(false)
   const [draft,     setDraft]     = useState<Omit<WorkBracket, 'id'>>({ ...BLANK_BRACKET })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -496,7 +494,11 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
       <ConfirmModal
         open={deleteId !== null}
         title="Delete bracket?"
-        message="This custom bracket and all its BOM items and fabrication activities will be permanently removed."
+        message={
+          deleteId && setupBracketIds?.has(deleteId)
+            ? "This sub-assembly is currently used in setup. Deleting it will remove it everywhere — including its quantity rules and parameter values."
+            : "This custom bracket and all its BOM items and fabrication activities will be permanently removed."
+        }
         onConfirm={() => { remove(deleteId!); setDeleteId(null) }}
         onCancel={() => setDeleteId(null)}
       />

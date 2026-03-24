@@ -160,6 +160,7 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
           customBrackets={sys.customBrackets ?? []}
           materials={sys.materials}
           libraryItems={library}
+          setupBracketIds={new Set((sys.setupBrackets ?? []).map(sb => sb.bracketId))}
           onChange={b => onUpdate({ customBrackets: b })}
           onAddFromLib={addFromLib}
         />
