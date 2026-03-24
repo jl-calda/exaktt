@@ -276,10 +276,11 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
             )}
           </div>
 
-          {/* Primitive dim pills — click label to rename */}
+          {/* Primitive dim pills — click label to rename (structural dims like corners/ends are fixed) */}
           {(() => {
             const dimKeys = DIMS_FOR_INPUT_MODEL[sys.inputModel] ?? DIMS_FOR_INPUT_MODEL[normalizeInputModel(sys.inputModel)] ?? []
             const available = PRIMITIVE_DIMS.filter(d => dimKeys.includes(d.key))
+            const fixedDims = new Set(['corners', 'end1', 'end2', 'both_ends', 'perimeter'])
             return (
               <div className="mt-4">
                 <div className="text-[10px] font-semibold text-ink-muted uppercase tracking-wide mb-2">
@@ -287,29 +288,33 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {available.map(d => {
+                    const editable = !fixedDims.has(d.key)
                     const customLabel = sys.dimLabels?.[d.key]
                     const displayLabel = customLabel || d.label
                     return (
                       <span key={d.key}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-ink border border-surface-200 group"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-ink border border-surface-200"
                         style={{ borderRadius: 'var(--radius)' }}>
                         <span className="text-sm leading-none">{d.icon}</span>
-                        <input
-                          type="text"
-                          value={displayLabel}
-                          placeholder={d.label}
-                          onChange={e => onUpdate({ dimLabels: { ...sys.dimLabels, [d.key]: e.target.value } })}
-                          onBlur={e => {
-                            // If cleared, remove the override so it falls back to default
-                            if (!e.target.value.trim()) {
-                              const next = { ...sys.dimLabels }
-                              delete next[d.key]
-                              onUpdate({ dimLabels: next })
-                            }
-                          }}
-                          className="bg-transparent border-none outline-none text-[11px] font-medium text-ink w-16 p-0 focus:ring-0 focus:underline"
-                          style={{ minWidth: '3ch', width: `${Math.max(3, displayLabel.length)}ch` }}
-                        />
+                        {editable ? (
+                          <input
+                            type="text"
+                            value={displayLabel}
+                            placeholder={d.label}
+                            onChange={e => onUpdate({ dimLabels: { ...sys.dimLabels, [d.key]: e.target.value } })}
+                            onBlur={e => {
+                              if (!e.target.value.trim()) {
+                                const next = { ...sys.dimLabels }
+                                delete next[d.key]
+                                onUpdate({ dimLabels: next })
+                              }
+                            }}
+                            className="bg-transparent border-none outline-none text-[11px] font-medium text-ink w-16 p-0 focus:ring-0 focus:underline"
+                            style={{ minWidth: '3ch', width: `${Math.max(3, displayLabel.length)}ch` }}
+                          />
+                        ) : (
+                          <span>{d.label}</span>
+                        )}
                         {d.unit && <span className="text-[10px] text-ink-faint opacity-70">({d.unit})</span>}
                       </span>
                     )
