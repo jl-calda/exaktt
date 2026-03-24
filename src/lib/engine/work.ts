@@ -179,6 +179,23 @@ export function computeWorkSchedule(
       const totalMinutes   = timePerBracket * bQty
       const timeUnit       = fa.timeUnit ?? 'min'
       const totalMins      = timeUnit === 'hr' ? totalMinutes * 60 : totalMinutes
+      const crewSize       = fa.crewSize ?? 1
+      const elapsedHours   = (totalMins / 60) / crewSize
+
+      let labourCost: number | undefined
+      if (showCost) {
+        if (fa.unitType === 'per_piece' && fa.unitCost != null)
+          labourCost = bQty * fa.unitCost
+        else if (fa.unitType === 'per_hour' && fa.labourRateHr != null)
+          labourCost = (totalMins / 60) * fa.labourRateHr
+        else if (fa.unitType === 'lump_sum' && fa.unitCost != null)
+          labourCost = fa.unitCost
+        else if (fa.unitType === 'per_dim' && fa.unitCost != null)
+          labourCost = bQty * fa.unitCost
+        else if (fa.labourRateHr)
+          labourCost = (totalMins / 60) * fa.labourRateHr
+      }
+
       bracketFabResults.push({
         activityId:    `${bracket.id}_${fa.id}`,
         phase:         'fabrication',
@@ -188,10 +205,10 @@ export function computeWorkSchedule(
         timePerUnit:   timePerBracket,
         totalMinutes:  totalMins,
         totalHours:    totalMins / 60,
-        crewSize:      1,
-        elapsedHours:  totalMins / 60,
+        crewSize,
+        elapsedHours,
         labourCategory: fa.labourCategory,
-        labourCost:    undefined,
+        labourCost,
         isThirdParty:  false,
       })
     }

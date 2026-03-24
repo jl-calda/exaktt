@@ -810,6 +810,37 @@ export async function removeTenderItem(id: string, companyId: string) {
   return prisma.tenderItem.delete({ where: { id } })
 }
 
+// ─── Labour Rates ─────────────────────────────────────────────────────────────
+
+export async function getLabourRates(companyId: string) {
+  return prisma.labourRate.findMany({ where: { companyId, isArchived: false }, orderBy: [{ category: 'asc' }, { name: 'asc' }] })
+}
+
+export async function createLabourRate(companyId: string, createdById: string, data: Partial<{ name: string; category: string; unitType: string; unitLabel: string; rate: number; notes: string }>) {
+  return prisma.labourRate.create({
+    data: {
+      companyId,
+      createdById,
+      name:      data.name      ?? '',
+      category:  data.category  ?? '',
+      unitType:  data.unitType  ?? 'per_hour',
+      unitLabel: data.unitLabel ?? 'hr',
+      rate:      data.rate      ?? 0,
+      notes:     data.notes     ?? null,
+    },
+  })
+}
+
+export async function updateLabourRate(id: string, companyId: string, data: any) {
+  await verifyOwnership(prisma.labourRate, id, companyId, 'LabourRate')
+  return prisma.labourRate.update({ where: { id }, data })
+}
+
+export async function deleteLabourRate(id: string, companyId: string) {
+  await verifyOwnership(prisma.labourRate, id, companyId, 'LabourRate')
+  return prisma.labourRate.update({ where: { id }, data: { isArchived: true } })
+}
+
 // ─── LimitError ───────────────────────────────────────────────────────────────
 
 export class LimitError extends Error {

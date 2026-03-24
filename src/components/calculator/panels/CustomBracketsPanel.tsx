@@ -16,6 +16,7 @@ interface Props {
   customBrackets:   WorkBracket[]
   materials:        Material[]
   libraryItems?:    any[]
+  labourRates?:     any[]
   setupBracketIds?: Set<string>   // IDs of brackets currently in setup (for deletion warning)
   onChange:         (brackets: WorkBracket[]) => void
   onAddFromLib?:    (libItem: any) => void
@@ -241,14 +242,37 @@ function BOMItemRow({
 }
 
 function FabActivityRow({
-  item, params, onChange, onRemove,
+  item, params, onChange, onRemove, labourRates = [],
 }: {
   item: BracketFabActivity
   params: BracketParameter[]
   onChange: (item: BracketFabActivity) => void
   onRemove: () => void
+  labourRates?: any[]
 }) {
   const resolvedTime = evaluateFormula(item.timeFormula, Object.fromEntries(params.map(p => [p.key, p.default])))
+
+  const onRateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const rateId = e.target.value
+    if (rateId === '') {
+      onChange({ ...item, labourRateId: undefined, labourCategory: '', labourRateHr: undefined, unitCost: undefined, unitType: undefined })
+    } else if (rateId === '__manual__') {
+      onChange({ ...item, labourRateId: undefined })
+    } else {
+      const rate = labourRates.find((r: any) => r.id === rateId)
+      if (rate) {
+        onChange({
+          ...item,
+          labourRateId:   rate.id,
+          labourCategory: rate.name,
+          labourRateHr:   rate.unitType === 'per_hour' ? rate.rate : undefined,
+          unitCost:       rate.unitType !== 'per_hour' ? rate.rate : undefined,
+          unitType:       rate.unitType,
+        })
+      }
+    }
+  }
+
   return (
     <div className="flex flex-wrap gap-2 items-end bg-surface-50 border border-surface-200 p-3" style={{ borderRadius: 'var(--radius-card)' }}>
       <Input label="Activity name" value={item.name} onChange={e => onChange({ ...item, name: e.target.value })}
@@ -260,20 +284,39 @@ function FabActivityRow({
       </div>
       <Select label="Unit" value={item.timeUnit} onChange={e => onChange({ ...item, timeUnit: e.target.value as 'min' | 'hr' })}
         options={TIME_UNITS.map(u => ({ value: u, label: u }))} className="w-20" />
-      <Input label="Labour cat." value={item.labourCategory ?? ''} onChange={e => onChange({ ...item, labourCategory: e.target.value })}
-        placeholder="Optional" className="w-36" />
+      {labourRates.length > 0 ? (
+        <div className="w-44">
+          <label className="label">Rate</label>
+          <select className="input text-xs" value={item.labourRateId ?? (item.labourCategory ? '__manual__' : '')} onChange={onRateChange}>
+            <option value="">None</option>
+            {labourRates.map((r: any) => (
+              <option key={r.id} value={r.id}>{r.name} ({r.rate}/{r.unitLabel})</option>
+            ))}
+            <option value="__manual__">Manual...</option>
+          </select>
+        </div>
+      ) : (
+        <Input label="Labour cat." value={item.labourCategory ?? ''} onChange={e => onChange({ ...item, labourCategory: e.target.value })}
+          placeholder="Optional" className="w-36" />
+      )}
+      {(!item.labourRateId && item.labourCategory) && (
+        <Input label="Rate $/hr" value={String(item.labourRateHr ?? '')}
+          onChange={e => onChange({ ...item, labourRateHr: parseFloat(e.target.value) || undefined })}
+          placeholder="0" className="w-24" />
+      )}
       <Button size="xs" variant="danger" onClick={onRemove} icon={<Trash2 className="w-3 h-3" />} className="mb-1 flex-shrink-0" />
     </div>
   )
 }
 
 function BracketForm({
-  draft, onChange, materials, libraryItems = [], onSave, onCancel, label, onAddFromLib,
+  draft, onChange, materials, libraryItems = [], labourRates = [], onSave, onCancel, label, onAddFromLib,
 }: {
   draft: Partial<WorkBracket>
   onChange: (patch: Partial<WorkBracket>) => void
   materials: Material[]
   libraryItems?: any[]
+  labourRates?: any[]
   onSave: () => void
   onCancel: () => void
   label: string
@@ -372,7 +415,7 @@ function BracketForm({
         {fabActivities.length === 0 && <p className="text-xs text-ink-faint">No fab activities. Add workshop steps like cutting, drilling, welding.</p>}
         <div className="space-y-2">
           {fabActivities.map((item, i) => (
-            <FabActivityRow key={item.id} item={item} params={params}
+            <FabActivityRow key={item.id} item={item} params={params} labourRates={labourRates}
               onChange={updated => updateFab(i, updated)} onRemove={() => removeFab(i)} />
           ))}
         </div>
@@ -386,7 +429,7 @@ function BracketForm({
   )
 }
 
-export default function CustomBracketsPanel({ customBrackets, materials, libraryItems = [], setupBracketIds, onChange, onAddFromLib }: Props) {
+export default function CustomBracketsPanel({ customBrackets, materials, libraryItems = [], labourRates = [], setupBracketIds, onChange, onAddFromLib }: Props) {
   const [adding,    setAdding]    = useState(false)
   const [draft,     setDraft]     = useState<Omit<WorkBracket, 'id'>>({ ...BLANK_BRACKET })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -423,7 +466,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
         <div className="p-5 bg-surface-100 border-b border-surface-200">
           <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide mb-4">New Bracket</div>
           <BracketForm draft={draft} onChange={patch => setDraft(d => ({ ...d, ...patch }))}
-            materials={materials} libraryItems={libraryItems}
+            materials={materials} libraryItems={libraryItems} labourRates={labourRates}
             onSave={add} onCancel={() => setAdding(false)} label="Add" onAddFromLib={onAddFromLib} />
         </div>
       )}
@@ -561,7 +604,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
               {isEd && editDraft && (
                 <div className="px-5 pb-5 border-t border-primary/20 pt-4">
                   <BracketForm draft={editDraft} onChange={patch => setEditDraft(d => d ? { ...d, ...patch } : d)}
-                    materials={materials} libraryItems={libraryItems}
+                    materials={materials} libraryItems={libraryItems} labourRates={labourRates}
                     onSave={saveEdit} onCancel={cancelEdit} label="Save" onAddFromLib={onAddFromLib} />
                 </div>
               )}

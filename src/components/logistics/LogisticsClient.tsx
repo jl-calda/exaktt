@@ -2,21 +2,23 @@
 'use client'
 import { useState } from 'react'
 import type { Plan } from '@prisma/client'
-import { LayoutDashboard, Package, Building2, ShoppingCart, Truck, Factory } from 'lucide-react'
+import { LayoutDashboard, Package, Building2, ShoppingCart, Truck, Factory, Hammer } from 'lucide-react'
 import OverviewTab        from './OverviewTab'
 import MaterialsTab       from './MaterialsTab'
 import SuppliersTab       from './SuppliersTab'
 import ManufacturersTab   from './ManufacturersTab'
 import PurchaseOrdersTab  from './PurchaseOrdersTab'
 import DeliveriesTab      from './DeliveriesTab'
+import FabricationTab     from './FabricationTab'
 
-type Tab = 'overview' | 'materials' | 'suppliers' | 'manufacturers' | 'orders' | 'deliveries'
+type Tab = 'overview' | 'materials' | 'suppliers' | 'manufacturers' | 'orders' | 'deliveries' | 'fabrication'
 
 const NAV_TABS: { id: Tab; label: string; Icon: React.ElementType }[] = [
   { id: 'overview',       label: 'Overview',        Icon: LayoutDashboard },
   { id: 'materials',      label: 'Materials',        Icon: Package         },
   { id: 'suppliers',      label: 'Suppliers',        Icon: Building2       },
   { id: 'manufacturers',  label: 'Manufacturers',    Icon: Factory         },
+  { id: 'fabrication',    label: 'Fabrication',       Icon: Hammer          },
   { id: 'orders',         label: 'Purchase Orders',  Icon: ShoppingCart    },
   { id: 'deliveries',     label: 'Deliveries',       Icon: Truck           },
 ]
@@ -30,9 +32,10 @@ interface Props {
   categories:    any[]
   grades:        any[]
   manufacturers: any[]
+  labourRates:   any[]
 }
 
-export default function LogisticsClient({ library: initialLibrary, suppliers: initialSuppliers, pos: initialPos, dos: initialDos, plan, categories: initialCategories, grades: initialGrades, manufacturers: initialManufacturers }: Props) {
+export default function LogisticsClient({ library: initialLibrary, suppliers: initialSuppliers, pos: initialPos, dos: initialDos, plan, categories: initialCategories, grades: initialGrades, manufacturers: initialManufacturers, labourRates: initialLabourRates }: Props) {
   const [tab,           setTab]           = useState<Tab>('overview')
   const [library,       setLibrary]       = useState(initialLibrary)
   const [suppliers,     setSuppliers]     = useState(initialSuppliers)
@@ -41,6 +44,7 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
   const [categories,    setCategories]    = useState(initialCategories)
   const [grades,        setGrades]        = useState(initialGrades)
   const [manufacturers, setManufacturers] = useState(initialManufacturers)
+  const [labourRates,   setLabourRates]   = useState(initialLabourRates)
 
   const refreshLibrary       = () => fetch('/api/mto/library').then(r => r.json()).then(j => { if (j.data) setLibrary(j.data) })
   const refreshSuppliers     = () => fetch('/api/logistics/suppliers').then(r => r.json()).then(j => { if (j.data) setSuppliers(j.data) })
@@ -49,6 +53,7 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
   const refreshCategories    = () => fetch('/api/mto/categories').then(r => r.json()).then(j => { if (j.data) setCategories(j.data) })
   const refreshGrades        = () => fetch('/api/mto/grades').then(r => r.json()).then(j => { if (j.data) setGrades(j.data) })
   const refreshManufacturers = () => fetch('/api/mto/manufacturers').then(r => r.json()).then(j => { if (j.data) setManufacturers(j.data) })
+  const refreshLabourRates   = () => fetch('/api/mto/labour-rates').then(r => r.json()).then(j => { if (j.data) setLabourRates(j.data) })
 
   return (
     <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
@@ -102,6 +107,9 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
             <span>Manufacturers</span><span className="font-semibold text-ink">{manufacturers.length}</span>
           </div>
           <div className="flex justify-between text-[10px] text-ink-faint">
+            <span>Rates</span><span className="font-semibold text-ink">{labourRates.length}</span>
+          </div>
+          <div className="flex justify-between text-[10px] text-ink-faint">
             <span>Open POs</span><span className="font-semibold text-ink">{pos.filter(p => ['DRAFT','SENT'].includes(p.status)).length}</span>
           </div>
           <div className="flex justify-between text-[10px] text-ink-faint">
@@ -117,6 +125,7 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
           {tab === 'materials'  && <MaterialsTab library={library} suppliers={suppliers} categories={categories} grades={grades} manufacturers={manufacturers} onRefresh={refreshLibrary} onRefreshCategories={refreshCategories} onRefreshGrades={refreshGrades} onRefreshManufacturers={refreshManufacturers} />}
           {tab === 'suppliers'      && <SuppliersTab suppliers={suppliers} onRefresh={refreshSuppliers} />}
           {tab === 'manufacturers'  && <ManufacturersTab manufacturers={manufacturers} library={library} onRefresh={refreshManufacturers} />}
+          {tab === 'fabrication'    && <FabricationTab labourRates={labourRates} onRefresh={refreshLabourRates} />}
           {tab === 'orders'     && <PurchaseOrdersTab pos={pos} suppliers={suppliers} library={library} onRefresh={refreshPos} />}
           {tab === 'deliveries' && <DeliveriesTab dos={dos} pos={pos} library={library} onRefresh={refreshDos} onRefreshPos={refreshPos} />}
         </div>

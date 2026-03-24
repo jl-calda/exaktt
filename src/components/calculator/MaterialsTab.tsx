@@ -21,11 +21,13 @@ interface Props {
 
 export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE', subTab: initialSubTab = 'all' }: Props) {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>(initialSubTab)
-  const [library,   setLibrary]   = useState<any[]>([])
-  const [tagFilter, setTagFilter] = useState<string[]>([])
+  const [library,      setLibrary]      = useState<any[]>([])
+  const [labourRates,  setLabourRates]  = useState<any[]>([])
+  const [tagFilter,    setTagFilter]    = useState<string[]>([])
 
   useEffect(() => {
     fetch('/api/mto/library').then(r => r.json()).then(({ data }) => { if (data) setLibrary(data) })
+    fetch('/api/mto/labour-rates').then(r => r.json()).then(({ data }) => { if (data) setLabourRates(data) })
   }, [])
 
   const saveMat = (updated: Material) =>
@@ -160,6 +162,7 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
           customBrackets={sys.customBrackets ?? []}
           materials={sys.materials}
           libraryItems={library}
+          labourRates={labourRates}
           setupBracketIds={new Set((sys.setupBrackets ?? []).map(sb => sb.bracketId))}
           onChange={b => onUpdate({ customBrackets: b })}
           onAddFromLib={addFromLib}

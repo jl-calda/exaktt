@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getLibraryItems, getSuppliers, getPurchaseOrders, getDeliveryOrders, getCompanyPlan, getMaterialCategories, getMaterialGrades, getManufacturers, getUserCompany } from '@/lib/db/queries'
+import { getLibraryItems, getSuppliers, getPurchaseOrders, getDeliveryOrders, getCompanyPlan, getMaterialCategories, getMaterialGrades, getManufacturers, getLabourRates, getUserCompany } from '@/lib/db/queries'
 import LogisticsClient from '@/components/logistics/LogisticsClient'
 
 export default async function LogisticsPage() {
@@ -15,7 +15,7 @@ export default async function LogisticsPage() {
   if (!company) redirect('/auth/login')
   const companyId = company.id
 
-  const [library, suppliers, pos, dos, plan, categories, grades, manufacturers] = await Promise.all([
+  const [library, suppliers, pos, dos, plan, categories, grades, manufacturers, labourRates] = await Promise.all([
     getLibraryItems(companyId),
     getSuppliers(companyId),
     getPurchaseOrders(companyId),
@@ -24,6 +24,7 @@ export default async function LogisticsPage() {
     getMaterialCategories(companyId),
     getMaterialGrades(companyId),
     getManufacturers(companyId),
+    getLabourRates(companyId),
   ])
 
   return (
@@ -36,6 +37,7 @@ export default async function LogisticsPage() {
       categories={categories as any[]}
       grades={grades as any[]}
       manufacturers={manufacturers as any[]}
+      labourRates={labourRates as any[]}
     />
   )
 }
