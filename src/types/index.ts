@@ -676,12 +676,31 @@ export interface BracketBOMItem {
   notes?:      string
 }
 
+export type LabourRateUnitType = 'per_piece' | 'per_dim' | 'per_hour' | 'lump_sum'
+
+export interface LabourRate {
+  id:         string
+  name:       string
+  category:   string
+  unitType:   LabourRateUnitType
+  unitLabel:  string       // "pc", "m", "m²", "hr", "lot"
+  rate:       number       // price per unit
+  notes?:     string | null
+  isArchived: boolean
+}
+
 export interface BracketFabActivity {
   id:              string
   name:            string
   timeFormula:     string    // e.g. "5" or "3 + projection_mm / 100"
   timeUnit:        'min' | 'hr'
   labourCategory?: string
+  // Rate reference
+  labourRateId?:   string              // -> LabourRate.id
+  labourRateHr?:   number              // snapshot: $/hr (for per_hour rates)
+  unitCost?:       number              // snapshot: $/unit (for per_piece, per_dim, lump_sum)
+  unitType?:       LabourRateUnitType  // snapshot of rate unit type
+  crewSize?:       number              // default 1
 }
 
 export interface WorkBracket {
@@ -737,6 +756,7 @@ export interface WorkActivity {
   thirdPartySupplier?: string
 
   // Labour
+  labourRateId?:   string    // -> LabourRate.id
   labourCategory?: string
   labourRateHr?:   number    // S$/hr — Pro+ only
   crewSize:        number    // default 1

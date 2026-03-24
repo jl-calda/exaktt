@@ -91,6 +91,7 @@ model Company {
   materialCategories     MaterialCategory[]
   globalTags             GlobalTag[]
   activityLibrary        ActivityLibraryItem[]
+  labourRates            LabourRate[]
 
   @@map("companies")
 }
@@ -159,6 +160,7 @@ model User {
   createdMaterialCategories  MaterialCategory[]      @relation("createdByUser")
   createdGlobalTags          GlobalTag[]             @relation("createdByUser")
   createdActivityLibrary     ActivityLibraryItem[]   @relation("createdByUser")
+  createdLabourRates         LabourRate[]            @relation("createdByUser")
 
   @@map("users")
 }
@@ -724,4 +726,31 @@ model ActivityLibraryItem {
 
   @@index([companyId])
   @@map("activity_library_items")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LABOUR RATES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model LabourRate {
+  id          String  @id @default(cuid())
+  companyId   String
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User    @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
+
+  name        String                 // "Cable swaging", "Powder coat", "Fabricator"
+  category    String   @default("")  // grouping: "Fabrication", "Installation", "Finishing"
+  unitType    String                 // 'per_piece' | 'per_dim' | 'per_hour' | 'lump_sum'
+  unitLabel   String   @default("")  // display: "pc", "m", "m²", "hr", "lot"
+  rate        Float                  // price per unit (in company's defaultCurrency)
+  notes       String?
+  isArchived  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("labour_rates")
 }
