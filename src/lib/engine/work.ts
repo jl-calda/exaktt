@@ -4,7 +4,7 @@
 import type {
   WorkActivity, WorkBracket, WorkScheduleResult, WorkScheduleSummary,
   MultiRunMaterial, CutListResult, CutListBar, CutItem, OffcutItem,
-  BracketBOMItem, MtoSystem, RuleRow,
+  BracketBOMItem, Material, MtoSystem, RuleRow,
 } from '@/types'
 import { computeResults } from './compute'
 import { getUnitFactor } from './constants'
@@ -349,22 +349,67 @@ export interface BracketBOMExpanded {
   qty:        number
   unit:       string
   notes?:     string
+  raw?:       number    // before wastage
+  wastePct?:  number    // auto-calc'd waste %
+  withWaste?: number    // after wastage, before rounding
+}
+
+// ─── Stock wastage helper ────────────────────────────────────────────────────
+// For repeated identical cuts from a stock bar, calculate the waste %.
+// piecesPerBar = floor(stockLen / cutLen), offcut = stockLen - pieces * cutLen
+// wastePct = offcut / (pieces * cutLen) * 100
+
+function calcStockWastePct(cutLengthMm: number, stockLengthMm: number): number {
+  if (cutLengthMm <= 0 || stockLengthMm <= 0) return 0
+  if (cutLengthMm > stockLengthMm) return 0  // can't fit — no auto-waste
+  const piecesPerBar = Math.floor(stockLengthMm / cutLengthMm)
+  if (piecesPerBar <= 0) return 0
+  const offcut = stockLengthMm - piecesPerBar * cutLengthMm
+  return (offcut / (piecesPerBar * cutLengthMm)) * 100
+}
+
+// Get stock length in mm from a Material's spec
+function getStockLengthMm(mat: Material): number {
+  return mat.spec?.stockLengthMm ?? 0
 }
 
 export function computeBracketBOM(
   bracket:    WorkBracket,
   qty:        number,
   params:     Record<string, number> = {},
+  materials:  Material[] = [],
 ): BracketBOMExpanded[] {
   return bracket.bom.map(item => {
     const unitQty = evaluateFormula(item.qtyFormula, { ...params })
+    const raw     = unitQty * qty
+
+    // Auto-calculate wastage when material has a stock length and BOM uses a length unit
+    let wastePct  = 0
+    const isLength = item.qtyUnit === 'mm' || item.qtyUnit === 'm'
+    if (isLength && item.materialId) {
+      const mat = materials.find(m => m.id === item.materialId)
+      if (mat) {
+        const stockMm = getStockLengthMm(mat)
+        if (stockMm > 0) {
+          // cutLength per bracket in mm
+          const cutMm = item.qtyUnit === 'm' ? unitQty * 1000 : unitQty
+          wastePct = calcStockWastePct(cutMm, stockMm)
+        }
+      }
+    }
+
+    const withWaste = wastePct > 0 ? raw * (1 + wastePct / 100) : raw
+
     return {
       bracketId:  bracket.id,
       bracketQty: qty,
       materialId: item.materialId,
-      qty:        unitQty * qty,
+      qty:        Math.ceil(withWaste),
       unit:       item.qtyUnit,
       notes:      item.notes,
+      raw,
+      wastePct,
+      withWaste,
     }
   })
 }
@@ -389,7 +434,7 @@ export function computeAllBracketBOM(
     const qty = bracketQtys[bracket.id] ?? 0
     if (qty <= 0) continue
     const params = Object.fromEntries((bracket.parameters ?? []).map(p => [p.key, p.default]))
-    const expanded = computeBracketBOM(bracket, qty, params)
+    const expanded = computeBracketBOM(bracket, qty, params, sys.materials)
     const items = expanded.map((item, idx) => {
       const sysMat    = item.materialId ? sys.materials.find(m => m.id === item.materialId) : null
       const bomItem   = bracket.bom[idx]
