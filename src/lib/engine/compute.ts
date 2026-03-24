@@ -16,7 +16,9 @@ export const PRIMITIVE_DIMS = [
   { key: 'height',    label: 'Height',       unit: 'm',       icon: '↕️',  step: '0.1' },
   { key: 'perimeter', label: 'Perimeter',    unit: 'm',       icon: '⬜', step: '0.1' },
   { key: 'corners',   label: 'Corners',      unit: 'corners', icon: '🔲', step: '1'   },
-  { key: 'ends',      label: 'Ends',         unit: 'ends',    icon: '🔚', step: '1'   },
+  { key: 'end1',      label: 'End 1',        unit: 'end',     icon: '🔚', step: '1'   },
+  { key: 'end2',      label: 'End 2',        unit: 'end',     icon: '🔚', step: '1'   },
+  { key: 'both_ends', label: 'Both Ends',    unit: 'ends',    icon: '🔚', step: '1'   },
   { key: 'workers',   label: 'Workers',      unit: 'workers', icon: '👷', step: '1'   },
   { key: 'levels',    label: 'Levels/Floors',unit: 'levels',  icon: '🏢', step: '1'   },
   { key: 'openings',  label: 'Openings',     unit: 'openings',icon: '🚪', step: '1'   },
@@ -98,7 +100,10 @@ export function computeResults(opts: ComputeOptions): MaterialResult[] {
   if (segments.length > 0) {
     const res = resolveSegments(segments)
     if (!jobDims.length) jobDims.length = res.length
-    if (!jobDims.ends)   jobDims.ends   = res.ends
+    const resEnds = res.ends
+    if (!jobDims.end1)      jobDims.end1      = resEnds >= 1 ? 1 : 0
+    if (!jobDims.end2)      jobDims.end2      = resEnds >= 2 ? 1 : 0
+    if (!jobDims.both_ends) jobDims.both_ends = resEnds
     if (!jobDims.corners) jobDims.corners = res.corners
   }
 
@@ -323,15 +328,20 @@ export function computeMultiRun(
 
     if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear')) {
       if (run.inputMode === 'simple') {
-        jobDims.length  = parseFloat(run.simpleJob?.length as any) || 0
-        jobDims.corners = 0
-        jobDims.ends    = criteriaState['loop'] ? 0 : 2
+        jobDims.length    = parseFloat(run.simpleJob?.length as any) || 0
+        jobDims.corners   = 0
+        const isLoop      = !!criteriaState['loop']
+        jobDims.end1      = isLoop ? 0 : 1
+        jobDims.end2      = isLoop ? 0 : 1
+        jobDims.both_ends = isLoop ? 0 : 2
         jobDims['__spacing_int_brackets'] = parseFloat(run.simpleJob?.spacing as any) || 10
       } else if (run.inputMode === 'segment' && run.segments?.length) {
         const res = resolveSegments(run.segments)
-        jobDims.length  = res.length
-        jobDims.ends    = res.ends
-        jobDims.corners = res.corners
+        jobDims.length    = res.length
+        jobDims.end1      = res.ends >= 1 ? 1 : 0
+        jobDims.end2      = res.ends >= 2 ? 1 : 0
+        jobDims.both_ends = res.ends
+        jobDims.corners   = res.corners
       }
     }
 
