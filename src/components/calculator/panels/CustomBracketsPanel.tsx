@@ -11,16 +11,11 @@ import { Input, NumberInput } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import type { WorkBracket, BracketParameter, BracketBOMItem, BracketFabActivity, Material } from '@/types'
 import { evaluateFormula } from '@/lib/engine/work'
-import { InlineRuleEditor } from './MatRow'
-import type { CustomDim, CustomCriterion, Variant } from '@/types'
 
 interface Props {
   customBrackets: WorkBracket[]
   materials:      Material[]
   libraryItems?:  any[]
-  customDims:     CustomDim[]
-  customCriteria: CustomCriterion[]
-  variants:       Variant[]
   onChange:       (brackets: WorkBracket[]) => void
   onAddFromLib?:  (libItem: any) => void
 }
@@ -155,15 +150,12 @@ function FabActivityRow({
 }
 
 function BracketForm({
-  draft, onChange, materials, libraryItems = [], customDims, customCriteria, variants, onSave, onCancel, label, onAddFromLib,
+  draft, onChange, materials, libraryItems = [], onSave, onCancel, label, onAddFromLib,
 }: {
   draft: Partial<WorkBracket>
   onChange: (patch: Partial<WorkBracket>) => void
   materials: Material[]
   libraryItems?: any[]
-  customDims: CustomDim[]
-  customCriteria: CustomCriterion[]
-  variants: Variant[]
   onSave: () => void
   onCancel: () => void
   label: string
@@ -208,34 +200,6 @@ function BracketForm({
           placeholder="WB-A" className="w-28" />
         <Input label="Description" value={draft.description ?? ''} onChange={e => onChange({ description: e.target.value })}
           placeholder="Optional" className="flex-1 min-w-48" />
-      </div>
-
-      {/* Qty rules */}
-      <div>
-        <label className="label mb-2 block">Quantity Rules</label>
-        <div className="border border-surface-300 bg-surface-50 rounded-lg overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
-        <InlineRuleEditor
-          mat={{
-            id: draft.id ?? 'bracket_draft',
-            name: draft.name || 'Bracket',
-            unit: 'bracket',
-            ruleSet:      draft.ruleSet      ?? [],
-            criteriaKeys: draft.criteriaKeys ?? [],
-            variantTags:  draft.variantTags  ?? {},
-            customDimKey: null,
-            notes: '', photo: null, productCode: '', category: '',
-            properties: {}, tags: [], substrate: 'all', libraryRef: null,
-            _libSyncedAt: null, _systemSpecific: false, _createdInSystem: null,
-            _createdAt: null, _updatedAt: null, _wasLibrary: null, _madeUniqueAt: null,
-          } as Material}
-          embedded
-          customDims={customDims}
-          customCriteria={customCriteria}
-          variants={variants}
-          onSave={m => onChange({ ruleSet: m.ruleSet, criteriaKeys: m.criteriaKeys, variantTags: m.variantTags })}
-          onClose={() => {}}
-        />
-        </div>
       </div>
 
       {/* Parameters */}
@@ -346,7 +310,7 @@ function BracketForm({
   )
 }
 
-export default function CustomBracketsPanel({ customBrackets, materials, libraryItems = [], customDims, customCriteria, variants, onChange, onAddFromLib }: Props) {
+export default function CustomBracketsPanel({ customBrackets, materials, libraryItems = [], onChange, onAddFromLib }: Props) {
   const [adding,    setAdding]    = useState(false)
   const [draft,     setDraft]     = useState<Omit<WorkBracket, 'id'>>({ ...BLANK_BRACKET })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -383,7 +347,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
         <div className="p-5 bg-surface-100 border-b border-surface-200">
           <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide mb-4">New Bracket</div>
           <BracketForm draft={draft} onChange={patch => setDraft(d => ({ ...d, ...patch }))}
-            materials={materials} libraryItems={libraryItems} customDims={customDims} customCriteria={customCriteria} variants={variants}
+            materials={materials} libraryItems={libraryItems}
             onSave={add} onCancel={() => setAdding(false)} label="Add" onAddFromLib={onAddFromLib} />
         </div>
       )}
@@ -417,11 +381,6 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
                   <div className="flex items-center gap-3 mt-0.5 text-xs text-ink-muted flex-wrap">
                     <span>{(bracket.bom ?? []).length} BOM items</span>
                     {totalFabMin > 0 && <span>{totalFabMin.toFixed(0)} min fab</span>}
-                    {(bracket.ruleSet?.some(r => r.ruleType)) ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold text-primary" style={{ background: 'var(--color-primary-50, #eff6ff)' }}>rule-driven qty</span>
-                    ) : (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold text-amber-700 bg-amber-50">⚠ no qty rule</span>
-                    )}
                     {bracket.description && <span className="text-ink-faint">{bracket.description}</span>}
                   </div>
                 </div>
@@ -526,7 +485,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
               {isEd && editDraft && (
                 <div className="px-5 pb-5 border-t border-primary/20 pt-4">
                   <BracketForm draft={editDraft} onChange={patch => setEditDraft(d => d ? { ...d, ...patch } : d)}
-                    materials={materials} libraryItems={libraryItems} customDims={customDims} customCriteria={customCriteria} variants={variants}
+                    materials={materials} libraryItems={libraryItems}
                     onSave={saveEdit} onCancel={cancelEdit} label="Save" onAddFromLib={onAddFromLib} />
                 </div>
               )}

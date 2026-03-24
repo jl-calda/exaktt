@@ -15,7 +15,7 @@ import CriteriaPanel       from './panels/CriteriaPanel'
 import WarningsPanel       from './panels/WarningsPanel'
 import VariantsPanel       from './panels/VariantsPanel'
 import WorkActivitiesPanel from './panels/WorkActivitiesPanel'
-import CustomBracketsPanel from './panels/CustomBracketsPanel'
+import BracketRulesPanel   from './panels/BracketRulesPanel'
 import MaterialsTable      from './panels/MaterialsTable'
 import SystemOverviewPanel from './SystemOverviewPanel'
 
@@ -31,7 +31,7 @@ const STEPS = [
   { n: 2, label: 'Derived',       desc: 'Quantities computed from inputs' },
   { n: 3, label: 'Gates',         desc: 'Criteria and warnings that filter materials' },
   { n: 4, label: 'Variants',      desc: 'User choices that swap product codes' },
-  { n: 5, label: 'Sub-assemblies',desc: 'Custom brackets made of materials' },
+  { n: 5, label: 'Sub-assemblies',desc: 'Quantity rules for declared sub-assemblies' },
   { n: 6, label: 'Materials',     desc: 'BOM items output by the calculator' },
   { n: 7, label: 'Schedule',      desc: 'Work activities driven by the BOM' },
 ]
@@ -292,17 +292,14 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
         <VariantsPanel variants={sys.variants} onChange={v => onUpdate({ variants: v })} />
       </StepHeader>
 
-      {/* ── Step 5: Custom Brackets ── */}
+      {/* ── Step 5: Sub-assembly Rules ── */}
       <StepHeader step={STEPS[4]}>
-        <CustomBracketsPanel
-          customBrackets={sys.customBrackets ?? []}
-          materials={sys.materials}
-          libraryItems={library}
+        <BracketRulesPanel
+          brackets={sys.customBrackets ?? []}
           customDims={sys.customDims ?? []}
           customCriteria={sys.customCriteria ?? []}
           variants={sys.variants ?? []}
           onChange={b => onUpdate({ customBrackets: b })}
-          onAddFromLib={addFromLib}
         />
       </StepHeader>
 
