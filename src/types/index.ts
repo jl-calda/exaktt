@@ -313,7 +313,7 @@ export interface Run {
   name:           string
   inputMode:      'simple' | 'segment'
   job:            Record<string, string | number>
-  simpleJob:      { length: string; corners: string; spacing: string }
+  simpleJob:      { length: string; corners: string }
   segments:       Segment[]
   stockOverrides: Record<string, Record<string, number>>
   qty:            number
