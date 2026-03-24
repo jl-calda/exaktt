@@ -1,10 +1,11 @@
 // src/components/calculator/panels/BracketRulesPanel.tsx
 'use client'
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, ChevronUp, Plus, Search } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Search, Trash2 } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import type { WorkBracket, Material, CustomDim, CustomCriterion, Variant } from '@/types'
 import { InlineRuleEditor } from './MatRow'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 interface Props {
   brackets:       WorkBracket[]
@@ -84,6 +85,7 @@ function BracketCombobox({ brackets, onAdd }: { brackets: WorkBracket[]; onAdd: 
 
 export default function BracketRulesPanel({ brackets, customDims, customCriteria, variants, onChange }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(brackets.length === 1 ? brackets[0].id : null)
+  const [deleteId,   setDeleteId]   = useState<string | null>(null)
 
   const addBracket = (b: WorkBracket) => {
     onChange([...brackets, b])
@@ -120,10 +122,10 @@ export default function BracketRulesPanel({ brackets, customDims, customCriteria
           const isExp = expandedId === bracket.id
           const hasRules = (bracket.ruleSet ?? []).some(r => r.ruleType)
           return (
-            <div key={bracket.id}>
+            <div key={bracket.id} className="relative">
               <button
                 onClick={() => setExpandedId(isExp ? null : bracket.id)}
-                className="w-full px-5 py-3 flex items-center gap-3 text-left hover:bg-surface-100 transition-colors"
+                className="w-full px-5 py-3 pr-10 flex items-center gap-3 text-left hover:bg-surface-100 transition-colors"
               >
                 <span className="text-lg flex-shrink-0">{bracket.icon}</span>
                 <div className="flex-1 min-w-0">
@@ -140,6 +142,13 @@ export default function BracketRulesPanel({ brackets, customDims, customCriteria
                   </div>
                 </div>
                 {isExp ? <ChevronUp className="w-4 h-4 text-ink-faint" /> : <ChevronDown className="w-4 h-4 text-ink-faint" />}
+              </button>
+              <button
+                onClick={e => { e.stopPropagation(); setDeleteId(bracket.id) }}
+                className="absolute right-3 top-3 p-1 rounded text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors"
+                title="Remove sub-assembly"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
 
               {isExp && (
@@ -171,6 +180,14 @@ export default function BracketRulesPanel({ brackets, customDims, customCriteria
           )
         })}
       </div>
+
+      <ConfirmModal
+        open={deleteId !== null}
+        title="Remove sub-assembly?"
+        message="This will remove the sub-assembly and its quantity rules from the system."
+        onConfirm={() => { onChange(brackets.filter(b => b.id !== deleteId)); setDeleteId(null) }}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }
