@@ -6,6 +6,9 @@ import type { Plan } from '@prisma/client'
 import { nanoid } from 'nanoid'
 import LibraryTab from './LibraryTab'
 import MaterialsTable from './panels/MaterialsTable'
+import CustomBracketsPanel from './panels/CustomBracketsPanel'
+
+type SubTab = 'all' | 'library' | 'brackets'
 
 interface Props {
   sys:         MtoSystem
@@ -13,10 +16,11 @@ interface Props {
   globalTags:  GlobalTag[]
   onGoToSetup: () => void
   plan?:       Plan
-  subTab?:     'all' | 'library'
+  subTab?:     SubTab
 }
 
-export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE', subTab = 'all' }: Props) {
+export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE', subTab: initialSubTab = 'all' }: Props) {
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>(initialSubTab)
   const [library,   setLibrary]   = useState<any[]>([])
   const [tagFilter, setTagFilter] = useState<string[]>([])
 
@@ -85,10 +89,33 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
     return true
   })
 
+  const SUB_TABS: { id: SubTab; label: string }[] = [
+    { id: 'all',      label: 'Materials' },
+    { id: 'brackets', label: 'Sub-assemblies' },
+    { id: 'library',  label: 'Library' },
+  ]
+
   return (
     <div>
+      {/* Sub-tab navigation */}
+      <div className="flex items-center gap-1 mb-4 border-b border-surface-200 pb-px">
+        {SUB_TABS.map(({ id, label }) => (
+          <button key={id} onClick={() => setActiveSubTab(id)}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-t-md border-b-2 transition-colors ${
+              activeSubTab === id
+                ? 'border-primary text-primary bg-primary/5'
+                : 'border-transparent text-ink-muted hover:text-ink hover:bg-surface-100'
+            }`}>
+            {label}
+            {id === 'brackets' && (sys.customBrackets ?? []).length > 0 && (
+              <span className="ml-1.5 text-[10px] font-normal text-ink-faint">({(sys.customBrackets ?? []).length})</span>
+            )}
+          </button>
+        ))}
+      </div>
+
       {/* Filter bar — tag pills only, shown on All tab */}
-      {subTab === 'all' && globalTags.length > 0 && (
+      {activeSubTab === 'all' && globalTags.length > 0 && (
         <div className="flex items-center gap-1.5 flex-wrap mb-5">
           {globalTags.map(tag => {
             const active = tagFilter.includes(tag.id)
@@ -109,7 +136,7 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
         </div>
       )}
 
-      {subTab === 'all' && (
+      {activeSubTab === 'all' && (
         <MaterialsTable
           inputModel={sys.inputModel}
           materials={filteredMaterials}
@@ -118,6 +145,7 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
           variants={sys.variants}
           globalTags={globalTags}
           library={library}
+          customBrackets={sys.customBrackets ?? []}
           sysId={sys.id}
           onSave={saveMat}
           onDelete={deleteMat}
@@ -127,7 +155,20 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
         />
       )}
 
-      {subTab === 'library' && (
+      {activeSubTab === 'brackets' && (
+        <CustomBracketsPanel
+          customBrackets={sys.customBrackets ?? []}
+          materials={sys.materials}
+          libraryItems={library}
+          customDims={sys.customDims ?? []}
+          customCriteria={sys.customCriteria ?? []}
+          variants={sys.variants ?? []}
+          onChange={b => onUpdate({ customBrackets: b })}
+          onAddFromLib={addFromLib}
+        />
+      )}
+
+      {activeSubTab === 'library' && (
         <LibraryTab
           plan={plan}
           globalTags={globalTags}

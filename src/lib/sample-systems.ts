@@ -16,8 +16,8 @@ import type {
 function rr(ruleType: string, p: Partial<RuleRow> = {}): RuleRow {
   return {
     id: 'r0', condition: null, ruleType,
-    ruleQty: 1, ruleOutUnit: 'each', ruleDivisor: 1, ruleDimKey: '',
-    ruleTileW: 600, ruleTileH: 600, ruleBagSize: 25, waste: 0,
+    ruleQty: 1, ruleDivisor: 1, ruleDimKey: '',
+    ruleTileW: 600, ruleTileH: 600, waste: 0,
     ruleStockDimKey: '', ruleStockLength: 0,
     ...p,
   }
@@ -214,40 +214,40 @@ const HLL: SampleSystem = {
     // ── Materials ─────────────────────────────────────────────────────────────
     materials: [
       mat('mat_ll_rope', 'Wire Rope 8mm ø 7×7 SS', 'm', 'LDV006',
-        'linear_metre', { ruleQty: 1.1, ruleOutUnit: 'm' },
+        'linear_metre', { ruleQty: 1.1 },
         { notes: '10% added for splice/termination allowance', unitPrice: 8.50 }),
 
       mat('mat_ll_end_conc', 'End Anchor LDV002 (concrete/steel)', 'each', 'LDV002',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'both_ends', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'both_ends' },
         { notes: 'Standard flat-roof end anchor', variantTags: { v_ll_roof: 'concrete_flat' }, unitPrice: 42.00 }),
 
       mat('mat_ll_end_deck', 'End Anchor LDV023 (metal sheet)', 'each', 'LDV023',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'both_ends', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'both_ends' },
         { notes: 'Stainless AISI 304; min roof thickness 0.5mm', variantTags: { v_ll_roof: 'metal_deck' }, unitPrice: 42.00 }),
 
       mat('mat_ll_int', 'NEO Intermediate Anchor LDV043', 'each', 'LDV043',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_ll_int', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_ll_int' },
         { notes: 'Energy-absorbing; glider passes without detachment — max 12m span', unitPrice: 38.00 }),
 
       mat('mat_ll_corner', 'Curve Guide 90° LDV145', 'each', 'LDV145',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'corners', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'corners' },
         { notes: 'Direction change unit for 90° corners', unitPrice: 28.00 }),
 
       mat('mat_ll_tens', 'Line Tensioner LDV137', 'each', 'LDV137',
-        'fixed_qty', { ruleQty: 1, ruleOutUnit: 'each' },
+        'fixed_qty', { ruleQty: 1 },
         { notes: 'One per run end — installed at fixed end', unitPrice: 145.00 }),
 
       mat('mat_ll_glider', 'Opening Glider LDV001', 'each', 'LDV001',
-        'fixed_qty', { ruleQty: 1, ruleOutUnit: 'each' },
+        'fixed_qty', { ruleQty: 1 },
         { notes: 'One glider per worker — opens at intermediate anchors (Freehand)', unitPrice: 95.00 }),
 
       mat('mat_ll_spring', 'Spring Energy Absorber LDV032', 'each', 'LDV032',
-        'fixed_qty', { ruleQty: 1, ruleOutUnit: 'each' },
+        'fixed_qty', { ruleQty: 1 },
         { notes: 'Required on thermally active/metal roofs to maintain cable tension',
           criteriaKeys: ['cr_thermal'], unitPrice: 220.00 }),
 
       mat('mat_ll_crimp', 'Crimping Ring LDV008', 'each', 'LDV008',
-        'fixed_qty', { ruleQty: 0, ruleOutUnit: 'each' },
+        'fixed_qty', { ruleQty: 0 },
         { notes: 'Used via HLL Cable End Assembly bracket — see Custom Brackets panel', unitPrice: 4.50 }),
     ],
   },
@@ -361,60 +361,60 @@ const VECTALADDER: SampleSystem = {
         { notes: 'Double-length section — solver uses to minimise joins', unitPrice: 375.00 }),
 
       mat('mat_vl_rung', 'Rung 400mm Step (30×30 serrated)', 'each', 'VL-RUNG',
-        'ratio_length', { ruleQty: 1, ruleDivisor: 0.28, ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 0.28, ruleDimKey: 'length' },
         { notes: '1 rung per 280mm height (EN ISO 14122-4 pitch)', unitPrice: 8.50 }),
 
       mat('mat_vl_hoop', 'Safety Cage Hoop 700mm Ø', 'each', 'VL-HOOP',
-        'ratio_length', { ruleQty: 1, ruleDivisor: 1.0, ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1.0, ruleDimKey: 'length' },
         { notes: 'Max 1000mm spacing per EN ISO 14122-4 § 4.8.3', unitPrice: 88.00 }),
 
       mat('mat_vl_bracket', 'Wall Fixing Bracket', 'each', 'VL-WFIX',
-        'ratio_length', { ruleQty: 1, ruleDivisor: 2.5, ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 2.5, ruleDimKey: 'length' },
         { notes: 'Ladder-to-wall bracket every 2.5m max; offset 205–750mm adjustable', unitPrice: 22.00 }),
 
       mat('mat_vl_base', 'Base Plate & Anchor Set', 'each', 'VL-BASE',
-        'fixed_qty', { ruleQty: 1, ruleOutUnit: 'each' }, { unitPrice: 95.00 }),
+        'fixed_qty', { ruleQty: 1 }, { unitPrice: 95.00 }),
 
       mat('mat_vl_handrail', 'Top Handrail Extension 1000mm', 'each', 'VL-HRAIL',
-        'fixed_qty', { ruleQty: 1, ruleOutUnit: 'each' },
+        'fixed_qty', { ruleQty: 1 },
         { notes: '1000mm extension above access level per EN ISO 14122-4', unitPrice: 45.00 }),
 
       mat('mat_vl_trapdoor', 'Access Trapdoor / Safety Hatch', 'each', 'VL-TRAP',
-        'fixed_qty', { ruleQty: 1, ruleOutUnit: 'each' },
+        'fixed_qty', { ruleQty: 1 },
         { notes: 'Required where ladder terminates at platform', criteriaKeys: ['cr_platform'], unitPrice: 650.00 }),
 
       mat('mat_vl_gate', 'Self-Closing Safety Gate', 'each', 'VL-GATE',
-        'fixed_qty', { ruleQty: 1, ruleOutUnit: 'each' },
+        'fixed_qty', { ruleQty: 1 },
         { notes: 'Auto-closing gate at platform opening', criteriaKeys: ['cr_platform'], unitPrice: 320.00 }),
 
       // VLL components — only included when "Vertical Lifeline" variant is active
       mat('mat_vl_vll_top', 'VLL Top Anchor + Absorber LDV233', 'each', 'LDV233',
-        'fixed_qty', { ruleQty: 1, ruleOutUnit: 'each' },
+        'fixed_qty', { ruleQty: 1 },
         { notes: 'Fallprotec QuickSet — fixed at top of ladder structure',
           variantTags: { v_vl_sys: 'vll' }, unitPrice: 95.00 }),
 
       mat('mat_vl_vll_bot', 'VLL Bottom Anchor + Tensioner LDV266', 'each', 'LDV266',
-        'fixed_qty', { ruleQty: 1, ruleOutUnit: 'each' },
+        'fixed_qty', { ruleQty: 1 },
         { notes: 'Fits 10–30mm diameter rungs; maintains cable tension',
           variantTags: { v_vl_sys: 'vll' }, unitPrice: 95.00 }),
 
       mat('mat_vl_vll_rope', 'VLL Wire Rope 8mm 7×7 SS (LDV006)', 'm', 'LDV006-VLL',
-        'linear_metre', { ruleQty: 1.1, ruleOutUnit: 'm' },
+        'linear_metre', { ruleQty: 1.1 },
         { notes: '10% extra for top overrun & bottom tensioner', variantTags: { v_vl_sys: 'vll' }, unitPrice: 6.20 }),
 
       mat('mat_vl_vll_glider', 'Fall Arrester Glider LDV250', 'each', 'LDV250',
-        'fixed_qty', { ruleQty: 1, ruleOutUnit: 'each' },
+        'fixed_qty', { ruleQty: 1 },
         { notes: 'One per worker — locks instantly on fall; travels freely during climbing',
           variantTags: { v_vl_sys: 'vll' }, unitPrice: 185.00 }),
 
       mat('mat_vl_vll_guide', 'Intermediate Guide LDV241', 'each', 'LDV241',
-        'ratio_length', { ruleQty: 1, ruleDivisor: 8, ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 8, ruleDimKey: 'length' },
         { notes: 'Mounted on rungs; guides cable — 1 per 8m of height (typical)',
           variantTags: { v_vl_sys: 'vll' }, unitPrice: 38.00 }),
 
       // Bracket reference material
       mat('mat_vl_bolt', 'Cage Fixing Bolt M10×75mm (coach)', 'each', 'VL-BOLT10',
-        'fixed_qty', { ruleQty: 0, ruleOutUnit: 'each' },
+        'fixed_qty', { ruleQty: 0 },
         { notes: 'Issued via Cage Hoop Fixing Kit bracket — see Custom Brackets panel', unitPrice: 1.20 }),
     ],
   },
@@ -530,50 +530,50 @@ const EVORAIL: SampleSystem = {
     materials: [
       // Posts — galvanised variant
       mat('mat_er_post_galv', 'Long Upright 1100mm (Galvanised)', 'each', 'ER-LU-GALV',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts' },
         { notes: 'Telescopic adjustable legs; 10° incline; 48mm OD', variantTags: { v_er_finish: 'galvanised' }, unitPrice: 78.00 }),
 
       mat('mat_er_post_ss', 'Long Upright 1100mm (Stainless 304)', 'each', 'ER-LU-SS304',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts' },
         { notes: 'Grade 304 stainless; seacoast/chemical environments', variantTags: { v_er_finish: 'ss304' }, unitPrice: 145.00 }),
 
       // Top rail — galvanised variant
       mat('mat_er_toprail_galv', 'Top Rail MAGNAtube 48mm × 2.5m', 'each', 'ER-TR-GALV',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts' },
         { notes: '1 rail section per post bay; 4.2 kg/rail', variantTags: { v_er_finish: 'galvanised' }, unitPrice: 95.00 }),
 
       mat('mat_er_toprail_ss', 'Top Rail Stainless 304 48mm × 2.5m', 'each', 'ER-TR-SS304',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts' },
         { notes: '1 rail section per post bay', variantTags: { v_er_finish: 'ss304' }, unitPrice: 185.00 }),
 
       // Mid rail — galvanised variant
       mat('mat_er_midrail_galv', 'Mid Rail MAGNAtube 48mm × 2.5m', 'each', 'ER-MR-GALV',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts' },
         { notes: 'Knee rail — 1 per bay', variantTags: { v_er_finish: 'galvanised' }, unitPrice: 68.00 }),
 
       mat('mat_er_midrail_ss', 'Mid Rail Stainless 304 48mm × 2.5m', 'each', 'ER-MR-SS304',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts' },
         { notes: 'Knee rail — 1 per bay', variantTags: { v_er_finish: 'ss304' }, unitPrice: 142.00 }),
 
       // Common components (no variant — same regardless of finish)
       mat('mat_er_cbal', 'Counterbalance Weight 20kg', 'each', 'ER-CBW20',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts' },
         { notes: '20kg recycled rubber; 1 per post — same count as Posts custom dim', unitPrice: 55.00 }),
 
       mat('mat_er_clamp', 'Eazy Clamp (rail-to-post connector)', 'each', 'ER-EACLAMP',
-        'ratio', { ruleQty: 2, ruleDivisor: 1, ruleDimKey: 'cd_er_posts', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 2, ruleDivisor: 1, ruleDimKey: 'cd_er_posts' },
         { notes: '2 clamps per post (top rail + mid rail); Grade A2 SS screws', unitPrice: 18.00 }),
 
       mat('mat_er_dend', 'D-End 500mm (run termination)', 'each', 'ER-DEND',
-        'ratio', { ruleQty: 2, ruleDivisor: 1, ruleDimKey: 'both_ends', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 2, ruleDivisor: 1, ruleDimKey: 'both_ends' },
         { notes: '2 D-ends per run termination (top + mid)', unitPrice: 42.00 }),
 
       mat('mat_er_corner', 'Corner Post Bracket Set', 'each', 'ER-CORNR',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'corners', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'corners' },
         { notes: 'Eazy Clamp angle adapter for direction changes', unitPrice: 145.00 }),
 
       mat('mat_er_kick', 'Kickboard 150mm (per 2.5m bay)', 'each', 'ER-KICK',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_er_posts' },
         { notes: 'Slotted toeboard — clips to post base; add when "With Kickboard" is ON',
           criteriaKeys: ['cr_kickboard'], unitPrice: 32.00 }),
     ],
@@ -638,7 +638,7 @@ const SOLAR: SampleSystem = {
       mat('sol_splice',  'Rail Splice Connector',     'each', 'SOL-SPLICE', 'ratio',       { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'cd_sol_rows'   }, { unitPrice: 14.00 }),
       mat('sol_l_foot',  'L-Foot Roof Mount',         'each', 'SOL-LFOOT',  'ratio',       { ruleQty: 4, ruleDivisor: 1, ruleDimKey: 'cd_sol_rows'   }, { unitPrice: 12.00 }),
       mat('sol_inv',     'String Inverter',           'each', 'SOL-INV',    'fixed_qty',   { ruleQty: 1 },                                              { unitPrice: 2200.00 }),
-      mat('sol_dc_cable','DC Cable 6mm² (m)',          'm',    'SOL-DC6',    'ratio_area',  { ruleQty: 3 },                                              { unitPrice: 3.20 }),
+      mat('sol_dc_cable','DC Cable 6mm² (m)',          'm',    'SOL-DC6',    'ratio',       { ruleQty: 3, ruleDimKey: '__area' },                                              { unitPrice: 3.20 }),
       mat('sol_ac_cable','AC Cable 6mm² (m)',          'm',    'SOL-AC6',    'fixed_qty',   { ruleQty: 6 },                                              { unitPrice: 2.80 }),
       mat('sol_battery', 'Battery Module 10kWh',      'each', 'SOL-BAT',    'fixed_qty',   { ruleQty: 1 }, { criteriaKeys: ['cr_battery'],               unitPrice: 3800.00 }),
       mat('sol_hyb_inv', 'Hybrid Inverter',           'each', 'SOL-HINV',   'fixed_qty',   { ruleQty: 1 }, { criteriaKeys: ['cr_battery'],               unitPrice: 2200.00 }),
@@ -691,12 +691,12 @@ const PAINT: SampleSystem = {
       ]),
     ],
     materials: [
-      mat('pt_primer',   'Primer 10L',             'tin',  'PT-PRIMER',   'coverage_per_item', { ruleQty: 1, ruleDivisor: 8,  ruleOutUnit: 'tin'  }, { criteriaKeys: ['cr_primer'],              unitPrice: 68.00 }),
-      mat('pt_paint',    'Topcoat Paint 15L',       'tin',  'PT-TOPCOAT',  'coverage_per_item', { ruleQty: 1, ruleDivisor: 12, ruleOutUnit: 'tin'  }, { variantTags: { var_pt_finish: 'flat' },  unitPrice: 95.00 }),
-      mat('pt_solvent',  'Thinner / Solvent 5L',    'tin',  'PT-SOLVENT',  'ratio',             { ruleQty: 1, ruleDivisor: 5, ruleOutUnit: 'tin', ruleDimKey: 'cd_pt_vol' },                  { unitPrice: 24.00 }),
+      mat('pt_primer',   'Primer 10L',             'tin',  'PT-PRIMER',   'coverage_per_item', { ruleQty: 1, ruleDivisor: 8 }, { criteriaKeys: ['cr_primer'],              unitPrice: 68.00 }),
+      mat('pt_paint',    'Topcoat Paint 15L',       'tin',  'PT-TOPCOAT',  'coverage_per_item', { ruleQty: 1, ruleDivisor: 12 }, { variantTags: { var_pt_finish: 'flat' },  unitPrice: 95.00 }),
+      mat('pt_solvent',  'Thinner / Solvent 5L',    'tin',  'PT-SOLVENT',  'ratio',             { ruleQty: 1, ruleDivisor: 5, ruleDimKey: 'cd_pt_vol' },                  { unitPrice: 24.00 }),
       mat('pt_roller',   'Roller Frame + Cover',    'each', 'PT-ROLLER',   'fixed_qty',         { ruleQty: 4 },                                                                               { unitPrice: 18.00 }),
       mat('pt_brush',    'Paint Brush Set',         'each', 'PT-BRUSH',    'fixed_qty',         { ruleQty: 2 },                                                                               { unitPrice: 22.00 }),
-      mat('pt_tape',     'Masking Tape 50m',        'roll', 'PT-TAPE',     'ratio_length',      { ruleQty: 1, ruleDivisor: 50 },                                                              { unitPrice: 8.50 }),
+      mat('pt_tape',     'Masking Tape 50m',        'roll', 'PT-TAPE',     'ratio',             { ruleQty: 1, ruleDivisor: 50, ruleDimKey: 'length' },                                                              { unitPrice: 8.50 }),
       mat('pt_drop',     'Drop Cloth 4×3m',         'each', 'PT-DROP',     'fixed_qty',         { ruleQty: 2 },                                                                               { unitPrice: 14.00 }),
       mat('pt_tray',     'Roller Tray',             'each', 'PT-TRAY',     'fixed_qty',         { ruleQty: 2 },                                                                               { unitPrice: 6.50 }),
     ],
@@ -715,7 +715,7 @@ const TILER: SampleSystem = {
     'Floor and wall tiling take-off. Tile size variant drives sheet count. ' +
     'Adhesive and grout quantities derived from area. "Wet Area" criterion adds waterproofing.',
   highlights: [
-    'Tile count: tile_size rule — sheet dimensions from variant (300×300, 600×600, 300×600)',
+    'Tile count: sheet_size rule — sheet dimensions from variant (300×300, 600×600, 300×600)',
     'Adhesive: coverage rule (4 kg/m²)',
     'Grout: coverage rule (0.4 kg/m²) × joint width',
     '"Wet Area" criterion adds waterproofing membrane to BOM',
@@ -749,13 +749,13 @@ const TILER: SampleSystem = {
       ]),
     ],
     materials: [
-      mat('tl_tile',       'Floor Tile (m²)',           'm²',   'TL-TILE',    'tile_size',         { ruleTileW: 300, ruleTileH: 300, ruleOutUnit: 'box', waste: 10 }, { variantTags: { var_tl_size: 't300x300' }, unitPrice: 45.00 }),
-      mat('tl_adhesive',   'Tile Adhesive 20kg',        'bag',  'TL-ADH',     'kg_per_sqm',        { ruleQty: 4,  ruleOutUnit: 'bag', ruleBagSize: 20, waste: 5 },                            { unitPrice: 28.00 }),
-      mat('tl_grout',      'Grout 5kg',                 'bag',  'TL-GROUT',   'kg_per_sqm',        { ruleQty: 0.4,ruleOutUnit: 'bag', ruleBagSize: 5,  waste: 5 },                            { unitPrice: 18.00 }),
-      mat('tl_spacer',     'Tile Spacers 2mm (bag 100)','bag',  'TL-SPACER',  'ratio_area',        { ruleQty: 20 },                                                                            { unitPrice: 6.00 }),
+      mat('tl_tile',       'Floor Tile (m²)',           'm²',   'TL-TILE',    'sheet_size',         { ruleTileW: 300, ruleTileH: 300, waste: 10 }, { variantTags: { var_tl_size: 't300x300' }, unitPrice: 45.00 }),
+      mat('tl_adhesive',   'Tile Adhesive 20kg',        'bag',  'TL-ADH',     'kg_per_sqm',        { ruleQty: 4, waste: 5 },                            { unitPrice: 28.00 }),
+      mat('tl_grout',      'Grout 5kg',                 'bag',  'TL-GROUT',   'kg_per_sqm',        { ruleQty: 0.4, waste: 5 },                            { unitPrice: 18.00 }),
+      mat('tl_spacer',     'Tile Spacers 2mm (bag 100)','bag',  'TL-SPACER',  'ratio',             { ruleQty: 20, ruleDimKey: '__area' },                                                                            { unitPrice: 6.00 }),
       mat('tl_trim',       'Edge Trim (m)',              'm',    'TL-TRIM',    'linear_metre',      { ruleQty: 1 },                                                                             { unitPrice: 12.00 }),
-      mat('tl_membrane',   'Waterproof Membrane 1L',    'tin',  'TL-MEMBRANE','coverage_per_item', { ruleQty: 1, ruleDivisor: 1.5, ruleOutUnit: 'tin' }, { criteriaKeys: ['cr_wetarea'],      unitPrice: 38.00 }),
-      mat('tl_primer',     'Substrate Primer 5L',       'tin',  'TL-PRIMER',  'coverage_per_item', { ruleQty: 1, ruleDivisor: 6,   ruleOutUnit: 'tin' }, { criteriaKeys: ['cr_wetarea'],      unitPrice: 32.00 }),
+      mat('tl_membrane',   'Waterproof Membrane 1L',    'tin',  'TL-MEMBRANE','coverage_per_item', { ruleQty: 1, ruleDivisor: 1.5,  }, { criteriaKeys: ['cr_wetarea'],      unitPrice: 38.00 }),
+      mat('tl_primer',     'Substrate Primer 5L',       'tin',  'TL-PRIMER',  'coverage_per_item', { ruleQty: 1, ruleDivisor: 6,    }, { criteriaKeys: ['cr_wetarea'],      unitPrice: 32.00 }),
     ],
   },
 }
@@ -943,10 +943,10 @@ const CLADDING: SampleSystem = {
       mat('cl_fastener', 'Tek Screw 12-14×35 (pk50)','pk',  'CL-SCREW',   'ratio',        { ruleQty: 1, ruleDivisor: 50, ruleDimKey: 'cd_cl_fast' },                                 { unitPrice: 18.00 }),
       mat('cl_ridge',    'Ridge Cap (m)',             'm',   'CL-RIDGE',   'linear_metre', { ruleQty: 1 },                                                                             { unitPrice: 24.00 }),
       mat('cl_flash',    'Flashing 300mm (m)',        'm',   'CL-FLASH',   'linear_metre', { ruleQty: 2 },                                                                             { unitPrice: 16.00 }),
-      mat('cl_seal',     'Butyl Sealant Tape 10m',  'roll', 'CL-SEAL',    'ratio_length', { ruleQty: 1, ruleDivisor: 10 },                                                            { unitPrice: 28.00 }),
+      mat('cl_seal',     'Butyl Sealant Tape 10m',  'roll', 'CL-SEAL',    'ratio', { ruleQty: 1, ruleDivisor: 10, ruleDimKey: 'length' },                                                            { unitPrice: 28.00 }),
       mat('cl_foam',     'Foam Closure Strip (m)',    'm',   'CL-FOAM',    'linear_metre', { ruleQty: 2 },                                                                             { unitPrice: 8.50 }),
-      mat('cl_insul',    'Insulation Batt R2.0',    'each', 'CL-INSUL',   'ratio_area',   { ruleQty: 1 },    { criteriaKeys: ['cr_insulation'],                                       unitPrice: 35.00 }),
-      mat('cl_tape',     'Double-Sided Tape 30m',   'roll', 'CL-TAPE',    'ratio_area',   { ruleQty: 0.05 }, { criteriaKeys: ['cr_insulation'],                                       unitPrice: 12.00 }),
+      mat('cl_insul',    'Insulation Batt R2.0',    'each', 'CL-INSUL',   'ratio',        { ruleQty: 1, ruleDimKey: '__area' },    { criteriaKeys: ['cr_insulation'],                                       unitPrice: 35.00 }),
+      mat('cl_tape',     'Double-Sided Tape 30m',   'roll', 'CL-TAPE',    'ratio',        { ruleQty: 0.05, ruleDimKey: '__area' }, { criteriaKeys: ['cr_insulation'],                                       unitPrice: 12.00 }),
     ],
   },
 }

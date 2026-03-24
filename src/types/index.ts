@@ -114,12 +114,10 @@ export interface RuleRow {
   condition:       null | { criterionKey: string; whenValue: boolean }
   ruleType:        string | null
   ruleQty:         number
-  ruleOutUnit:     string
   ruleDivisor:     number
   ruleDimKey:      string
   ruleTileW:       number
   ruleTileH:       number
-  ruleBagSize:     number
   waste:           number
   ruleStockDimKey: string
   ruleStockLength: number
