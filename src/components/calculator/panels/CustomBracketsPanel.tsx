@@ -256,8 +256,6 @@ function BracketForm({
                 ) : (
                   <div className="flex flex-wrap gap-2 items-end pl-3 border-l-2 border-surface-300">
                     <NumberInput label="Default" value={p.default} step="any" onChange={e => updateParam(i, { ...p, default: parseFloat(e.target.value) || 0 })} className="w-24" />
-                    <NumberInput label="Min" value={p.min ?? ''} step="any" onChange={e => updateParam(i, { ...p, min: parseFloat(e.target.value) || undefined })} className="w-20" />
-                    <NumberInput label="Max" value={p.max ?? ''} step="any" onChange={e => updateParam(i, { ...p, max: parseFloat(e.target.value) || undefined })} className="w-20" />
                   </div>
                 )}
               </div>
