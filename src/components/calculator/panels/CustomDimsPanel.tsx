@@ -130,8 +130,22 @@ function CriteriaOverridesSection({ d, set, criteria }: {
   const [addParamVal, setAddParamVal]   = useState('')
 
   const addOverride = () => {
-    if (!addCritKey || !addParamKey || addParamVal === '') return
-    const val = isNaN(Number(addParamVal)) ? addParamVal : Number(addParamVal)
+    if (!addCritKey || !addParamKey) return
+    const param = OVERRIDABLE_PARAMS.find(p => p.value === addParamKey)
+    let val: any
+    if (param?.type === 'boolean') {
+      val = addParamVal === 'true'
+    } else if (param?.type === 'number') {
+      const n = Number(addParamVal)
+      if (addParamVal === '' || isNaN(n)) return
+      val = n
+    } else if (param?.type === 'select') {
+      if (!addParamVal) return
+      val = addParamVal
+    } else {
+      if (addParamVal === '') return
+      val = isNaN(Number(addParamVal)) ? addParamVal : Number(addParamVal)
+    }
     const next = [...overrides, { criterionKey: addCritKey, whenActive: addWhenActive, params: { [addParamKey]: val } }]
     set('criteriaOverrides')(next)
     setAddParamVal('')
@@ -144,25 +158,26 @@ function CriteriaOverridesSection({ d, set, criteria }: {
 
   if (inputCriteria.length === 0) return null
 
-  const OVERRIDABLE_PARAMS = [
-    { value: 'spacing',            label: 'Spacing value' },
-    { value: 'formulaQty',         label: 'Multiplier' },
-    { value: 'formulaDimKey',      label: 'Formula dim' },
-    { value: 'spacingTargetDim',   label: 'Spacing dim' },
-    { value: 'includesEndpoints',  label: 'Includes endpoints' },
-    { value: 'firstSupportMode',   label: 'First support mode' },
-    { value: 'firstGap',           label: 'First gap' },
+  const OVERRIDABLE_PARAMS: { value: string; label: string; type: 'number' | 'boolean' | 'select' | 'text'; options?: { value: string; label: string }[] }[] = [
+    { value: 'spacing',            label: 'Spacing value',       type: 'number' },
+    { value: 'formulaQty',         label: 'Multiplier',          type: 'number' },
+    { value: 'formulaDimKey',      label: 'Formula dim',         type: 'select', options: PRIMITIVE_DIMS.map(p => ({ value: p.key, label: p.icon + ' ' + p.label })) },
+    { value: 'spacingTargetDim',   label: 'Spacing dim',         type: 'select', options: PRIMITIVE_DIMS.map(p => ({ value: p.key, label: p.icon + ' ' + p.label })) },
+    { value: 'includesEndpoints',  label: 'Includes endpoints',  type: 'boolean' },
+    { value: 'firstSupportMode',   label: 'First support mode',  type: 'select', options: [{ value: 'none', label: 'None' }, { value: 'ground', label: 'At ground' }, { value: 'offset', label: 'Offset' }] },
+    { value: 'firstGap',           label: 'First gap',           type: 'number' },
     // stock_length
-    { value: 'stockTargetDim',     label: 'Stock target dim' },
-    { value: 'stockLengths',       label: 'Stock lengths' },
-    { value: 'stockOptimMode',     label: 'Stock optim mode' },
+    { value: 'stockTargetDim',     label: 'Stock target dim',    type: 'select', options: PRIMITIVE_DIMS.map(p => ({ value: p.key, label: p.icon + ' ' + p.label })) },
+    { value: 'stockLengths',       label: 'Stock lengths',       type: 'text' },
+    { value: 'stockOptimMode',     label: 'Stock optim mode',    type: 'select', options: [{ value: 'min_waste', label: 'Min waste' }, { value: 'min_sections', label: 'Min sections' }] },
     // sheet_cut
-    { value: 'plateMaterialId',    label: 'Plate material' },
-    { value: 'partW',              label: 'Part width' },
-    { value: 'partH',              label: 'Part height' },
-    { value: 'kerf',               label: 'Kerf' },
-    { value: 'sheetAllowRotation', label: 'Allow rotation' },
+    { value: 'plateMaterialId',    label: 'Plate material',      type: 'text' },
+    { value: 'partW',              label: 'Part width',           type: 'number' },
+    { value: 'partH',              label: 'Part height',          type: 'number' },
+    { value: 'kerf',               label: 'Kerf',                type: 'number' },
+    { value: 'sheetAllowRotation', label: 'Allow rotation',      type: 'boolean' },
   ]
+  const selectedParam = OVERRIDABLE_PARAMS.find(p => p.value === addParamKey)
 
   return (
     <div className="border-t border-surface-200 pt-3 mt-1">
@@ -213,12 +228,36 @@ function CriteriaOverridesSection({ d, set, criteria }: {
               </div>
             </div>
             <Select label="Param" value={addParamKey}
-              onChange={e => setAddParamKey(e.target.value)}
+              onChange={e => { setAddParamKey(e.target.value); setAddParamVal('') }}
               options={OVERRIDABLE_PARAMS}
               className="w-36" />
-            <Input label="Value" value={addParamVal}
-              onChange={e => setAddParamVal(e.target.value)}
-              placeholder="e.g. 3.0" className="w-24" />
+            {selectedParam?.type === 'boolean' ? (
+              <div className="flex flex-col gap-1">
+                <label className="label">Value</label>
+                <div className="flex overflow-hidden border border-surface-300" style={{ borderRadius: 'var(--radius)' }}>
+                  {[{ val: 'true', l: 'Yes' }, { val: 'false', l: 'No' }].map((opt, i) => (
+                    <button key={opt.val} type="button"
+                      onClick={() => setAddParamVal(opt.val)}
+                      className={`px-3 py-1.5 text-xs font-semibold transition-all ${i > 0 ? 'border-l border-surface-300' : ''} ${addParamVal === opt.val ? 'bg-ink text-surface-50' : 'bg-surface-50 text-ink-muted hover:bg-surface-100'}`}>
+                      {opt.l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : selectedParam?.type === 'select' ? (
+              <Select label="Value" value={addParamVal}
+                onChange={e => setAddParamVal(e.target.value)}
+                options={[{ value: '', label: '— select —' }, ...(selectedParam.options ?? [])]}
+                className="w-36" />
+            ) : selectedParam?.type === 'number' ? (
+              <Input label="Value" type="number" value={addParamVal}
+                onChange={e => setAddParamVal(e.target.value)}
+                placeholder="e.g. 3.0" className="w-24" />
+            ) : (
+              <Input label="Value" value={addParamVal}
+                onChange={e => setAddParamVal(e.target.value)}
+                placeholder="e.g. 3.0" className="w-24" />
+            )}
             <Button size="sm" variant="secondary" onClick={addOverride} icon={<Plus className="w-3 h-3" />}>Add</Button>
           </div>
         </div>
