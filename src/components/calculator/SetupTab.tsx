@@ -254,12 +254,6 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {userEntered.map(d => renderDimPill(d, true))}
-                      {(sys.inputModel === 'linear_run' || normalizeInputModel(sys.inputModel) === 'linear') && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-ink border border-surface-200"
-                          style={{ borderRadius: 'var(--radius)' }}>
-                          + segment mode
-                        </span>
-                      )}
                     </div>
                   </div>
                 )}
