@@ -241,25 +241,66 @@ function BracketForm({
       {/* Parameters */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="label mb-0">Parameters (optional)</label>
+          <label className="label mb-0">Parameters</label>
           <Button size="xs" variant="secondary" onClick={addParam} icon={<Plus className="w-3 h-3" />}>Add</Button>
         </div>
-        {params.length === 0 && <p className="text-xs text-ink-faint">No parameters — bracket quantities are fixed. Add parameters for adjustable assemblies (e.g. projection_mm).</p>}
+        {params.length === 0 && <p className="text-xs text-ink-faint">No parameters — bracket quantities are fixed. Add parameters for adjustable assemblies (e.g. length).</p>}
         <div className="space-y-2">
-          {params.map((p, i) => (
-            <div key={i} className="flex flex-wrap gap-2 items-end bg-surface-50 rounded-lg border border-surface-200 p-3">
-              <Input label="Key" value={p.key} onChange={e => updateParam(i, { ...p, key: e.target.value.replace(/\s+/g, '_').toLowerCase() })}
-                placeholder="projection_mm" className="w-36" />
-              <Input label="Label" value={p.label} onChange={e => updateParam(i, { ...p, label: e.target.value })}
-                placeholder="Projection" className="w-36" />
-              <Input label="Unit" value={p.unit} onChange={e => updateParam(i, { ...p, unit: e.target.value })}
-                placeholder="mm" className="w-20" />
-              <NumberInput label="Default" value={p.default} step="any" onChange={e => updateParam(i, { ...p, default: parseFloat(e.target.value) || 0 })} className="w-24" />
-              <NumberInput label="Min" value={p.min ?? ''} step="any" onChange={e => updateParam(i, { ...p, min: parseFloat(e.target.value) || undefined })} className="w-20" />
-              <NumberInput label="Max" value={p.max ?? ''} step="any" onChange={e => updateParam(i, { ...p, max: parseFloat(e.target.value) || undefined })} className="w-20" />
-              <Button size="xs" variant="danger" onClick={() => removeParam(i)} icon={<Trash2 className="w-3 h-3" />} className="mb-1" />
-            </div>
-          ))}
+          {params.map((p, i) => {
+            const isStockLen = p.source === 'stock_length'
+            const stockMat   = isStockLen && p.stockMaterialId ? materials.find(m => m.id === p.stockMaterialId) : null
+            const stockMm    = stockMat?.spec?.stockLengthMm ?? 0
+            return (
+              <div key={i} className="bg-surface-50 rounded-lg border border-surface-200 p-3 space-y-2">
+                <div className="flex flex-wrap gap-2 items-end">
+                  <Input label="Key" value={p.key} onChange={e => updateParam(i, { ...p, key: e.target.value.replace(/\s+/g, '_').toLowerCase() })}
+                    placeholder="length" className="w-36" />
+                  <Input label="Label" value={p.label} onChange={e => updateParam(i, { ...p, label: e.target.value })}
+                    placeholder="Length" className="w-36" />
+                  <Input label="Unit" value={p.unit} onChange={e => updateParam(i, { ...p, unit: e.target.value })}
+                    placeholder="mm" className="w-20" />
+                  <Select label="Source" value={p.source ?? 'input'}
+                    onChange={e => updateParam(i, { ...p, source: e.target.value as 'input' | 'stock_length', ...(e.target.value === 'input' ? { stockMaterialId: undefined } : {}) })}
+                    options={[{ value: 'input', label: 'Input' }, { value: 'stock_length', label: 'Stock length' }]} className="w-32" />
+                  <Button size="xs" variant="danger" onClick={() => removeParam(i)} icon={<Trash2 className="w-3 h-3" />} className="mb-1" />
+                </div>
+                {isStockLen ? (
+                  <div className="flex flex-wrap gap-2 items-end pl-3 border-l-2 border-primary/30">
+                    <div className="flex flex-col gap-1 min-w-48">
+                      <span className="label mb-0">Material (stock length source)</span>
+                      <select value={p.stockMaterialId ?? ''} onChange={e => {
+                          const matId = e.target.value
+                          const mat = materials.find(m => m.id === matId)
+                          const sl = mat?.spec?.stockLengthMm ?? 0
+                          updateParam(i, { ...p, stockMaterialId: matId || undefined, default: sl })
+                        }} className="input text-sm">
+                        <option value="">— pick material —</option>
+                        {materials.map(m => (
+                          <option key={m.id} value={m.id}>{m.name}{m.spec?.stockLengthMm ? ` (${m.spec.stockLengthMm} mm)` : ''}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {stockMm > 0 && (
+                      <div className="text-xs text-primary font-semibold px-2 py-1 bg-primary/10 rounded">
+                        Stock length: {stockMm} mm
+                      </div>
+                    )}
+                    {p.stockMaterialId && stockMm === 0 && (
+                      <div className="text-xs text-amber-700 font-semibold px-2 py-1 bg-amber-50 rounded">
+                        No stock length set on this material
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2 items-end pl-3 border-l-2 border-surface-300">
+                    <NumberInput label="Default" value={p.default} step="any" onChange={e => updateParam(i, { ...p, default: parseFloat(e.target.value) || 0 })} className="w-24" />
+                    <NumberInput label="Min" value={p.min ?? ''} step="any" onChange={e => updateParam(i, { ...p, min: parseFloat(e.target.value) || undefined })} className="w-20" />
+                    <NumberInput label="Max" value={p.max ?? ''} step="any" onChange={e => updateParam(i, { ...p, max: parseFloat(e.target.value) || undefined })} className="w-20" />
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -401,11 +442,18 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
                     <div className="mb-2">
                       <div className="text-[10px] font-bold uppercase text-ink-faint tracking-wide mb-1">Parameters</div>
                       <div className="flex flex-wrap gap-2">
-                        {bracket.parameters.map(p => (
-                          <span key={p.key} className="text-xs border px-2 py-0.5 font-mono text-ink border-surface-200" style={{ borderRadius: 'var(--radius)', background: 'var(--color-surface-100)' }}>
-                            {p.key} = {p.default}{p.unit}
-                          </span>
-                        ))}
+                        {bracket.parameters.map(p => {
+                          const isStock = p.source === 'stock_length'
+                          const stockMat = isStock && p.stockMaterialId ? materials.find(m => m.id === p.stockMaterialId) : null
+                          const stockVal = stockMat?.spec?.stockLengthMm ?? 0
+                          const displayVal = isStock ? stockVal : p.default
+                          return (
+                            <span key={p.key} className="text-xs border px-2 py-0.5 font-mono text-ink border-surface-200" style={{ borderRadius: 'var(--radius)', background: 'var(--color-surface-100)' }}>
+                              {p.key} = {displayVal}{p.unit}
+                              {isStock && <span className="text-[9px] ml-1 text-primary font-sans font-semibold">(stock)</span>}
+                            </span>
+                          )
+                        })}
                       </div>
                     </div>
                   )}
@@ -416,13 +464,37 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
                         {bracket.bom.map(item => {
                           const mat     = materials.find(m => m.id === item.materialId)
                           const matName = item.customName || mat?.name || '(unknown)'
-                          const qty = evaluateFormula(item.qtyFormula, Object.fromEntries((bracket.parameters ?? []).map(p => [p.key, p.default])))
+                          // Resolve params with stock length values
+                          const resolvedParams: Record<string, number> = {}
+                          for (const p of bracket.parameters ?? []) {
+                            if (p.source === 'stock_length' && p.stockMaterialId) {
+                              const sMat = materials.find(m => m.id === p.stockMaterialId)
+                              resolvedParams[p.key] = sMat?.spec?.stockLengthMm ?? p.default
+                            } else {
+                              resolvedParams[p.key] = p.default
+                            }
+                          }
+                          const qty = evaluateFormula(item.qtyFormula, resolvedParams)
+                          // Show wastage hint if length-based BOM item with stock length available
+                          const isLength = item.qtyUnit === 'mm' || item.qtyUnit === 'm'
+                          const stockMm = mat?.spec?.stockLengthMm ?? 0
+                          let wasteHint = ''
+                          if (isLength && stockMm > 0) {
+                            const cutMm = item.qtyUnit === 'm' ? qty * 1000 : qty
+                            if (cutMm > 0 && cutMm <= stockMm) {
+                              const pcsPerBar = Math.floor(stockMm / cutMm)
+                              const offcut = stockMm - pcsPerBar * cutMm
+                              const pct = (offcut / (pcsPerBar * cutMm)) * 100
+                              wasteHint = pct > 0 ? `${pcsPerBar}/bar, ${pct.toFixed(1)}% waste` : `${pcsPerBar}/bar, 0% waste`
+                            }
+                          }
                           return (
                             <div key={item.id} className="flex items-center gap-2 text-xs text-ink">
                               <span className="text-ink-faint w-3">└</span>
                               <span className="font-medium">{matName}</span>
                               {item.customName && <span className="text-[9px] text-ink-faint border border-surface-300 px-1 rounded">custom</span>}
                               <span className="text-ink-muted font-mono">{qty} {item.qtyUnit}</span>
+                              {wasteHint && <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded font-medium">{wasteHint}</span>}
                               {item.notes && <span className="text-ink-faint">{item.notes}</span>}
                             </div>
                           )
