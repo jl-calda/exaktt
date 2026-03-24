@@ -12,7 +12,6 @@ import { useRouter } from 'next/navigation'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
 import { computeWorkSchedule, computeBracketQtys, computeBracketBOM, resolveBracketParams, migrateSetupBrackets } from '@/lib/engine/work'
 import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, getDimLabel, getDimUnit } from '@/lib/engine/constants'
-import { normalizeInputModel } from '@/types'
 import SystemOverviewPanel from './SystemOverviewPanel'
 
 interface Props {
@@ -116,7 +115,7 @@ function getRelevantKeys(sys: MtoSystem): Set<string> {
 function getRunDims(run: Run, sys: MtoSystem): Record<string, number> {
   const relevant = getRelevantKeys(sys)
   const dims: Record<string, number> = {}
-  if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple') {
+  if (sys.inputModel === 'linear' && run.inputMode === 'simple') {
     dims.length  = parseFloat(run.simpleJob?.length  as any) || 0
     dims.corners   = 0
     dims.end1      = 1
@@ -955,8 +954,8 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
       for (const [k, v] of Object.entries(job)) {
         jobDims[k] = parseFloat(String(v)) || 0
       }
-      // Handle linear_run simple mode dims
-      if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple') {
+      // Handle linear simple mode dims
+      if (sys.inputModel === 'linear' && run.inputMode === 'simple') {
         jobDims.length    = parseFloat(run.simpleJob?.length as any) || 0
         jobDims.corners   = 0
         const isLoop      = !!(run.criteriaState ?? {} as any)['loop']
@@ -1060,7 +1059,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
   // Total run length for rate calculations
   const totalRunLength = calc.runs.reduce((sum: number, run: Run) => {
-    if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear')) {
+    if (sys.inputModel === 'linear') {
       if (run.inputMode === 'segment') {
         return sum + (run.segments ?? []).reduce((s: number, seg: Segment) => s + (parseFloat(seg.length) || 0), 0) * run.qty
       }
@@ -1171,7 +1170,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                       <VariantSelector sys={sys} run={run} onUpdate={patch => calc.updateRun(run.id, patch)} />
                     )}
 
-                    {(sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && (
+                    {sys.inputModel === 'linear' && (
                       <div className="flex gap-0 rounded-lg overflow-hidden border border-secondary-200">
                         {([['simple', '📐 Simple'], ['segment', '🗺 Segments']] as const).map(([mode, label], i) => (
                           <button key={mode} onClick={() => calc.updateRun(run.id, { inputMode: mode })}
@@ -1213,7 +1212,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                       </div>
                     )}
 
-                    {!['linear_run','linear','area'].includes(sys.inputModel) && (
+                    {!['linear','area'].includes(sys.inputModel) && (
                       <div className="grid grid-cols-2 gap-2">
                         {(DIMS_FOR_INPUT_MODEL[sys.inputModel] ?? PRIMITIVE_DIMS.map(p => p.key)).filter(key => {
                           // Always show dims defined by the input model
@@ -1294,7 +1293,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                       </div>
                     )}
 
-                    {(sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple' && (
+                    {sys.inputModel === 'linear' && run.inputMode === 'simple' && (
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{getDimLabel('length', sys.dimOverrides)}</div>
@@ -1359,7 +1358,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                       </div>
                     )}
 
-                    {(sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'segment' && (
+                    {sys.inputModel === 'linear' && run.inputMode === 'segment' && (
                       <>
                         <SegmentEditor
                           segments={run.segments ?? []}

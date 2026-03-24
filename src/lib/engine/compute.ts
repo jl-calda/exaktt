@@ -45,25 +45,6 @@ function getPlateDims(mat: Material) {
   }
 }
 
-function migrateMat(mat: any): Material {
-  if (mat.ruleSet) return mat
-  if (!mat.ruleType) return { ...mat, ruleSet: [], customDimKey: mat.customDimKey ?? null, criteriaKeys: mat.criteriaKeys ?? [], variantTags: mat.variantTags ?? {} }
-  const row: RuleRow = {
-    id: 'r_' + Math.random().toString(36).slice(2, 7),
-    condition:    null,
-    ruleType:     mat.ruleType,
-    ruleQty:      mat.ruleQty      ?? 1,
-    ruleDivisor:  mat.ruleDivisor  ?? 1,
-    ruleDimKey:   mat.ruleDimKey   ?? '',
-    ruleTileW:    mat.ruleTileW    ?? 600,
-    ruleTileH:    mat.ruleTileH    ?? 600,
-    waste:        mat.waste        ?? 0,
-    ruleStockDimKey: '',
-    ruleStockLength: 0,
-  }
-  return { ...mat, ruleSet: [row], criteriaKeys: mat.criteriaKeys ?? [], variantTags: mat.variantTags ?? {} }
-}
-
 function matHasRule(mat: Material): boolean {
   return (mat.ruleSet ?? []).some(r => r.ruleType)
 }
@@ -259,7 +240,6 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
 
   const active = materials
     .filter(m => m.substrate === 'all' || substrate === 'all' || m.substrate === substrate)
-    .map(migrateMat)
     .filter(m => !bracketMatIds.has(m.id) && (matHasRule(m) || plateMaterialIds.has(m.id)))
 
   const matResults = active.map(mat => {
@@ -377,7 +357,7 @@ export function computeMultiRun(
     const variantState  = run.variantState  ?? {}
     const jobDims: Record<string, number | string> = { ...(run.job ?? {}) }
 
-    if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear')) {
+    if (sys.inputModel === 'linear') {
       if (run.inputMode === 'simple') {
         jobDims.length    = parseFloat(run.simpleJob?.length as any) || 0
         jobDims.corners   = 0

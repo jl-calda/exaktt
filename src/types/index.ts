@@ -3,14 +3,6 @@
 
 export type Plan = 'FREE' | 'PRO'
 export type InputModel = 'linear' | 'area' | 'volume' | 'mass' | 'count' | 'time'
-  | 'simple_dims' | 'linear_run'  // legacy aliases
-
-/** Normalize legacy inputModel values to current ones */
-export function normalizeInputModel(raw: string): InputModel {
-  if (raw === 'linear_run')  return 'linear'
-  if (raw === 'simple_dims') return 'linear'
-  return raw as InputModel
-}
 export type CompanyRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
 
 // ─── Company + Team ───────────────────────────────────────────────────────────
@@ -134,7 +126,6 @@ export interface Material {
   properties:   MaterialProperties
   tags:         string[]
   substrate:    string
-  customDimKey: string | null
   ruleSet:      RuleRow[]
   unitPrice?:   number | null
   criteriaKeys: string[]

@@ -133,7 +133,6 @@ export function computeBracketQtys(
       ruleSet:      sb.ruleSet,
       criteriaKeys: sb.criteriaKeys ?? [],
       variantTags:  sb.variantTags  ?? {},
-      customDimKey: null,
       notes: '', photo: null, productCode: '', category: '',
       properties: {}, tags: [], substrate: 'all', libraryRef: null,
       _libSyncedAt: null, _systemSpecific: false, _createdInSystem: null,
