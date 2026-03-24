@@ -2,7 +2,7 @@
 'use client'
 import { useState } from 'react'
 import type { CustomCriterion, CustomDim } from '@/types'
-import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
 import { Plus, Trash2, Edit3, Check, X, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -16,6 +16,7 @@ import FloatingPanel from '../FloatingPanel'
 interface Props {
   customCriteria: CustomCriterion[]
   customDims:     CustomDim[]
+  inputModel?:    string
   onChange:       (criteria: CustomCriterion[]) => void
 }
 
@@ -71,14 +72,16 @@ function FieldGuide({ type, items }: { type: string; items: { label: string; des
   )
 }
 
-export default function CriteriaPanel({ customCriteria, customDims, onChange }: Props) {
+export default function CriteriaPanel({ customCriteria, customDims, inputModel, onChange }: Props) {
   const [adding, setAdding]       = useState(false)
   const [draft, setDraft]         = useState({ ...BLANK })
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState<CustomCriterion | null>(null)
   const [deleteId,  setDeleteId]  = useState<string | null>(null)
 
-  const allDims = [...PRIMITIVE_DIMS, ...customDims]
+  const allowedKeys = new Set(DIMS_FOR_INPUT_MODEL[inputModel ?? ''] ?? PRIMITIVE_DIMS.map(p => p.key))
+  const filteredPrims = PRIMITIVE_DIMS.filter(p => allowedKeys.has(p.key))
+  const allDims = [...filteredPrims, ...customDims]
   const sd = (k: keyof typeof BLANK)       => (v: any) => setDraft(d => ({ ...d, [k]: v }))
   const se = (k: keyof CustomCriterion)    => (v: any) => setEditDraft(d => d ? { ...d, [k]: v } : d)
 
