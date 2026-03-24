@@ -106,56 +106,11 @@ export function evaluateFormula(formula: string, params: Record<string, number> 
 }
 
 // ─── migrateSetupBrackets ─────────────────────────────────────────────────────
-// Backward compat: if system has legacy ruleSet/criteriaKeys/variantTags on
-// WorkBracket but no setupBrackets array, create SetupBrackets from them.
+// Returns existing setupBrackets or empty array. Legacy bracket data (ruleSet
+// etc. on WorkBracket) is dropped — users re-add via the Setup Step 5 dropdown.
 
 export function migrateSetupBrackets(sys: MtoSystem): SetupBracket[] {
-  if (sys.setupBrackets?.length) return sys.setupBrackets
-  // Build from legacy WorkBracket fields (ruleSet etc. may still be on the object)
-  const brackets = sys.customBrackets ?? []
-  const result: SetupBracket[] = []
-  for (const raw of brackets) {
-    const b = raw as any
-    // Only migrate brackets that had rules or were setupEnabled
-    const hadRules = (b.ruleSet ?? []).length > 0
-    const wasEnabled = b.setupEnabled !== false
-    if (!hadRules && !wasEnabled) continue
-    // Build legacy rule row if needed
-    let ruleSet = b.ruleSet ?? []
-    if (!ruleSet.length && b.qtyFormula) {
-      ruleSet = [{
-        id:              'r_' + Math.random().toString(36).slice(2, 7),
-        condition:       null,
-        ruleType:        'ratio',
-        ruleQty:         1,
-        ruleDivisor:     1,
-        ruleDimKey:      '',
-        ruleTileW:       600,
-        ruleTileH:       600,
-        waste:           0,
-        ruleStockDimKey: '',
-        ruleStockLength: 0,
-      }]
-    }
-    // Migrate parameter values from BracketParameter defaults and overrides
-    const paramOverrides = b.paramOverrides ?? {}
-    const params = (b.parameters ?? []).map((p: any) => ({
-      key:             p.key,
-      source:          p.source ?? 'input',
-      value:           paramOverrides[p.key] ?? p.default ?? 0,
-      min:             p.min,
-      max:             p.max,
-      stockMaterialId: p.stockMaterialId,
-    }))
-    result.push({
-      bracketId:    b.id,
-      params,
-      ruleSet,
-      criteriaKeys: b.criteriaKeys ?? [],
-      variantTags:  b.variantTags  ?? {},
-    })
-  }
-  return result
+  return sys.setupBrackets ?? []
 }
 
 // ─── computeBracketQtys ───────────────────────────────────────────────────────
