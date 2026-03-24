@@ -118,7 +118,7 @@ function getRunDims(run: Run, sys: MtoSystem): Record<string, number> {
   const dims: Record<string, number> = {}
   if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple') {
     dims.length  = parseFloat(run.simpleJob?.length  as any) || 0
-    dims.corners = parseInt(run.simpleJob?.corners   as any) || 0
+    dims.corners = 0
     dims.ends    = 2
     dims['__spacing_int_brackets'] = parseFloat(run.simpleJob?.spacing as any) || 10
   }
@@ -962,7 +962,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
       // Handle linear_run simple mode dims
       if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple') {
         jobDims.length  = parseFloat(run.simpleJob?.length as any) || 0
-        jobDims.corners = parseInt(run.simpleJob?.corners as any) || 0
+        jobDims.corners = 0
         jobDims.ends    = (run.criteriaState ?? {} as any)['loop'] ? 0 : 2
         jobDims['__spacing_int_brackets'] = parseFloat(run.simpleJob?.spacing as any) || 10
       }
@@ -1266,7 +1266,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
                     {(sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple' && (
                       <div className="grid grid-cols-2 gap-2">
-                        {[{key:'length',label:'Length',unit:'m'},{key:'corners',label:'Corners',unit:''},{key:'spacing',label:'Spacing',unit:'m'}].map(f => (
+                        {[{key:'length',label:'Length',unit:'m'},{key:'spacing',label:'Bracket Spacing',unit:'m'}].map(f => (
                           <div key={f.key}>
                             <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{f.label}</div>
                             <div className="relative">
