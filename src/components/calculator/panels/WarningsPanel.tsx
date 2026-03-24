@@ -16,7 +16,7 @@ interface Props {
   customDims: CustomDim[]
   onChange:   (warnings: Warning[]) => void
   inputModel?: string
-  dimLabels?:  Record<string, string>
+  dimOverrides?:  Record<string, { label?: string; unit?: string }>
 }
 
 const OPS   = [{ value: '>', label: '>' }, { value: '>=', label: '≥' }, { value: '<', label: '<' }, { value: '<=', label: '≤' }]
@@ -106,7 +106,7 @@ function WarnForm({ dimOptions, d, onField, onSubmit, onCancel, submitLabel }: W
   )
 }
 
-export default function WarningsPanel({ warnings, customDims, onChange, inputModel, dimLabels }: Props) {
+export default function WarningsPanel({ warnings, customDims, onChange, inputModel, dimOverrides }: Props) {
   const [adding,    setAdding]    = useState(false)
   const [draft,     setDraft]     = useState({ ...BLANK })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -119,7 +119,7 @@ export default function WarningsPanel({ warnings, customDims, onChange, inputMod
   const filteredPrims = PRIMITIVE_DIMS.filter(p => allowedKeys.has(p.key))
 
   const dimOptions = [
-    ...filteredPrims.map(p => ({ value: p.key, label: p.icon + ' ' + getDimLabel(p.key, dimLabels), group: 'Primitive' })),
+    ...filteredPrims.map(p => ({ value: p.key, label: p.icon + ' ' + getDimLabel(p.key, dimOverrides), group: 'Primitive' })),
     ...customDims.flatMap(cd => {
       const base = { value: cd.key, label: (cd.icon ?? '🔗') + ' ' + cd.name + ' — computed count (' + cd.unit + ')', group: 'Custom Dimensions' }
       if (cd.derivType === 'spacing' && cd.spacingMode === 'user') {
@@ -187,7 +187,7 @@ export default function WarningsPanel({ warnings, customDims, onChange, inputMod
                 <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <div className="font-mono text-xs text-amber-700 font-semibold mb-0.5">
-                    {PRIMITIVE_DIMS.some(p => p.key === cdKey) ? getDimLabel(cdKey, dimLabels) : (dimInfo as any)?.name ?? cdKey}
+                    {PRIMITIVE_DIMS.some(p => p.key === cdKey) ? getDimLabel(cdKey, dimOverrides) : (dimInfo as any)?.name ?? cdKey}
                     {isSpacingInput ? ' spacing' : ''} {w.operator} {w.threshold}
                   </div>
                   <div className="text-sm text-ink">{w.message}</div>

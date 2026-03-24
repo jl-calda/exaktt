@@ -8,7 +8,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input, NumberInput } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import type { WorkActivity, ActivityPhase, ActivityRateType, SpeedMode, Material, CustomCriterion, WorkBracket } from '@/types'
-import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, getDimUnit, type DimOverride } from '@/lib/engine/constants'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { IconPicker }  from '@/components/ui/IconPicker'
 import FloatingPanel from '../FloatingPanel'
@@ -19,6 +19,7 @@ interface Props {
   customCriteria: CustomCriterion[]
   customBrackets: WorkBracket[]
   onChange:       (activities: WorkActivity[]) => void
+  dimOverrides?:  Record<string, DimOverride>
 }
 
 const PHASES: { value: ActivityPhase; label: string; icon: string }[] = [
@@ -86,7 +87,7 @@ const BLANK: Omit<WorkActivity, 'id'> = {
 }
 
 function ActivityForm({
-  d, set, materials, customCriteria, customBrackets, onSave, onCancel, label,
+  d, set, materials, customCriteria, customBrackets, onSave, onCancel, label, dimOverrides,
 }: {
   d: Partial<WorkActivity>
   set: (k: keyof Omit<WorkActivity, 'id'>) => (v: any) => void
@@ -96,6 +97,7 @@ function ActivityForm({
   onSave: () => void
   onCancel: () => void
   label: string
+  dimOverrides?: Record<string, DimOverride>
 }) {
   const allDims = PRIMITIVE_DIMS
   const isThirdParty = d.rateType?.startsWith('third_party') ?? false
@@ -151,12 +153,15 @@ function ActivityForm({
               </button>
             ))}
           </div>
-          {d.speedMode === 'time_per_unit'
-            ? <NumberInput label="Min per unit" value={d.timePerUnit ?? ''} step="any" min={0}
-                onChange={e => set('timePerUnit')(parseFloat(e.target.value) || undefined)} className="w-32" />
-            : <NumberInput label="Units per hour" value={d.ratePerHr ?? ''} step="any" min={0}
-                onChange={e => set('ratePerHr')(parseFloat(e.target.value) || undefined)} className="w-32" />
-          }
+          {(() => {
+            const rateU = d.rateType === 'per_dim' && d.sourceDimKey
+              ? getDimUnit(d.sourceDimKey, dimOverrides) || 'unit' : 'unit'
+            return d.speedMode === 'time_per_unit'
+              ? <NumberInput label={`Min per ${rateU}`} value={d.timePerUnit ?? ''} step="any" min={0}
+                  onChange={e => set('timePerUnit')(parseFloat(e.target.value) || undefined)} className="w-32" />
+              : <NumberInput label={`${rateU}/hr`} value={d.ratePerHr ?? ''} step="any" min={0}
+                  onChange={e => set('ratePerHr')(parseFloat(e.target.value) || undefined)} className="w-32" />
+          })()}
           <NumberInput label="Crew size" value={d.crewSize ?? 1} step={1} min={1}
             onChange={e => set('crewSize')(parseInt(e.target.value) || 1)} className="w-24" />
         </div>
@@ -223,7 +228,7 @@ function ActivityForm({
   )
 }
 
-export default function WorkActivitiesPanel({ workActivities, materials, customCriteria, customBrackets, onChange }: Props) {
+export default function WorkActivitiesPanel({ workActivities, materials, customCriteria, customBrackets, onChange, dimOverrides }: Props) {
   const [adding,    setAdding]    = useState(false)
   const [draft,     setDraft]     = useState<Omit<WorkActivity, 'id'>>({ ...BLANK })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -253,8 +258,10 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
 
   const fmtRate = (act: WorkActivity) => {
     if (act.rateType?.startsWith('third_party')) return 'S$' + (act.thirdPartyRate ?? '—') + (act.rateType === 'third_party_day' ? '/day' : act.rateType === 'third_party_unit' ? '/unit' : ' lump')
-    if (act.speedMode === 'rate') return (act.ratePerHr ?? '—') + ' units/hr'
-    return (act.timePerUnit ?? '—') + ' min/unit'
+    const u = act.rateType === 'per_dim' && act.sourceDimKey
+      ? getDimUnit(act.sourceDimKey, dimOverrides) || 'unit' : 'unit'
+    if (act.speedMode === 'rate') return (act.ratePerHr ?? '—') + ' ' + u + '/hr'
+    return (act.timePerUnit ?? '—') + ' min/' + u
   }
 
   return (
@@ -271,7 +278,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
         <div className="p-5 bg-surface-100 border-b border-surface-200">
           <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide mb-4">New Activity</div>
           <ActivityForm d={draft} set={sd} materials={materials} customCriteria={customCriteria} customBrackets={customBrackets}
-            onSave={add} onCancel={() => setAdding(false)} label="Add" />
+            onSave={add} onCancel={() => setAdding(false)} label="Add" dimOverrides={dimOverrides} />
         </div>
       )}
 
@@ -316,7 +323,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
               {isEd && editDraft && (
                 <div className="px-5 pb-5 border-t border-primary/20 pt-4">
                   <ActivityForm d={editDraft} set={se} materials={materials} customCriteria={customCriteria} customBrackets={customBrackets}
-                    onSave={saveEdit} onCancel={cancelEdit} label="Save" />
+                    onSave={saveEdit} onCancel={cancelEdit} label="Save" dimOverrides={dimOverrides} />
                 </div>
               )}
             </div>

@@ -7,6 +7,7 @@ import type {
 } from '@/types'
 import { solveStockLengths, solveSheetCut } from './solver'
 import { resolveSegments } from './segments'
+import { UNIT_SELECTABLE_DIMS, getUnitFactor } from './constants'
 
 // ─── Primitive dimensions ────────────────────────────────────────────────────
 
@@ -132,9 +133,16 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
     if (!jobDims.corners) jobDims.corners = res.corners
   }
 
-  // Build prim values
+  // Build prim values and normalize linear dims to meters
   const prim: Record<string, number> = {}
   PRIMITIVE_DIMS.forEach(d => { prim[d.key] = parseFloat(jobDims[d.key] as any) || 0 })
+  if (sys.dimOverrides) {
+    for (const [key, ov] of Object.entries(sys.dimOverrides)) {
+      if (UNIT_SELECTABLE_DIMS.has(key) && ov.unit && prim[key] !== 0) {
+        prim[key] *= getUnitFactor(ov.unit)
+      }
+    }
+  }
 
   // Resolve custom dims
   const customVals: Record<string, number> = {}
@@ -148,18 +156,22 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
         break
       case 'spacing': {
         const spacingInputKey = '__spacing_' + cd.key
+        const spacingDimKey = s.spacingTargetDim ?? 'length'
+        const spacingUnit = sys.dimOverrides?.[spacingDimKey]?.unit
+        const spacingFactor = spacingUnit ? getUnitFactor(spacingUnit) : 1
         const userSpacing = s.spacingMode === 'user'
           ? parseFloat(jobDims[spacingInputKey] as any) || parseFloat(s.spacing as any) || 1
           : null
-        const actualSp = userSpacing ?? parseFloat(s.spacing as any) ?? 1
-        const L = prim[s.spacingTargetDim ?? 'length'] ?? customVals[s.spacingTargetDim ?? 'length'] ?? prim.length
+        const actualSp = (userSpacing ?? parseFloat(s.spacing as any) ?? 1) * spacingFactor
+        const L = prim[spacingDimKey] ?? customVals[spacingDimKey] ?? prim.length
         const firstGapVal = parseFloat(s.firstGap as any) ?? 300
+        const firstGapMeters = firstGapVal * spacingFactor
         let count = 0
         if (L > 0) {
           if (s.firstSupportMode === 'ground') {
             count = Math.max(0, Math.ceil(L / actualSp) + 1)
           } else if (s.firstSupportMode === 'offset') {
-            const remaining = Math.max(0, L - firstGapVal / 1000)
+            const remaining = Math.max(0, L - firstGapMeters)
             count = 1 + (remaining > 0 ? Math.max(0, Math.ceil(remaining / actualSp)) : 0)
           } else {
             count = Math.max(0, Math.ceil(L / actualSp) + (s.includesEndpoints ? 1 : -1))
@@ -178,10 +190,12 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
         customVals[cd.key] = (parseFloat(s.formulaQty as any) || 1) * (prim[s.formulaDimKey ?? 'length'] ?? customVals[s.formulaDimKey ?? 'length'] ?? 0)
         break
       case 'stock_length': {
-        const rawTarget = parseFloat(jobDims[s.stockTargetDim ?? 'length'] as any) || customVals[s.stockTargetDim ?? 'length'] || 0
-        const metreDims = new Set(['length', 'height', 'width', 'perimeter'])
-        const targetMm = metreDims.has(s.stockTargetDim ?? 'length') ? rawTarget * 1000 : rawTarget
-        const result = solveStockLengths(targetMm, s.stockLengths ?? [], 'min_waste', {})
+        const stockDimKey = s.stockTargetDim ?? 'length'
+        const rawTarget = prim[stockDimKey] ?? customVals[stockDimKey] ?? 0
+        const targetMm = rawTarget * 1000  // rawTarget is already normalized to meters
+        const stockUnitFactor = getUnitFactor(sys.dimOverrides?.[stockDimKey]?.unit ?? 'm')
+        const stockLengthsMm = (s.stockLengths ?? []).map((l: number) => l * stockUnitFactor * 1000)
+        const result = solveStockLengths(targetMm, stockLengthsMm, 'min_waste', {})
         customVals[cd.key] = result.totalQty
         jobDims[cd.key + '_total'] = result.totalQty
         jobDims[cd.key + '_waste'] = result.cutWaste
@@ -282,17 +296,18 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
       return { ...mat, raw: 0, withWaste: 0, qty: 0, blocked: true, blockedBy: vBlocked, activeRow: null } as MaterialResult
     }
 
-    // Derived criteria
+    // Derived criteria — threshold is in user's unit, convert to meters for comparison
     for (const cr of (customCriteria ?? [])) {
       if (cr.type !== 'derived') continue
-      const dv = getDimVal(cr.dimKey)
+      const dv = getDimVal(cr.dimKey)  // already in meters (normalized)
       const threshold = parseFloat(cr.threshold as any)
-      const tMm = threshold >= 100 ? threshold : threshold * 1000
-      const dvMm = dv < 100 ? dv * 1000 : dv
-      const passes = cr.operator === '>'  ? dvMm >  tMm :
-                     cr.operator === '>=' ? dvMm >= tMm :
-                     cr.operator === '<'  ? dvMm <  tMm :
-                     cr.operator === '<=' ? dvMm <= tMm : true
+      const crUnit = sys.dimOverrides?.[cr.dimKey]?.unit
+      const crFactor = crUnit ? getUnitFactor(crUnit) : 1
+      const thresholdMeters = threshold * crFactor
+      const passes = cr.operator === '>'  ? dv >  thresholdMeters :
+                     cr.operator === '>=' ? dv >= thresholdMeters :
+                     cr.operator === '<'  ? dv <  thresholdMeters :
+                     cr.operator === '<=' ? dv <= thresholdMeters : true
       if (!passes && (mat.criteriaKeys ?? []).includes(cr.key)) {
         return { ...mat, raw: 0, withWaste: 0, qty: 0, blocked: false, blockedBy: [], activeRow: null, noMatch: true, noMatchReason: cr.name + ' not met' } as MaterialResult
       }
@@ -325,8 +340,12 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
       case 'linear_metre':      raw = qty_ * prim.length; break
       case 'base_plus_length':  raw = qty_ + prim.length / div; break
       case 'coverage_per_item': raw = (prim.length * prim.width) / div; break
-      case 'sheet_size':        raw = (prim.length * prim.width) / ((activeRow.ruleTileW / 1000) * (activeRow.ruleTileH / 1000)); break
-      case 'tile_size':         raw = (prim.length * prim.width) / ((activeRow.ruleTileW / 1000) * (activeRow.ruleTileH / 1000)); break
+      case 'sheet_size':
+      case 'tile_size': {
+        const tileFactor = getUnitFactor(sys.dimOverrides?.['length']?.unit ?? 'm')
+        raw = (prim.length * prim.width) / ((activeRow.ruleTileW * tileFactor) * (activeRow.ruleTileH * tileFactor))
+        break
+      }
       case 'kg_per_sqm':        raw = qty_ * prim.length * prim.width; break
       case 'kg_per_metre':      raw = qty_ * prim.length; break
       case 'kg_per_item':       raw = qty_ * dimV; break

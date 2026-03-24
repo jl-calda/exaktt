@@ -2,7 +2,7 @@
 'use client'
 import { useState } from 'react'
 import type { CustomDim, CriteriaParamOverride, MtoSystem } from '@/types'
-import { DERIV_TYPES, PRIMITIVE_DIMS, INPUT_MODELS, DIMS_FOR_INPUT_MODEL, getDimLabel } from '@/lib/engine/constants'
+import { DERIV_TYPES, PRIMITIVE_DIMS, INPUT_MODELS, DIMS_FOR_INPUT_MODEL, getDimLabel, getDimUnit } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
 import { Plus, Trash2, Edit3, Check, X, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -166,7 +166,7 @@ function ModelStrategiesSection({ d, set, dimOptions }: {
                       className="w-48" />
                     {(strat.derivType ?? d.derivType) === 'spacing' && (
                       <>
-                        <NumberInput label="Spacing (m)" value={strat.spacing ?? d.spacing ?? 1} min={0.01} step={0.1}
+                        <NumberInput label="Spacing" value={strat.spacing ?? d.spacing ?? 1} min={0.01} step={0.1}
                           onChange={e => updateStrategy(m.value, 'spacing', parseFloat(e.target.value))} className="w-24" />
                         <Select label="Along" value={strat.spacingTargetDim ?? d.spacingTargetDim ?? 'length'}
                           onChange={e => updateStrategy(m.value, 'spacingTargetDim', e.target.value)}
@@ -347,7 +347,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
     const allowedKeys = new Set(DIMS_FOR_INPUT_MODEL[sys?.inputModel ?? ''] ?? PRIMITIVE_DIMS.map(p => p.key))
     const filteredPrims = PRIMITIVE_DIMS.filter(p => allowedKeys.has(p.key))
     const dimOptions = [
-      ...filteredPrims.map(p => ({ value: p.key, label: p.icon + ' ' + getDimLabel(p.key, sys?.dimLabels), group: 'Primitive' as const })),
+      ...filteredPrims.map(p => ({ value: p.key, label: p.icon + ' ' + getDimLabel(p.key, sys?.dimOverrides), group: 'Primitive' as const })),
       ...precedingDims.map(cd => ({ value: cd.key, label: cd.icon + ' ' + cd.name + (cd.unit ? ` (${cd.unit})` : ''), group: 'Custom' as const })),
     ]
     return (
@@ -392,7 +392,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
                 </div>
               </div>
               {d.spacingMode === 'fixed' && (
-                <NumberInput label="Spacing (m)" value={(d as any).spacing ?? 1} min={0.01} step={0.1}
+                <NumberInput label={`Spacing (${getDimUnit((d as any).spacingTargetDim ?? 'length', sys?.dimOverrides)})`} value={(d as any).spacing ?? 1} min={0.01} step={0.1}
                   onChange={e => set('spacing')(parseFloat(e.target.value))} className="w-28" />
               )}
               {d.spacingMode === 'user' && (
@@ -404,7 +404,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
                 options={[{ value: 'none', label: 'None (intermediate only)' }, { value: 'ground', label: 'At ground (0mm)' }, { value: 'offset', label: 'Offset from ground' }]}
                 className="w-52" />
               {(d as any).firstSupportMode === 'offset' && (
-                <NumberInput label="First gap (mm)" value={(d as any).firstGap ?? 300} min={0} step={10}
+                <NumberInput label={`First gap (${getDimUnit((d as any).spacingTargetDim ?? 'length', sys?.dimOverrides)})`} value={(d as any).firstGap ?? 300} min={0} step={10}
                   onChange={e => set('firstGap')(parseFloat(e.target.value))} className="w-28" />
               )}
             </div>
@@ -579,7 +579,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
                   </div>
                   <div className="text-xs text-ink-faint mt-0.5">
                     {cd.derivType === 'stock_length' && `Target: ${cd.stockTargetDim} · ${cd.stockLengths.length} lengths`}
-                    {cd.derivType === 'spacing'      && `Along: ${cd.spacingTargetDim ?? 'length'} · ${cd.spacingMode === 'user' ? 'user input' : cd.spacing + 'm'}`}
+                    {cd.derivType === 'spacing'      && `Along: ${cd.spacingTargetDim ?? 'length'} · ${cd.spacingMode === 'user' ? 'user input' : cd.spacing + ' ' + getDimUnit(cd.spacingTargetDim ?? 'length', sys?.dimOverrides)}`}
                     {cd.derivType === 'formula'      && `${cd.formulaQty} × ${cd.formulaDimKey}`}
                     {cd.derivType === 'sheet_cut'    && `Part: ${cd.partW}×${cd.partH}mm · kerf: ${cd.kerf}mm`}
                     {cd.derivType === 'sum'          && `Sum of: ${(cd.sumKeys ?? []).join(', ')}`}

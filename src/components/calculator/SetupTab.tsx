@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import type { MtoSystem, GlobalTag, Material, CustomDim } from '@/types'
 import { nanoid } from 'nanoid'
 import { Plus, X, BookOpen } from 'lucide-react'
-import { PRIMITIVE_DIMS, INPUT_MODELS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, INPUT_MODELS, DIMS_FOR_INPUT_MODEL, LINEAR_UNITS, UNIT_SELECTABLE_DIMS } from '@/lib/engine/constants'
 import { normalizeInputModel } from '@/types'
 import { Button }          from '@/components/ui/Button'
 import { ColorPicker }     from '@/components/ui/ColorPicker'
@@ -289,7 +289,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
                 <div className="flex flex-wrap gap-1.5">
                   {available.map(d => {
                     const editable = !fixedDims.has(d.key)
-                    const customLabel = sys.dimLabels?.[d.key]
+                    const customLabel = sys.dimOverrides?.[d.key]?.label
                     const displayLabel = customLabel || d.label
                     return (
                       <span key={d.key}
@@ -301,12 +301,16 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
                             type="text"
                             value={displayLabel}
                             placeholder={d.label}
-                            onChange={e => onUpdate({ dimLabels: { ...sys.dimLabels, [d.key]: e.target.value } })}
+                            onChange={e => onUpdate({ dimOverrides: { ...sys.dimOverrides, [d.key]: { ...sys.dimOverrides?.[d.key], label: e.target.value } } })}
                             onBlur={e => {
                               if (!e.target.value.trim()) {
-                                const next = { ...sys.dimLabels }
-                                delete next[d.key]
-                                onUpdate({ dimLabels: next })
+                                const existing = sys.dimOverrides?.[d.key]
+                                if (existing) {
+                                  const { label: _, ...rest } = existing
+                                  const next = { ...sys.dimOverrides, [d.key]: rest }
+                                  if (!rest.unit) delete next[d.key]
+                                  onUpdate({ dimOverrides: next })
+                                }
                               }
                             }}
                             className="bg-transparent border-none outline-none text-[11px] font-medium text-ink w-16 p-0 focus:ring-0 focus:underline"
@@ -317,25 +321,19 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
                         )}
                         {d.unit && (
                           editable ? (
-                            <span className="text-[10px] text-ink-faint opacity-70 inline-flex items-center">
-                              (
-                              <input
-                                type="text"
-                                value={sys.dimUnits?.[d.key] || d.unit}
-                                placeholder={d.unit}
-                                onChange={e => onUpdate({ dimUnits: { ...sys.dimUnits, [d.key]: e.target.value } })}
-                                onBlur={e => {
-                                  if (!e.target.value.trim()) {
-                                    const next = { ...sys.dimUnits }
-                                    delete next[d.key]
-                                    onUpdate({ dimUnits: next })
-                                  }
-                                }}
-                                className="bg-transparent border-none outline-none text-[10px] text-ink-faint opacity-70 p-0 focus:ring-0 focus:underline"
-                                style={{ minWidth: '1ch', width: `${Math.max(1, (sys.dimUnits?.[d.key] || d.unit).length)}ch` }}
-                              />
-                              )
-                            </span>
+                            UNIT_SELECTABLE_DIMS.has(d.key) ? (
+                              <select
+                                value={sys.dimOverrides?.[d.key]?.unit ?? d.unit}
+                                onChange={e => onUpdate({
+                                  dimOverrides: { ...sys.dimOverrides, [d.key]: { ...sys.dimOverrides?.[d.key], unit: e.target.value } }
+                                })}
+                                className="text-[10px] text-ink-faint opacity-70 bg-transparent border-none outline-none cursor-pointer p-0 focus:ring-0"
+                              >
+                                {LINEAR_UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+                              </select>
+                            ) : d.unit ? (
+                              <span className="text-[10px] text-ink-faint opacity-70">({d.unit})</span>
+                            ) : null
                           ) : (
                             <span className="text-[10px] text-ink-faint opacity-70">({d.unit})</span>
                           )
@@ -365,7 +363,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
       {/* ── Step 3: Criteria + Warnings ── */}
       <StepHeader step={STEPS[2]}>
         <CriteriaPanel customCriteria={sys.customCriteria} customDims={sys.customDims} onChange={c => onUpdate({ customCriteria: c })} />
-        <WarningsPanel warnings={sys.warnings} onChange={w => onUpdate({ warnings: w })} customDims={sys.customDims} inputModel={sys.inputModel} dimLabels={sys.dimLabels} />
+        <WarningsPanel warnings={sys.warnings} onChange={w => onUpdate({ warnings: w })} customDims={sys.customDims} inputModel={sys.inputModel} dimOverrides={sys.dimOverrides} />
       </StepHeader>
 
       {/* ── Step 4: Variants ── */}
@@ -415,6 +413,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
           customCriteria={sys.customCriteria}
           customBrackets={sys.customBrackets ?? []}
           onChange={a => onUpdate({ workActivities: a })}
+          dimOverrides={sys.dimOverrides}
         />
       </StepHeader>
     </div>

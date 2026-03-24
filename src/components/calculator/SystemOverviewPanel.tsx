@@ -3,7 +3,7 @@
 'use client'
 import { useState } from 'react'
 import type { MtoSystem } from '@/types'
-import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, INPUT_MODELS } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, INPUT_MODELS, getDimUnit } from '@/lib/engine/constants'
 import { normalizeInputModel } from '@/types'
 import { ChevronDown, ChevronUp, GitBranch } from 'lucide-react'
 
@@ -172,8 +172,8 @@ export default function SystemOverviewPanel({ sys, onViewGraph }: Props) {
           {derivedCds.map(cd => {
             const dt = DERIV_LABELS[cd.derivType] ?? { label: cd.derivType, color: '#64748b', bg: '#f1f5f9' }
             const sub =
-              cd.derivType === 'spacing'      ? `Along: ${cd.spacingTargetDim} · ${cd.spacing}${cd.spacingTargetDim === 'height' || cd.spacingTargetDim === 'length' ? 'm' : ''}` :
-              cd.derivType === 'stock_length' ? `Solver: ${cd.stockTargetDim} · ${(cd.stockLengths ?? []).map(l => l + 'mm').join(', ')}` :
+              cd.derivType === 'spacing'      ? `Along: ${cd.spacingTargetDim} · ${cd.spacing} ${getDimUnit(cd.spacingTargetDim ?? 'length', sys.dimOverrides)}` :
+              cd.derivType === 'stock_length' ? `Solver: ${cd.stockTargetDim} · ${(cd.stockLengths ?? []).map(l => l + ' ' + getDimUnit(cd.stockTargetDim ?? 'length', sys.dimOverrides)).join(', ')}` :
               cd.derivType === 'formula'      ? `Formula from: ${cd.formulaDimKey}` :
               cd.derivType === 'sum'          ? `Sum of: ${(cd.sumKeys ?? []).join(', ') || '—'}` : undefined
             return (
