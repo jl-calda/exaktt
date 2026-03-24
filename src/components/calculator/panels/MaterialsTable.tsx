@@ -2,10 +2,11 @@
 'use client'
 import { useState } from 'react'
 import type { Material, CustomDim, CustomCriterion, Variant, GlobalTag, WorkBracket, InputModel } from '@/types'
-import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
-import { Search, Plus } from 'lucide-react'
+import { PRIMITIVE_DIMS, MATERIAL_GROUPS } from '@/lib/engine/constants'
+import { Search, Plus, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import MatRow from './MatRow'
+import type { MatBadge } from './MatRow'
 import MaterialSearchCombobox from './MaterialSearchCombobox'
 import AddMaterialModal from './AddMaterialModal'
 
@@ -32,6 +33,7 @@ export default function MaterialsTable({
 }: Props) {
   const [search,       setSearch]       = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [collapsed,    setCollapsed]    = useState<Set<string>>(new Set())
 
   const allDims = [...PRIMITIVE_DIMS, ...customDims]
 
@@ -49,9 +51,86 @@ export default function MaterialsTable({
     materials.filter(m => !(m.ruleSet ?? []).some(r => r.ruleType) && bracketMatIds.has(m.id)).map(m => m.id)
   )
 
+  // Plate-driven material IDs (auto-qty from sheet_cut solver)
+  const plateMaterialIds = new Set(
+    customDims.filter(cd => cd.derivType === 'sheet_cut' && cd.plateMaterialId).map(cd => cd.plateMaterialId)
+  )
+
+  // Bracket source names per material
+  const bracketSourceMap = new Map<string, string[]>()
+  for (const b of customBrackets) {
+    for (const item of b.bom ?? []) {
+      if (!item.materialId) continue
+      const arr = bracketSourceMap.get(item.materialId) ?? []
+      arr.push(b.name)
+      bracketSourceMap.set(item.materialId, arr)
+    }
+  }
+
+  // Badge for each material
+  function getBadge(mat: Material): MatBadge | undefined {
+    if (bracketOnlyIds.has(mat.id)) {
+      const sources = bracketSourceMap.get(mat.id) ?? []
+      return { type: 'bracket', label: sources.length ? `via ${sources.join(', ')}` : 'Sub-assembly BOM' }
+    }
+    if (plateMaterialIds.has(mat.id)) return { type: 'plate', label: 'Auto' }
+    if ((mat.ruleSet ?? []).some(r => r.ruleType === 'stock_length_qty')) return { type: 'solver', label: 'Solver' }
+    if (!(mat.ruleSet ?? []).some(r => r.ruleType)) return { type: 'unassigned', label: 'No rule' }
+    return undefined
+  }
+
+  // Split into two groups
+  const matGroup    = visible.filter(m => !bracketOnlyIds.has(m.id))
+  const subAsmGroup = visible.filter(m => bracketOnlyIds.has(m.id))
+
   const unassigned = materials.filter(m =>
     !(m.ruleSet ?? []).some(r => r.ruleType) && !bracketOnlyIds.has(m.id)
   )
+
+  const toggleSection = (id: string) => {
+    setCollapsed(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const groupMeta = MATERIAL_GROUPS
+
+  const renderSection = (groupId: string, items: Material[]) => {
+    if (items.length === 0) return null
+    const meta = groupMeta.find(g => g.id === groupId)!
+    const isCollapsed = collapsed.has(groupId)
+    const Chevron = isCollapsed ? ChevronRight : ChevronDown
+    return (
+      <tbody key={groupId}>
+        <tr
+          className="cursor-pointer select-none"
+          onClick={() => toggleSection(groupId)}
+          style={{ background: meta.bg }}
+        >
+          <td colSpan={5} className="px-4 py-2 border-b border-t" style={{ borderColor: 'var(--color-surface-200)', borderLeft: `3px solid ${meta.color}` }}>
+            <div className="flex items-center gap-2">
+              <Chevron className="w-3.5 h-3.5" style={{ color: meta.color }} />
+              <span className="font-semibold text-xs" style={{ color: meta.color }}>{meta.label}</span>
+              <span className="text-[10px] text-ink-faint">({items.length})</span>
+              <span className="text-[10px] text-ink-faint ml-1">{meta.desc}</span>
+            </div>
+          </td>
+        </tr>
+        {!isCollapsed && items.map((mat, i) => (
+          <MatRow key={mat.id} mat={mat} rowIndex={i}
+            inputModel={inputModel}
+            onSave={onSave} onDelete={onDelete}
+            customDims={customDims} customCriteria={customCriteria} variants={variants}
+            globalTags={globalTags} allDims={allDims}
+            library={library} onMakeUnique={onMakeUnique} onSyncFromLib={onSyncFromLib}
+            isBracketMaterial={bracketOnlyIds.has(mat.id)}
+            badge={getBadge(mat)} />
+        ))}
+      </tbody>
+    )
+  }
 
   return (
     <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
@@ -87,24 +166,20 @@ export default function MaterialsTable({
               <th className="px-3 py-2.5 w-28"></th>
             </tr>
           </thead>
-          <tbody>
-            {visible.length === 0 && (
+          {visible.length === 0 ? (
+            <tbody>
               <tr><td colSpan={5} className="px-5 py-12 text-center text-sm text-ink-faint">
                 {materials.length === 0
                   ? 'No materials yet — search above to add from your library.'
                   : 'No materials match your filter.'}
               </td></tr>
-            )}
-            {visible.map((mat, i) => (
-              <MatRow key={mat.id} mat={mat} rowIndex={i}
-                inputModel={inputModel}
-                onSave={onSave} onDelete={onDelete}
-                customDims={customDims} customCriteria={customCriteria} variants={variants}
-                globalTags={globalTags} allDims={allDims}
-                library={library} onMakeUnique={onMakeUnique} onSyncFromLib={onSyncFromLib}
-                isBracketMaterial={bracketOnlyIds.has(mat.id)} />
-            ))}
-          </tbody>
+            </tbody>
+          ) : (
+            <>
+              {renderSection('materials', matGroup)}
+              {renderSection('subassembly', subAsmGroup)}
+            </>
+          )}
         </table>
       </div>
 

@@ -611,6 +611,8 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
 }
 
 // ─── MatRow ───────────────────────────────────────────────────────────────────
+export type MatBadge = { type: 'solver' | 'plate' | 'unassigned' | 'bracket'; label: string }
+
 interface MatRowProps {
   mat: Material; rowIndex: number
   inputModel: InputModel
@@ -621,9 +623,17 @@ interface MatRowProps {
   allDims: (typeof PRIMITIVE_DIMS[number] | CustomDim)[] | typeof PRIMITIVE_DIMS
   library: any[]; onMakeUnique: (id: string) => void; onSyncFromLib: (id: string) => void
   isBracketMaterial?: boolean
+  badge?: MatBadge
 }
 
-export default function MatRow({ mat, rowIndex, inputModel, onSave, onDelete, customDims, customCriteria, variants, globalTags, library, onMakeUnique, onSyncFromLib, isBracketMaterial = false }: MatRowProps) {
+const BADGE_STYLES: Record<MatBadge['type'], { bg: string; color: string }> = {
+  solver:     { bg: '#eff6ff', color: '#1d4ed8' },
+  plate:      { bg: '#faf5ff', color: '#7c3aed' },
+  unassigned: { bg: '#fffbeb', color: '#b45309' },
+  bracket:    { bg: '#f5f3ff', color: '#6d28d9' },
+}
+
+export default function MatRow({ mat, rowIndex, inputModel, onSave, onDelete, customDims, customCriteria, variants, globalTags, library, onMakeUnique, onSyncFromLib, isBracketMaterial = false, badge }: MatRowProps) {
   const [editingRule,  setEditingRule]  = useState(false)
   const [changing,     setChanging]     = useState(false)
   const [changeQ,      setChangeQ]      = useState('')
@@ -685,6 +695,12 @@ export default function MatRow({ mat, rowIndex, inputModel, onSave, onDelete, cu
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold text-sm text-ink">{mat.name}</span>
               {mat.productCode && <code className="text-[10px] bg-surface-100 text-ink-muted px-1.5 py-0.5 rounded">{mat.productCode}</code>}
+              {badge && (
+                <span className="badge text-[10px] px-1.5 py-0.5 font-semibold"
+                  style={{ background: BADGE_STYLES[badge.type].bg, color: BADGE_STYLES[badge.type].color }}>
+                  {badge.label}
+                </span>
+              )}
             </div>
             {mat.notes && <div className="text-xs text-ink-faint italic mt-0.5">{mat.notes}</div>}
             {mat.libraryRef ? (

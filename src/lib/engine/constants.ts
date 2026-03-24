@@ -132,6 +132,11 @@ export const RULE_TYPES = [
   { value: 'stock_length_qty',  label: 'Stock length qty (from solver)', group: 'ratio', fields: ['ruleStockDimKey','ruleStockLength'] },
 ] as const
 
+export const MATERIAL_GROUPS = [
+  { id: 'materials',   label: 'Materials',               color: '#334155', bg: '#f8fafc', desc: 'Quantity from rules' },
+  { id: 'subassembly', label: 'Sub-assembly components', color: '#7c3aed', bg: '#faf5ff', desc: 'Quantity from sub-assembly BOM' },
+] as const
+
 export const DERIV_TYPES = [
   { value: 'user_input',   label: 'User Input',            icon: '📥', desc: 'A value the user types directly into the calculator.' },
   { value: 'spacing',      label: 'Spaced along length',   icon: '📐', desc: 'Count items spaced along a run.' },
