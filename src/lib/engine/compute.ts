@@ -321,7 +321,7 @@ export function computeMultiRun(
     const variantState  = run.variantState  ?? {}
     const jobDims: Record<string, number | string> = { ...(run.job ?? {}) }
 
-    if (sys.inputModel === 'linear_run') {
+    if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear')) {
       if (run.inputMode === 'simple') {
         jobDims.length  = parseFloat(run.simpleJob?.length as any) || 0
         jobDims.corners = parseInt(run.simpleJob?.corners as any) || 0

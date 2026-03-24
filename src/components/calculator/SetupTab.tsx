@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import type { MtoSystem, GlobalTag, Material, CustomDim } from '@/types'
 import { nanoid } from 'nanoid'
 import { Plus, X, BookOpen } from 'lucide-react'
-import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, INPUT_MODELS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
+import { normalizeInputModel } from '@/types'
 import { Button }          from '@/components/ui/Button'
 import { ColorPicker }     from '@/components/ui/ColorPicker'
 import { IconPicker }      from '@/components/ui/IconPicker'
@@ -194,23 +195,22 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
           <div className="p-4">
           <div className="flex gap-3 flex-wrap">
             {/* Built-in model cards */}
-            {[
-              { value: 'simple_dims', label: 'Simple Dimensions', desc: 'Height, length, width etc.',   icon: '📐' },
-              { value: 'linear_run',  label: 'Linear Run',        desc: 'Length + corners + segments', icon: '📏' },
-              { value: 'area',        label: 'Area',              desc: 'Length × width',              icon: '⬛' },
-            ].map(opt => (
-              <button key={opt.value} type="button" onClick={() => onUpdate({ inputModel: opt.value as any })}
-                className={`flex-1 min-w-36 text-left p-4 border transition-all ${
-                  sys.inputModel === opt.value
-                    ? 'border-primary bg-primary/10'
-                    : 'border-surface-300 bg-surface-100 hover:border-surface-300 hover:bg-surface-100'
-                }`}
-                style={{ borderRadius: 'var(--radius-card)' }}>
-                <div className="text-lg mb-1">{opt.icon}</div>
-                <div className="font-semibold text-xs text-ink">{opt.label}</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">{opt.desc}</div>
-              </button>
-            ))}
+            {INPUT_MODELS.map(opt => {
+              const normalized = normalizeInputModel(sys.inputModel)
+              return (
+                <button key={opt.value} type="button" onClick={() => onUpdate({ inputModel: opt.value as any })}
+                  className={`flex-1 min-w-36 text-left p-4 border transition-all ${
+                    normalized === opt.value
+                      ? 'border-primary bg-primary/10'
+                      : 'border-surface-300 bg-surface-100 hover:border-surface-300 hover:bg-surface-100'
+                  }`}
+                  style={{ borderRadius: 'var(--radius-card)' }}>
+                  <div className="text-lg mb-1">{opt.icon}</div>
+                  <div className="font-semibold text-xs text-ink">{opt.label}</div>
+                  <div className="text-[11px] text-ink-muted mt-0.5">{opt.desc}</div>
+                </button>
+              )
+            })}
 
             {/* Additional user-input dim cards */}
             {userInputDims.map(cd => (
@@ -278,16 +278,12 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
 
           {/* Primitive dim pills */}
           {(() => {
-            const fixed =
-              sys.inputModel === 'linear_run' ? ['length', 'corners', 'ends'] :
-              sys.inputModel === 'area'       ? ['length', 'width'] : null
-            const available = fixed
-              ? PRIMITIVE_DIMS.filter(d => fixed.includes(d.key))
-              : PRIMITIVE_DIMS.filter(d => !['ends'].includes(d.key))
+            const dimKeys = DIMS_FOR_INPUT_MODEL[sys.inputModel] ?? DIMS_FOR_INPUT_MODEL[normalizeInputModel(sys.inputModel)] ?? []
+            const available = PRIMITIVE_DIMS.filter(d => dimKeys.includes(d.key))
             return (
               <div className="mt-4">
                 <div className="text-[10px] font-semibold text-ink-muted uppercase tracking-wide mb-2">
-                  {fixed ? 'Fixed inputs for this model' : 'Available primitive dimensions'}
+                  Inputs for this model
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {available.map(d => (
@@ -299,7 +295,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
                       {d.unit && <span className="text-[10px] text-ink-faint opacity-70">({d.unit})</span>}
                     </span>
                   ))}
-                  {sys.inputModel === 'linear_run' && (
+                  {(sys.inputModel === 'linear_run' || normalizeInputModel(sys.inputModel) === 'linear') && (
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-ink border border-surface-200"
                       style={{ borderRadius: 'var(--radius)' }}>
                       + segment mode
@@ -346,6 +342,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
       {/* ── Step 6: Materials ── */}
       <StepHeader step={STEPS[5]}>
         <MaterialsTable
+          inputModel={sys.inputModel}
           materials={sys.materials}
           customDims={sys.customDims}
           customCriteria={sys.customCriteria}

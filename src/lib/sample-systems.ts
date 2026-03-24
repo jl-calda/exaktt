@@ -127,7 +127,7 @@ const HLL: SampleSystem = {
   template: {
     name: 'SecuRope Horizontal Lifeline (Sample)',
     icon: '🔗', color: '#0284c7',
-    inputModel:  'linear_run',
+    inputModel:  'linear',
     description: 'Fallprotec SecuRope cable horizontal lifeline — based on EN 795:2012 Type C',
 
     // ── Custom Dim: intermediate anchor count at 12m max span ─────────────────
@@ -280,7 +280,7 @@ const VECTALADDER: SampleSystem = {
   template: {
     name: 'Vectaladder Cat Ladder (Sample)',
     icon: '🪜', color: '#7c3aed',
-    inputModel:  'simple_dims',
+    inputModel:  'linear',
     description: 'Alsolu Vectaladder modular cage ladder — height-driven with stock-length solver',
 
     // ── Custom Dim: stock-length solver for ladder sections ───────────────────
@@ -446,7 +446,7 @@ const EVORAIL: SampleSystem = {
   template: {
     name: 'Evorail Standard Guardrail (Sample)',
     icon: '🦺', color: '#dc2626',
-    inputModel:  'linear_run',
+    inputModel:  'linear',
     description: 'AKM Evorail freestanding roof-edge guardrail — EN 13374:2013 Class A',
 
     // ── Custom Dim: post count from spacing — referenced by multiple materials ─
@@ -787,7 +787,7 @@ const CABINETRY: SampleSystem = {
   template: {
     name: 'Kitchen Cabinetry (Sample)',
     icon: '🪵', color: '#92400e',
-    inputModel: 'linear_run',
+    inputModel: 'linear',
     description: 'Kitchen cabinetry take-off — base + overhead units, benchtop, hardware',
     customDims: [
       dim({ id: 'cd_cab_count', key: 'cd_cab_count', name: 'Base Cabinet Count', unit: 'units',
@@ -850,7 +850,7 @@ const BRIDGE_BEARINGS: SampleSystem = {
   template: {
     name: 'Bridge Bearings (Sample)',
     icon: '🌉', color: '#475569',
-    inputModel: 'simple_dims',
+    inputModel: 'linear',
     description: 'Bridge bearing installation — elastomeric, pot, or slide bearings with grouting',
     customDims: [
       dim({ id: 'cd_br_count', key: 'cd_br_count', name: 'Bearing Count', unit: 'bearings',

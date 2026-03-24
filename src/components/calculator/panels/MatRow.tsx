@@ -1,8 +1,8 @@
 // src/components/calculator/panels/MatRow.tsx
 'use client'
 import { useState, useRef, useEffect } from 'react'
-import type { Material, CustomDim, CustomCriterion, Variant, GlobalTag, RuleRow } from '@/types'
-import { PRIMITIVE_DIMS, RULE_TYPES, RULE_GROUPS } from '@/lib/engine/constants'
+import type { Material, CustomDim, CustomCriterion, Variant, GlobalTag, RuleRow, InputModel } from '@/types'
+import { PRIMITIVE_DIMS, RULE_TYPES, RULE_GROUPS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
 import { Trash2, Edit3, Check, X, ChevronUp, ChevronDown, Plus, AlertTriangle, ArrowRight, GitBranch, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -32,30 +32,40 @@ const RULE_DESCRIPTIONS: Record<string, { short: string; formula: string; exampl
 }
 
 // ─── RuleFields ───────────────────────────────────────────────────────────────
-function RuleFields({ row, onChange, customDims }: {
+function RuleFields({ row, onChange, customDims, inputModel }: {
   row: Partial<RuleRow> & { ruleType?: string | null }
   onChange: (k: keyof RuleRow, v: any) => void
   customDims: CustomDim[]
+  inputModel: InputModel
 }) {
   const rt = row.ruleType
   if (!rt) return <span className="text-xs text-ink-faint italic">Select rule type</span>
 
+  const availableDimKeys = new Set(DIMS_FOR_INPUT_MODEL[inputModel] ?? [])
+  const filteredPrimitiveDims = PRIMITIVE_DIMS.filter(d => availableDimKeys.has(d.key))
   const allDims = [...PRIMITIVE_DIMS, ...customDims]
 
-  const DimSel = ({ field = 'ruleDimKey' }: { field?: keyof RuleRow }) => (
-    <select value={(row as any)[field] ?? ''} onChange={e => onChange(field, e.target.value)}
-      className={`input text-xs py-1.5 ${!(row as any)[field] ? 'border-red-300' : ''}`}>
-      <option value="">— select dim —</option>
-      <optgroup label="Primitive">
-        {PRIMITIVE_DIMS.map(d => <option key={d.key} value={d.key}>{d.icon} {d.label} ({d.unit})</option>)}
-      </optgroup>
-      {customDims.length > 0 && (
-        <optgroup label="Custom">
-          {customDims.map(d => <option key={d.key} value={d.key}>{d.icon ?? '🔗'} {d.name} ({d.unit})</option>)}
+  const DimSel = ({ field = 'ruleDimKey' }: { field?: keyof RuleRow }) => {
+    const currentVal = (row as any)[field] ?? ''
+    const isOrphaned = currentVal && !filteredPrimitiveDims.some(d => d.key === currentVal) && !customDims.some(d => d.key === currentVal)
+    return (
+      <select value={currentVal} onChange={e => onChange(field, e.target.value)}
+        className={`input text-xs py-1.5 ${!currentVal ? 'border-red-300' : isOrphaned ? 'border-amber-300' : ''}`}>
+        <option value="">— select dim —</option>
+        <optgroup label="Primitive">
+          {filteredPrimitiveDims.map(d => <option key={d.key} value={d.key}>{d.icon} {d.label} ({d.unit})</option>)}
         </optgroup>
-      )}
-    </select>
-  )
+        {customDims.length > 0 && (
+          <optgroup label="Custom">
+            {customDims.map(d => <option key={d.key} value={d.key}>{d.icon ?? '🔗'} {d.name} ({d.unit})</option>)}
+          </optgroup>
+        )}
+        {isOrphaned && (
+          <option value={currentVal}>⚠️ {PRIMITIVE_DIMS.find(d => d.key === currentVal)?.label ?? currentVal} (incompatible)</option>
+        )}
+      </select>
+    )
+  }
 
   if (rt === 'stock_length_qty') {
     const solverDims = customDims.filter(cd => cd.derivType === 'stock_length')
@@ -340,11 +350,12 @@ function DependencyChain({ mat, ruleSet, criteriaKeys, customDimKey, customDims,
 }
 
 // ─── InlineRuleEditor ─────────────────────────────────────────────────────────
-export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCriteria, variants, hideDimOutput = false, embedded = false }: {
+export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCriteria, variants, hideDimOutput = false, embedded = false, inputModel = 'linear' }: {
   mat: Material; onSave: (m: Material) => void; onClose: () => void
   customDims: CustomDim[]; customCriteria: CustomCriterion[]; variants: Variant[]
   hideDimOutput?: boolean
   embedded?: boolean   // when true: auto-saves on every change, hides header/footer buttons
+  inputModel?: InputModel
 }) {
   const [customDimKey, setCustomDimKey] = useState(mat.customDimKey ?? null)
   const [ruleSet, setRuleSet]           = useState<RuleRow[]>(mat.ruleSet ?? [])
@@ -474,24 +485,41 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
                     {/* Rule type */}
                     <div>
                       <div className="label">Rule type</div>
-                      <select value={row.ruleType ?? ''} onChange={e => updateRow(row.id, { ruleType: e.target.value as any || null })}
-                        className="input text-xs py-1.5 min-w-52">
-                        <option value="">— unassigned —</option>
-                        {RULE_GROUPS.map(g => (
-                          <optgroup key={g.id} label={g.icon + '  ' + g.label}>
-                            {RULE_TYPES.filter(rt => rt.group === g.id).map(rt => (
-                              <option key={rt.value} value={rt.value}>{rt.label}</option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
+                      {(() => {
+                        const avail = new Set(DIMS_FOR_INPUT_MODEL[inputModel] ?? [])
+                        const isAvailable = (rt: string) => {
+                          const implicit = RULE_IMPLICIT_DIMS[rt] ?? []
+                          return implicit.length === 0 || implicit.every(d => avail.has(d))
+                        }
+                        const currentOrphaned = row.ruleType && !isAvailable(row.ruleType)
+                        return (
+                          <select value={row.ruleType ?? ''} onChange={e => updateRow(row.id, { ruleType: e.target.value as any || null })}
+                            className={`input text-xs py-1.5 min-w-52 ${currentOrphaned ? 'border-amber-300' : ''}`}>
+                            <option value="">— unassigned —</option>
+                            {RULE_GROUPS.map(g => {
+                              const types = RULE_TYPES.filter(rt => rt.group === g.id && isAvailable(rt.value))
+                              if (types.length === 0) return null
+                              return (
+                                <optgroup key={g.id} label={g.icon + '  ' + g.label}>
+                                  {types.map(rt => (
+                                    <option key={rt.value} value={rt.value}>{rt.label}</option>
+                                  ))}
+                                </optgroup>
+                              )
+                            })}
+                            {currentOrphaned && (
+                              <option value={row.ruleType!}>⚠️ {RULE_TYPES.find(rt => rt.value === row.ruleType)?.label ?? row.ruleType} (incompatible)</option>
+                            )}
+                          </select>
+                        )
+                      })()}
                     </div>
 
                     {/* Rule fields */}
                     {row.ruleType && (
                       <div>
                         <div className="label">Parameters</div>
-                        <RuleFields row={row} onChange={(k, v) => updateRow(row.id, { [k]: v })} customDims={customDims} />
+                        <RuleFields row={row} onChange={(k, v) => updateRow(row.id, { [k]: v })} customDims={customDims} inputModel={inputModel} />
                       </div>
                     )}
 
@@ -636,6 +664,7 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
 // ─── MatRow ───────────────────────────────────────────────────────────────────
 interface MatRowProps {
   mat: Material; rowIndex: number
+  inputModel: InputModel
   onSave: (m: Material) => void
   onDelete: (id: string) => void
   customDims: CustomDim[]; customCriteria: CustomCriterion[]; variants: Variant[]
@@ -645,7 +674,7 @@ interface MatRowProps {
   isBracketMaterial?: boolean
 }
 
-export default function MatRow({ mat, rowIndex, onSave, onDelete, customDims, customCriteria, variants, globalTags, library, onMakeUnique, onSyncFromLib, isBracketMaterial = false }: MatRowProps) {
+export default function MatRow({ mat, rowIndex, inputModel, onSave, onDelete, customDims, customCriteria, variants, globalTags, library, onMakeUnique, onSyncFromLib, isBracketMaterial = false }: MatRowProps) {
   const [editingRule,  setEditingRule]  = useState(false)
   const [changing,     setChanging]     = useState(false)
   const [changeQ,      setChangeQ]      = useState('')
@@ -746,12 +775,12 @@ export default function MatRow({ mat, rowIndex, onSave, onDelete, customDims, cu
         <td className="px-3 py-2.5">
           {hasRule && grp ? (
             <div className="flex flex-col gap-1">
-              <span className="badge text-[10px]" style={{ background: grp.bg, color: grp.color }}>{grp.icon} <span className="hidden sm:inline">{grp.label}</span></span>
+              <span className="badge text-[10px]" style={{ background: grp.bg, color: grp.color }}>{grp.icon} {grp.label}</span>
             </div>
           ) : isBracketMaterial ? (
             <span className="text-[10px] text-ink-faint italic">Rules on bracket</span>
           ) : (
-            <span className="badge bg-amber-50 text-amber-700 text-[10px]"><AlertTriangle className="w-2.5 h-2.5" /> <span className="hidden sm:inline">No rule</span></span>
+            <span className="badge bg-amber-50 text-amber-700 text-[10px]"><AlertTriangle className="w-2.5 h-2.5" /> No rule</span>
           )}
         </td>
 
@@ -808,7 +837,8 @@ export default function MatRow({ mat, rowIndex, onSave, onDelete, customDims, cu
           <td colSpan={5} className="bg-primary/5 border-t border-b border-primary/20 px-0 py-0">
             <InlineRuleEditor
               mat={migrated} onSave={saveRule} onClose={() => setEditingRule(false)}
-              customDims={customDims} customCriteria={customCriteria} variants={variants} />
+              customDims={customDims} customCriteria={customCriteria} variants={variants}
+              inputModel={inputModel} />
           </td>
         </tr>
       )}

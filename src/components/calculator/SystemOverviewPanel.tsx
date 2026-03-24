@@ -3,7 +3,8 @@
 'use client'
 import { useState } from 'react'
 import type { MtoSystem } from '@/types'
-import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, INPUT_MODELS } from '@/lib/engine/constants'
+import { normalizeInputModel } from '@/types'
 import { ChevronDown, ChevronUp, GitBranch } from 'lucide-react'
 
 interface Props { sys: MtoSystem; onViewGraph?: () => void }
@@ -64,15 +65,11 @@ function getCalculatorInputs(sys: MtoSystem): string[] {
   const cds = sys.customDims ?? []
   const mats = sys.materials ?? []
 
-  if (sys.inputModel === 'linear_run') {
-    // Always: length, corners, ends. Plus user-spacing dims (shown as overrideable inputs).
-    return ['length', 'corners', 'ends']
-  }
-  if (sys.inputModel === 'area') {
-    return ['length', 'width']
-  }
-  // simple_dims: only dims that are actively referenced
-  const ALL = ['height', 'length', 'width', 'perimeter', 'corners', 'custom_a', 'custom_b']
+  const dimKeys = DIMS_FOR_INPUT_MODEL[sys.inputModel]
+  if (dimKeys) return dimKeys
+
+  // fallback: only dims that are actively referenced
+  const ALL = PRIMITIVE_DIMS.map(d => d.key)
   return ALL.filter(key =>
     cds.some(cd => cd.derivType === 'stock_length' && cd.stockTargetDim === key) ||
     cds.some(cd => cd.derivType === 'spacing'      && cd.spacingTargetDim === key) ||
@@ -129,7 +126,7 @@ export default function SystemOverviewPanel({ sys, onViewGraph }: Props) {
           </div>
           <span className="badge text-[10px] font-bold"
             style={{ background: sys.color + '18', color: sys.color }}>
-            {sys.inputModel === 'linear_run' ? 'Linear Run' : sys.inputModel === 'area' ? 'Area' : 'Simple Dims'}
+            {INPUT_MODELS.find(m => m.value === normalizeInputModel(sys.inputModel))?.label ?? sys.inputModel}
           </span>
         </div>
 
@@ -159,7 +156,7 @@ export default function SystemOverviewPanel({ sys, onViewGraph }: Props) {
               right={<Pill label="custom" />}
             />
           ))}
-          {sys.inputModel === 'linear_run' && (
+          {(sys.inputModel === 'linear_run' || normalizeInputModel(sys.inputModel) === 'linear') && (
             <p className="text-[10px] text-ink-faint px-0.5 pt-0.5">
               + segment mode available for complex layouts
             </p>

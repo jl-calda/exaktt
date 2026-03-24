@@ -1,7 +1,7 @@
 // src/components/calculator/panels/MaterialsTable.tsx
 'use client'
 import { useState } from 'react'
-import type { Material, CustomDim, CustomCriterion, Variant, GlobalTag, WorkBracket } from '@/types'
+import type { Material, CustomDim, CustomCriterion, Variant, GlobalTag, WorkBracket, InputModel } from '@/types'
 import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
 import { Search, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -10,6 +10,7 @@ import MaterialSearchCombobox from './MaterialSearchCombobox'
 import AddMaterialModal from './AddMaterialModal'
 
 interface Props {
+  inputModel:      InputModel
   materials:       Material[]
   customDims:      CustomDim[]
   customCriteria:  CustomCriterion[]
@@ -26,7 +27,7 @@ interface Props {
 }
 
 export default function MaterialsTable({
-  materials, customDims, customCriteria, variants, globalTags,
+  inputModel, materials, customDims, customCriteria, variants, globalTags,
   library, customBrackets = [], onSave, onDelete, onMakeUnique, onSyncFromLib, onAddFromLib,
 }: Props) {
   const [search,       setSearch]       = useState('')
@@ -96,6 +97,7 @@ export default function MaterialsTable({
             )}
             {visible.map((mat, i) => (
               <MatRow key={mat.id} mat={mat} rowIndex={i}
+                inputModel={inputModel}
                 onSave={onSave} onDelete={onDelete}
                 customDims={customDims} customCriteria={customCriteria} variants={variants}
                 globalTags={globalTags} allDims={allDims}
