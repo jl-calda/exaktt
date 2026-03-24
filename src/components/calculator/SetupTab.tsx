@@ -311,7 +311,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
 
       {/* ── Step 2: Custom Dimensions ── */}
       <StepHeader step={STEPS[1]}>
-        <CustomDimsPanel customDims={sys.customDims} onChange={d => onUpdate({ customDims: d })} sysMats={sys.materials} />
+        <CustomDimsPanel customDims={sys.customDims} onChange={d => onUpdate({ customDims: d })} sysMats={sys.materials} sys={sys} />
       </StepHeader>
 
       {/* ── Step 3: Criteria + Warnings ── */}

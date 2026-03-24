@@ -228,6 +228,17 @@ export interface CustomDim {
   sheetAllowRotation: boolean
   sheetPartsNeededDim: string
   inputStep?: number   // user_input type only: increment for the number field
+
+  // Adaptive derivation features
+  modelStrategies?: Record<string, Partial<CustomDim>>   // #5: per-input-model strategy overrides
+  criteriaOverrides?: CriteriaParamOverride[]             // #1: criteria-gated param overrides
+  allowOverride?: boolean                                 // #4: allow user to override computed value
+}
+
+export interface CriteriaParamOverride {
+  criterionKey: string
+  whenActive:   boolean
+  params:       Record<string, any>
 }
 
 export interface CustomCriterion {
