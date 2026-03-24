@@ -3,7 +3,7 @@
 'use client'
 import { useState } from 'react'
 import type { MtoSystem } from '@/types'
-import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, INPUT_MODELS, getDimUnit } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, INPUT_MODELS, getDimLabel, getDimUnit } from '@/lib/engine/constants'
 import { normalizeInputModel } from '@/types'
 import { ChevronDown, ChevronUp, GitBranch } from 'lucide-react'
 
@@ -113,6 +113,8 @@ export default function SystemOverviewPanel({ sys, onViewGraph }: Props) {
 
   // Spacing dims that show as user inputs in calculator (spacingMode=user)
   const userSpacingDims = cds.filter(cd => cd.derivType === 'spacing' && cd.spacingMode === 'user')
+  // Override dims — auto-computed but user can manually override in calculator
+  const overrideDims = cds.filter(cd => cd.allowOverride && cd.derivType !== 'user_input')
 
   return (
     <div className="w-full">
@@ -137,30 +139,70 @@ export default function SystemOverviewPanel({ sys, onViewGraph }: Props) {
               No dims referenced yet — assign rules to materials to see inputs here.
             </p>
           )}
-          {calcInputs.map(key => {
-            const d = primMap[key]
-            return d ? (
-              <Row key={key} icon={d.icon} label={d.label} sub={d.unit ? `(${d.unit})` : undefined} />
-            ) : null
-          })}
-          {userInputDims.map(cd => (
-            <Row key={cd.key} icon={cd.icon} label={cd.name}
-              sub={cd.unit ? `(${cd.unit})` : 'custom input'}
-              keyTag={cd.key}
-              right={<Pill label="input" />}
-            />
-          ))}
-          {userSpacingDims.map(cd => (
-            <Row key={cd.key} icon={cd.icon ?? '🔗'} label={cd.spacingLabel || cd.name}
-              sub="spacing — user input"
-              right={<Pill label="custom" />}
-            />
-          ))}
-          {(sys.inputModel === 'linear_run' || normalizeInputModel(sys.inputModel) === 'linear') && (
-            <p className="text-[10px] text-ink-faint px-0.5 pt-0.5">
-              + segment mode available for complex layouts
-            </p>
-          )}
+          {(() => {
+            const autoCounted = new Set(['corners', 'end1', 'end2', 'both_ends', 'perimeter'])
+            const userEnteredKeys = calcInputs.filter(k => !autoCounted.has(k))
+            const autoCountedKeys = calcInputs.filter(k => autoCounted.has(k))
+            return (
+              <>
+                {/* User-entered measurements */}
+                {userEnteredKeys.map(key => {
+                  const d = primMap[key]
+                  if (!d) return null
+                  const label = getDimLabel(key, sys.dimOverrides)
+                  const unit  = getDimUnit(key, sys.dimOverrides)
+                  return (
+                    <Row key={key} icon={d.icon} label={label} sub={unit ? `(${unit})` : undefined} />
+                  )
+                })}
+                {userInputDims.map(cd => (
+                  <Row key={cd.key} icon={cd.icon} label={cd.name}
+                    sub={cd.unit ? `(${cd.unit})` : 'custom input'}
+                    keyTag={cd.key}
+                    right={<Pill label="input" />}
+                  />
+                ))}
+                {userSpacingDims.map(cd => (
+                  <Row key={cd.key} icon={cd.icon ?? '🔗'} label={cd.spacingLabel || cd.name}
+                    sub="spacing — user input"
+                    right={<Pill label="custom" />}
+                  />
+                ))}
+                {/* Override dims — auto-computed, user can override */}
+                {overrideDims.length > 0 && (
+                  <>
+                    <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide pt-1.5">
+                      Optional overrides
+                    </div>
+                    {overrideDims.map(cd => (
+                      <Row key={cd.key} icon={cd.icon ?? '🔗'} label={cd.name}
+                        sub={`auto-computed · user can override${cd.unit ? ` (${cd.unit})` : ''}`}
+                        right={<Pill label="override" />}
+                      />
+                    ))}
+                  </>
+                )}
+                {/* Auto-counted dims */}
+                {autoCountedKeys.length > 0 && (
+                  <>
+                    <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide pt-1.5">
+                      Automatically counted
+                    </div>
+                    {autoCountedKeys.map(key => {
+                      const d = primMap[key]
+                      if (!d) return null
+                      return (
+                        <Row key={key} icon={d.icon} label={d.label}
+                          sub={d.unit ? `(${d.unit})` : undefined}
+                          right={<Pill label="auto" />}
+                        />
+                      )
+                    })}
+                  </>
+                )}
+              </>
+            )
+          })()}
         </Section>
 
         {/* ── Custom Dimensions ────────────────────────────────────────── */}
