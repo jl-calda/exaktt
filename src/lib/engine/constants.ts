@@ -7,7 +7,9 @@ export const PRIMITIVE_DIMS = [
   { key: 'height',    label: 'Height',        unit: 'm',       icon: '↕️',  step: '0.1' },
   { key: 'perimeter', label: 'Perimeter',     unit: 'm',       icon: '⬜', step: '0.1' },
   { key: 'corners',   label: 'Corners',       unit: 'corners', icon: '🔲', step: '1'   },
-  { key: 'ends',      label: 'Ends',          unit: 'ends',    icon: '🔚', step: '1'   },
+  { key: 'end1',      label: 'End 1',          unit: 'end',     icon: '🔚', step: '1'   },
+  { key: 'end2',      label: 'End 2',          unit: 'end',     icon: '🔚', step: '1'   },
+  { key: 'both_ends', label: 'Both Ends',      unit: 'ends',    icon: '🔚', step: '1'   },
   { key: 'workers',   label: 'Workers',       unit: 'workers', icon: '👷', step: '1'   },
   { key: 'levels',    label: 'Levels/Floors', unit: 'levels',  icon: '🏢', step: '1'   },
   { key: 'openings',  label: 'Openings',      unit: 'openings',icon: '🚪', step: '1'   },
@@ -22,7 +24,7 @@ export const PRIMITIVE_DIMS = [
 // ─── Input model definitions ─────────────────────────────────────────────────
 
 export const INPUT_MODELS = [
-  { value: 'linear',  label: 'Linear',    icon: '📏', desc: 'Length, simple or segmented',     dims: ['length', 'corners', 'ends'] },
+  { value: 'linear',  label: 'Linear',    icon: '📏', desc: 'Length, simple or segmented',     dims: ['length', 'corners', 'end1', 'end2', 'both_ends'] },
   { value: 'area',    label: 'Area',       icon: '⬛', desc: 'Length x width',                  dims: ['length', 'width', 'perimeter'] },
   { value: 'volume',  label: 'Volume',     icon: '📦', desc: 'Length x width x height',         dims: ['length', 'width', 'height'] },
   { value: 'mass',    label: 'Mass',       icon: '⚖️',  desc: 'Weight-based inputs',             dims: ['mass'] },
@@ -35,7 +37,7 @@ export const DIMS_FOR_INPUT_MODEL: Record<string, string[]> = Object.fromEntries
   ...INPUT_MODELS.map(m => [m.value, m.dims]),
   // legacy aliases
   ['linear_run',  INPUT_MODELS[0].dims],
-  ['simple_dims', PRIMITIVE_DIMS.filter(d => d.key !== 'ends').map(d => d.key)],
+  ['simple_dims', PRIMITIVE_DIMS.filter(d => !['end1','end2','both_ends'].includes(d.key)).map(d => d.key)],
 ])
 
 export const LIBRARY_CATEGORIES = [

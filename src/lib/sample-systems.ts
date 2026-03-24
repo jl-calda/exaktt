@@ -117,7 +117,7 @@ const HLL: SampleSystem = {
     'runs and segmented layouts. End anchors vary by roof substrate via the Variants panel.',
   highlights: [
     'Wire Rope 8mm 7×7 SS (LDV006): linear metre + 10% splice allowance',
-    'End anchors: ratio off "ends" dim — concrete (LDV002) or metal deck (LDV023) via Roof Type variant',
+    'End anchors: ratio off "both_ends" dim — concrete (LDV002) or metal deck (LDV023) via Roof Type variant',
     'Intermediate NEO anchors (LDV043): spacing custom dim at 12m max span',
     'Corner Curve Guide 90° (LDV145): ratio off "corners" dim',
     'Spring absorber LDV032: gated behind "Thermal Roof" criterion',
@@ -220,11 +220,11 @@ const HLL: SampleSystem = {
         { notes: '10% added for splice/termination allowance', unitPrice: 8.50 }),
 
       mat('mat_ll_end_conc', 'End Anchor LDV002 (concrete/steel)', 'each', 'LDV002',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'ends', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'both_ends', ruleOutUnit: 'each' },
         { notes: 'Standard flat-roof end anchor', variantTags: { v_ll_roof: 'concrete_flat' }, unitPrice: 42.00 }),
 
       mat('mat_ll_end_deck', 'End Anchor LDV023 (metal sheet)', 'each', 'LDV023',
-        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'ends', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 1, ruleDivisor: 1, ruleDimKey: 'both_ends', ruleOutUnit: 'each' },
         { notes: 'Stainless AISI 304; min roof thickness 0.5mm', variantTags: { v_ll_roof: 'metal_deck' }, unitPrice: 42.00 }),
 
       mat('mat_ll_int', 'NEO Intermediate Anchor LDV043', 'each', 'LDV043',
@@ -569,7 +569,7 @@ const EVORAIL: SampleSystem = {
         { notes: '2 clamps per post (top rail + mid rail); Grade A2 SS screws', unitPrice: 18.00 }),
 
       mat('mat_er_dend', 'D-End 500mm (run termination)', 'each', 'ER-DEND',
-        'ratio', { ruleQty: 2, ruleDivisor: 1, ruleDimKey: 'ends', ruleOutUnit: 'each' },
+        'ratio', { ruleQty: 2, ruleDivisor: 1, ruleDimKey: 'both_ends', ruleOutUnit: 'each' },
         { notes: '2 D-ends per run termination (top + mid)', unitPrice: 42.00 }),
 
       mat('mat_er_corner', 'Corner Post Bracket Set', 'each', 'ER-CORNR',

@@ -118,8 +118,10 @@ function getRunDims(run: Run, sys: MtoSystem): Record<string, number> {
   const dims: Record<string, number> = {}
   if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple') {
     dims.length  = parseFloat(run.simpleJob?.length  as any) || 0
-    dims.corners = 0
-    dims.ends    = 2
+    dims.corners   = 0
+    dims.end1      = 1
+    dims.end2      = 1
+    dims.both_ends = 2
     dims['__spacing_int_brackets'] = parseFloat(run.simpleJob?.spacing as any) || 10
   }
   for (const [k, v] of Object.entries(run.job ?? {})) {
@@ -961,9 +963,12 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
       }
       // Handle linear_run simple mode dims
       if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple') {
-        jobDims.length  = parseFloat(run.simpleJob?.length as any) || 0
-        jobDims.corners = 0
-        jobDims.ends    = (run.criteriaState ?? {} as any)['loop'] ? 0 : 2
+        jobDims.length    = parseFloat(run.simpleJob?.length as any) || 0
+        jobDims.corners   = 0
+        const isLoop      = !!(run.criteriaState ?? {} as any)['loop']
+        jobDims.end1      = isLoop ? 0 : 1
+        jobDims.end2      = isLoop ? 0 : 1
+        jobDims.both_ends = isLoop ? 0 : 2
         jobDims['__spacing_int_brackets'] = parseFloat(run.simpleJob?.spacing as any) || 10
       }
       const criteriaState = run.criteriaState ?? {}
