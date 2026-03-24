@@ -113,6 +113,8 @@ export default function SystemOverviewPanel({ sys, onViewGraph }: Props) {
 
   // Spacing dims that show as user inputs in calculator (spacingMode=user)
   const userSpacingDims = cds.filter(cd => cd.derivType === 'spacing' && cd.spacingMode === 'user')
+  // Override dims — auto-computed but user can manually override in calculator
+  const overrideDims = cds.filter(cd => cd.allowOverride && cd.derivType !== 'user_input')
 
   return (
     <div className="w-full">
@@ -166,6 +168,20 @@ export default function SystemOverviewPanel({ sys, onViewGraph }: Props) {
                     right={<Pill label="custom" />}
                   />
                 ))}
+                {/* Override dims — auto-computed, user can override */}
+                {overrideDims.length > 0 && (
+                  <>
+                    <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide pt-1.5">
+                      Optional overrides
+                    </div>
+                    {overrideDims.map(cd => (
+                      <Row key={cd.key} icon={cd.icon ?? '🔗'} label={cd.name}
+                        sub={`auto-computed · user can override${cd.unit ? ` (${cd.unit})` : ''}`}
+                        right={<Pill label="override" />}
+                      />
+                    ))}
+                  </>
+                )}
                 {/* Auto-counted dims */}
                 {autoCountedKeys.length > 0 && (
                   <>
