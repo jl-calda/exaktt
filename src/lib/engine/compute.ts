@@ -53,12 +53,10 @@ function migrateMat(mat: any): Material {
     condition:    null,
     ruleType:     mat.ruleType,
     ruleQty:      mat.ruleQty      ?? 1,
-    ruleOutUnit:  mat.ruleOutUnit  ?? 'each',
     ruleDivisor:  mat.ruleDivisor  ?? 1,
     ruleDimKey:   mat.ruleDimKey   ?? '',
     ruleTileW:    mat.ruleTileW    ?? 600,
     ruleTileH:    mat.ruleTileH    ?? 600,
-    ruleBagSize:  mat.ruleBagSize  ?? 25,
     waste:        mat.waste        ?? 0,
     ruleStockDimKey: '',
     ruleStockLength: 0,
@@ -231,6 +229,7 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
   })
 
   const getDimVal = (key: string): number => {
+    if (key === '__area') return prim.length * prim.width
     if (key in prim) return prim[key]
     if (key in customVals) return customVals[key]
     const jv = jobDims[key]
@@ -332,13 +331,9 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
 
     switch (activeRow.ruleType) {
       case 'ratio':             raw = (qty_ / div) * dimV; break
-      case 'ratio_length':      raw = (qty_ / div) * prim.length; break
-      case 'ratio_area':        raw = (qty_ / div) * (prim.length * prim.width); break
       case 'linear_metre':      raw = qty_ * prim.length; break
-      case 'base_plus_length':  raw = qty_ + prim.length / div; break
       case 'coverage_per_item': raw = (prim.length * prim.width) / div; break
-      case 'sheet_size':
-      case 'tile_size': {
+      case 'sheet_size': {
         const tileFactor = getUnitFactor(sys.dimOverrides?.['length']?.unit ?? 'm')
         raw = (prim.length * prim.width) / ((activeRow.ruleTileW * tileFactor) * (activeRow.ruleTileH * tileFactor))
         break
@@ -346,7 +341,6 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
       case 'kg_per_sqm':        raw = qty_ * prim.length * prim.width; break
       case 'kg_per_metre':      raw = qty_ * prim.length; break
       case 'kg_per_item':       raw = qty_ * dimV; break
-      case 'bags_from_kg':      raw = (qty_ * prim.length * prim.width) / (activeRow.ruleBagSize || 25); break
       case 'fixed_qty':         raw = qty_; break
       case 'stock_length_qty': {
         const solverResult = jobDims['__solver_' + activeRow.ruleStockDimKey] as any

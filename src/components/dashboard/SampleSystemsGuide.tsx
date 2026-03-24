@@ -23,14 +23,13 @@ const FEATURE_COLORS: Record<string, { bg: string; text: string }> = {
 const RULE_COLORS: Record<string, { bg: string; text: string }> = {
   linear_metre:     { bg: '#dbeafe', text: '#1d4ed8' },
   ratio:            { bg: '#f3e8ff', text: '#7c3aed' },
-  ratio_length:     { bg: '#e0f2fe', text: '#0369a1' },
-  base_plus_length: { bg: '#fef3c7', text: '#b45309' },
   fixed_qty:        { bg: '#f0fdf4', text: '#15803d' },
   stock_length_qty: { bg: '#fce7f3', text: '#be185d' },
   coverage_per_item:{ bg: '#fff7ed', text: '#c2410c' },
-  tile_size:        { bg: '#fef9c3', text: '#854d0e' },
+  sheet_size:       { bg: '#fef9c3', text: '#854d0e' },
   kg_per_sqm:       { bg: '#f0fdf4', text: '#166534' },
-  ratio_area:       { bg: '#ecfeff', text: '#0e7490' },
+  kg_per_metre:     { bg: '#e0f2fe', text: '#0369a1' },
+  kg_per_item:      { bg: '#ecfeff', text: '#0e7490' },
 }
 
 const CATEGORY_ICONS: Record<string, string> = {

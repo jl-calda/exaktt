@@ -15,18 +15,13 @@ import FloatingPanel from '../FloatingPanel'
 // ─── Rule type descriptions ───────────────────────────────────────────────────
 
 const RULE_DESCRIPTIONS: Record<string, { short: string; formula: string; example: string }> = {
-  ratio:             { short: 'N units per N of a dimension', formula: 'qty = dim_value × (ruleQty / ruleDivisor)', example: '2 bolts per 1 corner → corners × 2' },
-  ratio_length:      { short: 'N units per metre of length run', formula: 'qty = length × (ruleQty / ruleDivisor)', example: '3 clips per 1 m → length × 3' },
-  ratio_area:        { short: 'N units per m² of area', formula: 'qty = (length × width) × (ruleQty / ruleDivisor)', example: '4 fixings per 1 m² → area × 4' },
+  ratio:             { short: 'N units per N of a dimension (length, area, or custom)', formula: 'qty = dim_value × (ruleQty / ruleDivisor)', example: '2 bolts per 1 corner → corners × 2' },
   linear_metre:      { short: 'Quantity equals the linear metre value directly', formula: 'qty = length × ruleQty', example: 'Cable: ruleQty=1.05 → length × 1.05 m' },
-  base_plus_length:  { short: 'A fixed base quantity plus one more per N metres', formula: 'qty = ruleQty + floor(length / ruleDivisor)', example: 'Base 1 post + 1 per 3 m run' },
   coverage_per_item: { short: 'Each item covers a given area in m²', formula: 'qty = ceil(area / ruleDivisor)', example: '1 sheet covers 3.6 m² → area ÷ 3.6, round up' },
-  sheet_size:        { short: 'Sheets cut to given width × height in mm', formula: 'qty = ceil(area / (tileW/1000 × tileH/1000))', example: '1200 × 2400 mm sheet covering floor area' },
-  tile_size:         { short: 'Tiles of given width × height covering area', formula: 'qty = ceil(area / (tileW/1000 × tileH/1000))', example: '600 × 600 mm floor tiles' },
+  sheet_size:        { short: 'Sheets or tiles of given width × height covering area', formula: 'qty = ceil(area / (W/1000 × H/1000))', example: '600 × 600 mm floor tiles or 1200 × 2400 mm sheets' },
   kg_per_sqm:        { short: 'Weight in kg applied per m² of area', formula: 'qty = area × ruleQty (kg)', example: 'Primer: 0.3 kg/m² × area' },
   kg_per_metre:      { short: 'Weight in kg per metre of run', formula: 'qty = length × ruleQty (kg)', example: 'Steel bar: 2.4 kg/m × length' },
   kg_per_item:       { short: 'Weight in kg per count of a dimension', formula: 'qty = dimValue × ruleQty (kg)', example: '0.8 kg per corner bracket' },
-  bags_from_kg:      { short: 'Total kg from area, then converted to bags', formula: 'qty = ceil((area × ruleQty) / bagSize)', example: 'Grout: 18 kg/m², 25 kg bags' },
   fixed_qty:         { short: 'Fixed quantity regardless of dimensions', formula: 'qty = ruleQty', example: 'Safety signage: always 1 set' },
   stock_length_qty:  { short: 'Uses the stock length solver — how many lengths are needed from the solver custom dim', formula: 'qty = bars_needed from solver for this length', example: 'One 6000mm bar from the Int Brackets solver' },
 }
@@ -47,13 +42,14 @@ function RuleFields({ row, onChange, customDims, inputModel }: {
 
   const DimSel = ({ field = 'ruleDimKey' }: { field?: keyof RuleRow }) => {
     const currentVal = (row as any)[field] ?? ''
-    const isOrphaned = currentVal && !filteredPrimitiveDims.some(d => d.key === currentVal) && !customDims.some(d => d.key === currentVal)
+    const isOrphaned = currentVal && currentVal !== '__area' && !filteredPrimitiveDims.some(d => d.key === currentVal) && !customDims.some(d => d.key === currentVal)
     return (
       <select value={currentVal} onChange={e => onChange(field, e.target.value)}
         className={`input text-xs py-1.5 ${!currentVal ? 'border-red-300' : isOrphaned ? 'border-amber-300' : ''}`}>
         <option value="">— select dim —</option>
         <optgroup label="Primitive">
           {filteredPrimitiveDims.map(d => <option key={d.key} value={d.key}>{d.icon} {d.label} ({d.unit})</option>)}
+          <option value="__area">⬛ Area (L × W) (m²)</option>
         </optgroup>
         {customDims.length > 0 && (
           <optgroup label="Custom">
@@ -97,7 +93,7 @@ function RuleFields({ row, onChange, customDims, inputModel }: {
     )
   }
 
-  if (['sheet_size', 'tile_size'].includes(rt)) {
+  if (rt === 'sheet_size') {
     return (
       <div className="flex gap-2 items-center text-xs">
         <NumberInput value={row.ruleTileW ?? 600} min={1} onChange={e => onChange('ruleTileW', parseFloat(e.target.value))} className="w-20" />
@@ -108,24 +104,10 @@ function RuleFields({ row, onChange, customDims, inputModel }: {
     )
   }
 
-  if (rt === 'bags_from_kg') {
-    return (
-      <div className="flex gap-2 items-center text-xs">
-        <NumberInput value={row.ruleQty ?? 18} onChange={e => onChange('ruleQty', parseFloat(e.target.value))} className="w-20" />
-        <span className="text-ink-faint">kg/m²</span>
-        <span className="text-ink-faint">÷</span>
-        <NumberInput value={row.ruleBagSize ?? 25} onChange={e => onChange('ruleBagSize', parseFloat(e.target.value))} className="w-20" />
-        <span className="text-ink-faint">kg/bag</span>
-      </div>
-    )
-  }
-
   if (rt === 'coverage_per_item') {
     return (
       <div className="flex gap-2 items-center text-xs">
-        <span className="text-ink-faint">1</span>
-        <input value={row.ruleOutUnit ?? 'item'} onChange={e => onChange('ruleOutUnit', e.target.value)} className="input text-xs py-1 w-20" />
-        <span className="text-ink-faint">covers</span>
+        <span className="text-ink-faint">1 item covers</span>
         <NumberInput value={row.ruleDivisor ?? 1} onChange={e => onChange('ruleDivisor', parseFloat(e.target.value))} className="w-20" />
         <span className="text-ink-faint">m²</span>
       </div>
@@ -142,19 +124,17 @@ function RuleFields({ row, onChange, customDims, inputModel }: {
     )
   }
 
-  // Generic: ratio, ratio_length, ratio_area, linear_metre, base_plus_length, kg_per_sqm, kg_per_metre, fixed_qty
-  const showQty  = !['coverage_per_item'].includes(rt)
-  const showUnit = ['ratio','ratio_length','ratio_area','fixed_qty'].includes(rt)
-  const showDiv  = ['ratio','ratio_length','ratio_area','base_plus_length'].includes(rt)
+  // Generic: ratio, linear_metre, kg_per_sqm, kg_per_metre, fixed_qty
+  const showQty  = true
+  const showDiv  = ['ratio'].includes(rt)
   const showDim  = ['ratio'].includes(rt)
-  const unitLabel = ['kg_per_sqm','kg_per_metre'].includes(rt) ? 'kg' : ['linear_metre'].includes(rt) ? 'm' : rt.includes('area') ? 'm²' : 'm'
+  const unitLabel = ['kg_per_sqm','kg_per_metre'].includes(rt) ? 'kg' : ['linear_metre'].includes(rt) ? 'm' : ''
 
   return (
     <div className="flex gap-2 items-center text-xs flex-wrap">
       {showQty  && <NumberInput value={row.ruleQty ?? 1} step={0.01} onChange={e => onChange('ruleQty', parseFloat(e.target.value))} className="w-20" />}
-      {showUnit && <input value={row.ruleOutUnit ?? 'each'} onChange={e => onChange('ruleOutUnit', e.target.value)} className="input text-xs py-1 w-20" />}
       {showDiv  && <><span className="text-ink-faint">per</span><NumberInput value={row.ruleDivisor ?? 1} step={0.01} onChange={e => onChange('ruleDivisor', parseFloat(e.target.value))} className="w-20" /></>}
-      {showDim  ? <DimSel /> : <span className="text-ink-faint">{unitLabel}</span>}
+      {showDim  ? <DimSel /> : unitLabel ? <span className="text-ink-faint">{unitLabel}</span> : null}
     </div>
   )
 }
@@ -163,18 +143,13 @@ function RuleFields({ row, onChange, customDims, inputModel }: {
 
 // Which primitive dims does a given rule type implicitly read?
 const RULE_IMPLICIT_DIMS: Record<string, string[]> = {
-  ratio:             [],           // explicit via ruleDimKey
-  ratio_length:      ['length'],
-  ratio_area:        ['length', 'width'],
+  ratio:             [],           // explicit via ruleDimKey (incl. __area → length,width)
   linear_metre:      ['length'],
-  base_plus_length:  ['length'],
   coverage_per_item: ['length', 'width'],
   sheet_size:        ['length', 'width'],
-  tile_size:         ['length', 'width'],
   kg_per_sqm:        ['length', 'width'],
   kg_per_metre:      ['length'],
   kg_per_item:       [],           // explicit via ruleDimKey
-  bags_from_kg:      ['length', 'width'],
   fixed_qty:         [],
   stock_length_qty:  [],           // via ruleStockDimKey (custom dim)
 }
@@ -367,8 +342,8 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
 
   const newRuleRow = (): RuleRow => ({
     id: 'r_' + nanoid(6), condition: null, ruleType: null,
-    ruleQty: 1, ruleOutUnit: 'each', ruleDivisor: 1, ruleDimKey: '',
-    ruleTileW: 600, ruleTileH: 600, ruleBagSize: 25, waste: 0,
+    ruleQty: 1, ruleDivisor: 1, ruleDimKey: '',
+    ruleTileW: 600, ruleTileH: 600, waste: 0,
     ruleStockDimKey: '', ruleStockLength: 0,
   })
 

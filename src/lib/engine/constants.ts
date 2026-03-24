@@ -121,19 +121,14 @@ export const RULE_GROUPS = [
 ] as const
 
 export const RULE_TYPES = [
-  { value: 'ratio',             label: 'Ratio (N per N)',             group: 'ratio',  fields: ['ruleQty','ruleOutUnit','ruleDivisor','ruleDimKey'] },
-  { value: 'ratio_length',      label: 'Ratio per metre run',         group: 'ratio',  fields: ['ruleQty','ruleOutUnit','ruleDivisor'] },
-  { value: 'ratio_area',        label: 'Ratio per m² area',           group: 'ratio',  fields: ['ruleQty','ruleOutUnit','ruleDivisor'] },
+  { value: 'ratio',             label: 'Ratio (N per N)',             group: 'ratio',  fields: ['ruleQty','ruleDivisor','ruleDimKey'] },
   { value: 'linear_metre',      label: 'Linear metres',               group: 'length', fields: ['ruleQty'] },
-  { value: 'base_plus_length',  label: 'Base qty + 1 per N metres',   group: 'length', fields: ['ruleQty','ruleDivisor'] },
-  { value: 'coverage_per_item', label: 'Coverage per item (m²)',      group: 'area',   fields: ['ruleOutUnit','ruleDivisor'] },
-  { value: 'sheet_size',        label: 'Sheet/board size',            group: 'area',   fields: ['ruleTileW','ruleTileH'] },
-  { value: 'tile_size',         label: 'Tile size',                   group: 'area',   fields: ['ruleOutUnit','ruleTileW','ruleTileH'] },
+  { value: 'coverage_per_item', label: 'Coverage per item (m²)',      group: 'area',   fields: ['ruleDivisor'] },
+  { value: 'sheet_size',        label: 'Sheet / tile size',           group: 'area',   fields: ['ruleTileW','ruleTileH'] },
   { value: 'kg_per_sqm',        label: 'kg per m²',                   group: 'weight', fields: ['ruleQty'] },
   { value: 'kg_per_metre',      label: 'kg per m run',                group: 'weight', fields: ['ruleQty'] },
   { value: 'kg_per_item',       label: 'kg per item count',           group: 'weight', fields: ['ruleQty','ruleDimKey'] },
-  { value: 'bags_from_kg',      label: 'Bags from kg/m²',             group: 'weight', fields: ['ruleQty','ruleOutUnit','ruleBagSize'] },
-  { value: 'fixed_qty',         label: 'Fixed quantity',              group: 'fixed',  fields: ['ruleQty','ruleOutUnit'] },
+  { value: 'fixed_qty',         label: 'Fixed quantity',              group: 'fixed',  fields: ['ruleQty'] },
   { value: 'stock_length_qty',  label: 'Stock length qty (from solver)', group: 'ratio', fields: ['ruleStockDimKey','ruleStockLength'] },
 ] as const
 

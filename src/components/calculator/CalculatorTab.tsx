@@ -139,13 +139,12 @@ function getFormulaDef(activeRow: any, dims: Record<string, number>, sys: MtoSys
   const qty_ = parseFloat(activeRow.ruleQty)    || 0
   const div  = parseFloat(activeRow.ruleDivisor) || 1
   const key  = activeRow.ruleDimKey ?? ''
-  const dimV = dims[key] ?? 0
-  const cd   = (sys.customDims ?? []).find(c => c.key === key)
-  const dimLabel = key ? (cd?.name ?? key) : ''
-  const dimUnit  = key ? (cd?.unit  ?? '') : ''
   const L    = dims.length ?? 0
   const W    = dims.width  ?? 0
-  const area = L * W
+  const dimV = key === '__area' ? L * W : (dims[key] ?? 0)
+  const cd   = (sys.customDims ?? []).find(c => c.key === key)
+  const dimLabel = key === '__area' ? 'area' : key ? (cd?.name ?? key) : ''
+  const dimUnit  = key === '__area' ? 'm²' : key ? (cd?.unit  ?? '') : ''
   const waste = parseFloat(activeRow.waste) || 0
 
   let leftTags: string[] = []
@@ -163,23 +162,9 @@ function getFormulaDef(activeRow: any, dims: Record<string, number>, sys: MtoSys
         : `${fmt(dimV)}${dimUnit} × ${qty_}`
       rightTags = div !== 1 ? ['factor'] : []
       break
-    case 'ratio_length':
-      leftTags = ['length']
-      core = div !== 1 ? `${fmt(L)}m × (${qty_} ÷ ${div})` : `${fmt(L)}m × ${qty_}`
-      rightTags = div !== 1 ? ['factor'] : []
-      break
-    case 'ratio_area':
-      leftTags = ['area']
-      core = `${fmt(L)}m × ${fmt(W)}m × (${qty_} ÷ ${div})`
-      rightTags = ['factor']
-      break
     case 'linear_metre':
       leftTags = ['length']
       core = `${fmt(L)}m × ${qty_}`
-      break
-    case 'base_plus_length':
-      leftTags = ['length']
-      core = `${qty_} + ${fmt(L)}m ÷ ${div}`
       break
     case 'coverage_per_item':
       leftTags = ['area']
@@ -201,13 +186,12 @@ function getFormulaDef(activeRow: any, dims: Record<string, number>, sys: MtoSys
       core = `${fmt(dimV)} × ${qty_}`
       rightTags = ['kg/item']
       break
-    case 'tile_size': {
-      const tileU = getDimUnit('length', sys.dimOverrides)
+    case 'sheet_size': {
       const tw = activeRow.ruleTileW || 600
       const th = activeRow.ruleTileH || 600
       leftTags = ['area']
       core = `${fmt(L)} × ${fmt(W)} ÷ (${tw} × ${th})`
-      rightTags = [`${tw}×${th}${tileU} tile`]
+      rightTags = [`${tw}×${th}mm`]
       break
     }
     default:
@@ -433,10 +417,10 @@ function CalcBreakdownPanel({ sys, runs, multiResults, workSchedule }: {
     commissioning: 'Commissioning', transport: 'Transport', third_party: 'Third Party',
   }
   const RULE_LABELS: Record<string, string> = {
-    fixed_qty: 'Fixed', ratio: 'Ratio', ratio_length: 'Ratio × L', ratio_area: 'Ratio × Area',
-    linear_metre: 'Linear m', base_plus_length: 'Base + L', coverage_per_item: 'Coverage',
-    kg_per_sqm: 'kg/m²', kg_per_metre: 'kg/m', kg_per_item: 'kg/item',
-    tile_size: 'Tile size', stock_length_qty: 'Stock length',
+    fixed_qty: 'Fixed', ratio: 'Ratio',
+    linear_metre: 'Linear m', coverage_per_item: 'Coverage',
+    sheet_size: 'Sheet/tile', kg_per_sqm: 'kg/m²', kg_per_metre: 'kg/m', kg_per_item: 'kg/item',
+    stock_length_qty: 'Stock length',
   }
   return (
     <div className="card overflow-hidden">
