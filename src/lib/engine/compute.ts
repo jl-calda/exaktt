@@ -324,7 +324,7 @@ export function computeMultiRun(
     if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear')) {
       if (run.inputMode === 'simple') {
         jobDims.length  = parseFloat(run.simpleJob?.length as any) || 0
-        jobDims.corners = parseInt(run.simpleJob?.corners as any) || 0
+        jobDims.corners = 0
         jobDims.ends    = criteriaState['loop'] ? 0 : 2
         jobDims['__spacing_int_brackets'] = parseFloat(run.simpleJob?.spacing as any) || 10
       } else if (run.inputMode === 'segment' && run.segments?.length) {

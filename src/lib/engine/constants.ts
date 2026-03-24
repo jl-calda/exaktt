@@ -22,7 +22,7 @@ export const PRIMITIVE_DIMS = [
 // ─── Input model definitions ─────────────────────────────────────────────────
 
 export const INPUT_MODELS = [
-  { value: 'linear',  label: 'Linear',    icon: '📏', desc: 'Length + corners + segments',     dims: ['length', 'corners', 'ends'] },
+  { value: 'linear',  label: 'Linear',    icon: '📏', desc: 'Length, simple or segmented',     dims: ['length', 'corners', 'ends'] },
   { value: 'area',    label: 'Area',       icon: '⬛', desc: 'Length x width',                  dims: ['length', 'width', 'perimeter'] },
   { value: 'volume',  label: 'Volume',     icon: '📦', desc: 'Length x width x height',         dims: ['length', 'width', 'height'] },
   { value: 'mass',    label: 'Mass',       icon: '⚖️',  desc: 'Weight-based inputs',             dims: ['mass'] },
