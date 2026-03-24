@@ -378,6 +378,10 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
                 // area needs length+width; spacing needs length
                 if (t.value === 'area' && (!modelDims.has('length') || !modelDims.has('width'))) return false
                 if (t.value === 'spacing' && !modelDims.has('length')) return false
+                if (t.value === 'sum') {
+                  const summable = ['length', 'width', 'height', 'perimeter']
+                  if (summable.filter(d => modelDims.has(d)).length < 2) return false
+                }
                 return true
               }).map(t => ({ value: t.value, label: t.icon + ' ' + t.label }))}
               className="w-52" />
