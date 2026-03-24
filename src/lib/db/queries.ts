@@ -1,8 +1,12 @@
 // src/lib/db/queries.ts
 import { prisma } from './prisma'
+import type { Prisma } from '@prisma/client'
 import { getLimits, withinLimit } from '@/lib/limits'
 import type { Plan } from '@prisma/client'
 import type { MtoSystem, SavedJob, LibraryItem, GlobalTag, MaterialSpec, Report, Profile, ActivityLibraryItem, Supplier } from '@/types'
+
+/** Narrow domain arrays/objects to Prisma's InputJsonValue in one place */
+function asJson<T>(value: T): Prisma.InputJsonValue { return value as unknown as Prisma.InputJsonValue }
 
 // ─── Ownership guard ─────────────────────────────────────────────────────────
 // Verifies a record belongs to the company before update/delete.
@@ -52,11 +56,6 @@ export async function getUserWithPlan(userId: string) {
   })
 }
 
-/** @deprecated Use getCompanyPlan instead */
-export async function getUserPlan(userId: string): Promise<Plan> {
-  return getCompanyPlan(userId)
-}
-
 // ─── User ─────────────────────────────────────────────────────────────────────
 
 export async function upsertUser(id: string, email: string, name?: string | null) {
@@ -102,13 +101,13 @@ async function seedSampleSystems(companyId: string, userId: string) {
         icon:           s.template.icon         ?? '📦',
         color:          s.template.color        ?? '#7917de',
         inputModel:     s.template.inputModel   ?? 'linear',
-        materials:      (s.template.materials      ?? []) as any,
-        customDims:     (s.template.customDims     ?? []) as any,
-        customCriteria: (s.template.customCriteria ?? []) as any,
-        variants:       (s.template.variants       ?? []) as any,
-        warnings:       (s.template.warnings       ?? []) as any,
-        customBrackets: (s.template.customBrackets ?? []) as any,
-        workActivities: (s.template.workActivities ?? []) as any,
+        materials:      asJson(s.template.materials      ?? []),
+        customDims:     asJson(s.template.customDims     ?? []),
+        customCriteria: asJson(s.template.customCriteria ?? []),
+        variants:       asJson(s.template.variants       ?? []),
+        warnings:       asJson(s.template.warnings       ?? []),
+        customBrackets: asJson(s.template.customBrackets ?? []),
+        workActivities: asJson(s.template.workActivities ?? []),
       })),
     })
   } catch {
@@ -165,13 +164,13 @@ export async function createMtoSystem(companyId: string, createdById: string, da
       icon:           data.icon        ?? '📦',
       color:          data.color       ?? '#7917de',
       inputModel:     data.inputModel  ?? 'linear',
-      materials:      (data.materials      ?? []) as any,
-      customDims:     (data.customDims     ?? []) as any,
-      customCriteria: (data.customCriteria ?? []) as any,
-      variants:       (data.variants       ?? []) as any,
-      warnings:       (data.warnings       ?? []) as any,
-      customBrackets: (data.customBrackets ?? []) as any,
-      workActivities: (data.workActivities ?? []) as any,
+      materials:      asJson(data.materials      ?? []),
+      customDims:     asJson(data.customDims     ?? []),
+      customCriteria: asJson(data.customCriteria ?? []),
+      variants:       asJson(data.variants       ?? []),
+      warnings:       asJson(data.warnings       ?? []),
+      customBrackets: asJson(data.customBrackets ?? []),
+      workActivities: asJson(data.workActivities ?? []),
     },
   })
 }
@@ -195,13 +194,13 @@ export async function updateMtoSystem(id: string, companyId: string, data: Parti
       ...(data.icon           !== undefined && { icon:           data.icon }),
       ...(data.color          !== undefined && { color:          data.color }),
       ...(data.inputModel     !== undefined && { inputModel:     data.inputModel }),
-      ...(data.materials      !== undefined && { materials:      data.materials as any }),
-      ...(data.customDims     !== undefined && { customDims:     data.customDims as any }),
-      ...(data.customCriteria !== undefined && { customCriteria: data.customCriteria as any }),
-      ...(data.variants       !== undefined && { variants:       data.variants as any }),
-      ...(data.warnings       !== undefined && { warnings:       data.warnings as any }),
-      ...(data.customBrackets !== undefined && { customBrackets: data.customBrackets as any }),
-      ...(data.workActivities !== undefined && { workActivities: data.workActivities as any }),
+      ...(data.materials      !== undefined && { materials:      asJson(data.materials) }),
+      ...(data.customDims     !== undefined && { customDims:     asJson(data.customDims) }),
+      ...(data.customCriteria !== undefined && { customCriteria: asJson(data.customCriteria) }),
+      ...(data.variants       !== undefined && { variants:       asJson(data.variants) }),
+      ...(data.warnings       !== undefined && { warnings:       asJson(data.warnings) }),
+      ...(data.customBrackets !== undefined && { customBrackets: asJson(data.customBrackets) }),
+      ...(data.workActivities !== undefined && { workActivities: asJson(data.workActivities) }),
     },
   })
 }
@@ -241,13 +240,13 @@ export async function createMtoJob(companyId: string, createdById: string, mtoSy
     data: {
       companyId, createdById, mtoSystemId,
       name:           data.name           ?? 'Untitled Job',
-      runs:           (data.runs           ?? []) as any,
-      criteriaState:  (data.criteriaState  ?? {}) as any,
-      variantState:   (data.variantState   ?? {}) as any,
+      runs:           asJson(data.runs           ?? []),
+      criteriaState:  asJson(data.criteriaState  ?? {}),
+      variantState:   asJson(data.variantState   ?? {}),
       stockOptimMode: data.stockOptimMode  ?? 'min_waste',
       calculatedAt:   data.calculatedAt    ? new Date(data.calculatedAt) : null,
-      matVersions:    (data.matVersions    ?? {}) as any,
-      lastResults:    (data.lastResults    ?? null) as any,
+      matVersions:    asJson(data.matVersions    ?? {}),
+      lastResults:    asJson(data.lastResults    ?? null),
     },
   })
 }
@@ -258,12 +257,12 @@ export async function updateMtoJob(id: string, companyId: string, data: Partial<
     where: { id },
     data: {
       ...(data.name           !== undefined && { name:           data.name }),
-      ...(data.runs           !== undefined && { runs:           data.runs as any }),
-      ...(data.criteriaState  !== undefined && { criteriaState:  data.criteriaState as any }),
-      ...(data.variantState   !== undefined && { variantState:   data.variantState as any }),
+      ...(data.runs           !== undefined && { runs:           asJson(data.runs) }),
+      ...(data.criteriaState  !== undefined && { criteriaState:  asJson(data.criteriaState) }),
+      ...(data.variantState   !== undefined && { variantState:   asJson(data.variantState) }),
       ...(data.stockOptimMode !== undefined && { stockOptimMode: data.stockOptimMode }),
       ...(data.calculatedAt   !== undefined && { calculatedAt:   data.calculatedAt ? new Date(data.calculatedAt) : null }),
-      ...(data.matVersions    !== undefined && { matVersions:    data.matVersions as any }),
+      ...(data.matVersions    !== undefined && { matVersions:    asJson(data.matVersions) }),
     },
   })
 }
@@ -339,8 +338,8 @@ export async function createReport(companyId: string, createdById: string, data:
       mtoSystemId:      data.systemId,
       mtoJobId:         data.jobId,
       systemName:       data.systemName,
-      resultsSnapshot:  data.resultsSnapshot as any,
-      specsSnapshot:    data.specsSnapshot  as any,
+      resultsSnapshot:  asJson(data.resultsSnapshot),
+      specsSnapshot:    asJson(data.specsSnapshot),
     },
   })
 }
@@ -390,7 +389,7 @@ export async function getLibraryItems(companyId: string) {
   // Build usedInSystems dynamically from the actual JSON — always accurate
   const usedIn = new Map<string, { id: string; name: string; shortName?: string | null }[]>()
   for (const sys of systems) {
-    const mats = sys.materials as any[]
+    const mats = sys.materials as { libraryRef?: string | null }[]
     for (const mat of mats) {
       if (mat.libraryRef) {
         if (!usedIn.has(mat.libraryRef)) usedIn.set(mat.libraryRef, [])
@@ -421,8 +420,8 @@ export async function createLibraryItem(companyId: string, createdById: string, 
       productCode:    data.productCode,
       category:       data.category ?? 'other',
       photo:          data.photo,
-      properties:     (data.properties ?? {}) as any,
-      ...(data.spec           !== undefined && { spec: data.spec as any }),
+      properties:     asJson(data.properties ?? {}),
+      ...(data.spec           !== undefined && { spec: asJson(data.spec) }),
       ...(data.gradeId        !== undefined && { gradeId: data.gradeId }),
       ...(data.manufacturerId !== undefined && { manufacturerId: data.manufacturerId }),
     },
