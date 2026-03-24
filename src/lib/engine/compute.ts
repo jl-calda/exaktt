@@ -99,14 +99,11 @@ export interface ComputeResult {
 
 function resolveStrategy(
   cd: CustomDim,
-  inputModel: string,
   criteriaState: Record<string, boolean>
 ): CustomDim {
-  // Layer 1: input-model override
-  const modelOverride = cd.modelStrategies?.[inputModel]
-  let resolved: CustomDim = modelOverride ? { ...cd, ...modelOverride } as CustomDim : cd
+  let resolved: CustomDim = cd
 
-  // Layer 2: criteria overrides (applied in order)
+  // Criteria overrides (applied in order)
   for (const co of cd.criteriaOverrides ?? []) {
     const active = !!criteriaState[co.criterionKey]
     if (active === co.whenActive) {
@@ -148,7 +145,7 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
   const customVals: Record<string, number> = {}
 
   customDims.forEach(cd => {
-    const s = resolveStrategy(cd, sys.inputModel, criteriaState)
+    const s = resolveStrategy(cd, criteriaState)
 
     switch (s.derivType) {
       case 'user_input':
