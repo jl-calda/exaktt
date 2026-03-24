@@ -317,7 +317,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
       {/* ── Step 3: Criteria + Warnings ── */}
       <StepHeader step={STEPS[2]}>
         <CriteriaPanel customCriteria={sys.customCriteria} customDims={sys.customDims} onChange={c => onUpdate({ customCriteria: c })} />
-        <WarningsPanel warnings={sys.warnings} onChange={w => onUpdate({ warnings: w })} customDims={sys.customDims} />
+        <WarningsPanel warnings={sys.warnings} onChange={w => onUpdate({ warnings: w })} customDims={sys.customDims} inputModel={sys.inputModel} />
       </StepHeader>
 
       {/* ── Step 4: Variants ── */}

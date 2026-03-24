@@ -2,7 +2,7 @@
 'use client'
 import { useState } from 'react'
 import type { CustomDim, CriteriaParamOverride, MtoSystem } from '@/types'
-import { DERIV_TYPES, PRIMITIVE_DIMS, INPUT_MODELS } from '@/lib/engine/constants'
+import { DERIV_TYPES, PRIMITIVE_DIMS, INPUT_MODELS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
 import { Plus, Trash2, Edit3, Check, X, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -343,9 +343,11 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
     const setStockRaw = isEdit ? setNewStockLenEdit : setNewStockLen
     const [guideOpen, setGuideOpen] = useState(false)
     const guideItems = FIELD_GUIDE_ITEMS[d.derivType] ?? []
-    // Build combined dim options: primitives + custom dims that appear before this one
+    // Build combined dim options: primitives (filtered by input model) + custom dims that appear before this one
+    const allowedKeys = new Set(DIMS_FOR_INPUT_MODEL[sys?.inputModel ?? ''] ?? PRIMITIVE_DIMS.map(p => p.key))
+    const filteredPrims = PRIMITIVE_DIMS.filter(p => allowedKeys.has(p.key))
     const dimOptions = [
-      ...PRIMITIVE_DIMS.map(p => ({ value: p.key, label: p.icon + ' ' + p.label, group: 'Primitive' as const })),
+      ...filteredPrims.map(p => ({ value: p.key, label: p.icon + ' ' + p.label, group: 'Primitive' as const })),
       ...precedingDims.map(cd => ({ value: cd.key, label: cd.icon + ' ' + cd.name + (cd.unit ? ` (${cd.unit})` : ''), group: 'Custom' as const })),
     ]
     return (

@@ -2,7 +2,7 @@
 'use client'
 import { useState } from 'react'
 import type { Warning, CustomDim } from '@/types'
-import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
 import { Plus, Trash2, Edit3, Check, X, AlertTriangle, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -15,6 +15,7 @@ interface Props {
   warnings:   Warning[]
   customDims: CustomDim[]
   onChange:   (warnings: Warning[]) => void
+  inputModel?: string
 }
 
 const OPS   = [{ value: '>', label: '>' }, { value: '>=', label: '≥' }, { value: '<', label: '<' }, { value: '<=', label: '≤' }]
@@ -104,7 +105,7 @@ function WarnForm({ dimOptions, d, onField, onSubmit, onCancel, submitLabel }: W
   )
 }
 
-export default function WarningsPanel({ warnings, customDims, onChange }: Props) {
+export default function WarningsPanel({ warnings, customDims, onChange, inputModel }: Props) {
   const [adding,    setAdding]    = useState(false)
   const [draft,     setDraft]     = useState({ ...BLANK })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -113,8 +114,11 @@ export default function WarningsPanel({ warnings, customDims, onChange }: Props)
 
   const allDims = [...PRIMITIVE_DIMS, ...customDims]
 
+  const allowedKeys = new Set(DIMS_FOR_INPUT_MODEL[inputModel ?? ''] ?? PRIMITIVE_DIMS.map(p => p.key))
+  const filteredPrims = PRIMITIVE_DIMS.filter(p => allowedKeys.has(p.key))
+
   const dimOptions = [
-    ...PRIMITIVE_DIMS.map(p => ({ value: p.key, label: p.icon + ' ' + p.label, group: 'Primitive' })),
+    ...filteredPrims.map(p => ({ value: p.key, label: p.icon + ' ' + p.label, group: 'Primitive' })),
     ...customDims.flatMap(cd => {
       const base = { value: cd.key, label: (cd.icon ?? '🔗') + ' ' + cd.name + ' — computed count (' + cd.unit + ')', group: 'Custom Dimensions' }
       if (cd.derivType === 'spacing' && cd.spacingMode === 'user') {
