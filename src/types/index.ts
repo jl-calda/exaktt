@@ -288,6 +288,7 @@ export interface MtoSystem {
   icon:           string
   color:          string
   inputModel:     InputModel
+  dimOverrides?:  Record<string, { label?: string; unit?: string }>
   materials:      Material[]
   customDims:     CustomDim[]
   customCriteria: CustomCriterion[]

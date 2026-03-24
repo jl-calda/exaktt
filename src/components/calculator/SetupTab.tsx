@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import type { MtoSystem, GlobalTag, Material, CustomDim } from '@/types'
 import { nanoid } from 'nanoid'
 import { Plus, X, BookOpen } from 'lucide-react'
-import { PRIMITIVE_DIMS, INPUT_MODELS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, INPUT_MODELS, DIMS_FOR_INPUT_MODEL, LINEAR_UNITS, UNIT_SELECTABLE_DIMS } from '@/lib/engine/constants'
 import { normalizeInputModel } from '@/types'
 import { Button }          from '@/components/ui/Button'
 import { ColorPicker }     from '@/components/ui/ColorPicker'
@@ -276,25 +276,71 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
             )}
           </div>
 
-          {/* Primitive dim pills */}
+          {/* Primitive dim pills — click label to rename (structural dims like corners/ends are fixed) */}
           {(() => {
             const dimKeys = DIMS_FOR_INPUT_MODEL[sys.inputModel] ?? DIMS_FOR_INPUT_MODEL[normalizeInputModel(sys.inputModel)] ?? []
             const available = PRIMITIVE_DIMS.filter(d => dimKeys.includes(d.key))
+            const fixedDims = new Set(['corners', 'end1', 'end2', 'both_ends', 'perimeter'])
             return (
               <div className="mt-4">
                 <div className="text-[10px] font-semibold text-ink-muted uppercase tracking-wide mb-2">
                   Inputs for this model
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {available.map(d => (
-                    <span key={d.key}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-ink border border-surface-200"
-                      style={{ borderRadius: 'var(--radius)' }}>
-                      <span className="text-sm leading-none">{d.icon}</span>
-                      {d.label}
-                      {d.unit && <span className="text-[10px] text-ink-faint opacity-70">({d.unit})</span>}
-                    </span>
-                  ))}
+                  {available.map(d => {
+                    const editable = !fixedDims.has(d.key)
+                    const customLabel = sys.dimOverrides?.[d.key]?.label
+                    const displayLabel = customLabel || d.label
+                    return (
+                      <span key={d.key}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-ink border border-surface-200"
+                        style={{ borderRadius: 'var(--radius)' }}>
+                        <span className="text-sm leading-none">{d.icon}</span>
+                        {editable ? (
+                          <input
+                            type="text"
+                            value={displayLabel}
+                            placeholder={d.label}
+                            onChange={e => onUpdate({ dimOverrides: { ...sys.dimOverrides, [d.key]: { ...sys.dimOverrides?.[d.key], label: e.target.value } } })}
+                            onBlur={e => {
+                              if (!e.target.value.trim()) {
+                                const existing = sys.dimOverrides?.[d.key]
+                                if (existing) {
+                                  const { label: _, ...rest } = existing
+                                  const next = { ...sys.dimOverrides, [d.key]: rest }
+                                  if (!rest.unit) delete next[d.key]
+                                  onUpdate({ dimOverrides: next })
+                                }
+                              }
+                            }}
+                            className="bg-transparent border-none outline-none text-[11px] font-medium text-ink w-16 p-0 focus:ring-0 focus:underline"
+                            style={{ minWidth: '3ch', width: `${Math.max(3, displayLabel.length)}ch` }}
+                          />
+                        ) : (
+                          <span>{d.label}</span>
+                        )}
+                        {d.unit && (
+                          editable ? (
+                            UNIT_SELECTABLE_DIMS.has(d.key) ? (
+                              <select
+                                value={sys.dimOverrides?.[d.key]?.unit ?? d.unit}
+                                onChange={e => onUpdate({
+                                  dimOverrides: { ...sys.dimOverrides, [d.key]: { ...sys.dimOverrides?.[d.key], unit: e.target.value } }
+                                })}
+                                className="text-[10px] text-ink-faint opacity-70 bg-transparent border-none outline-none cursor-pointer p-0 focus:ring-0"
+                              >
+                                {LINEAR_UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+                              </select>
+                            ) : d.unit ? (
+                              <span className="text-[10px] text-ink-faint opacity-70">({d.unit})</span>
+                            ) : null
+                          ) : (
+                            <span className="text-[10px] text-ink-faint opacity-70">({d.unit})</span>
+                          )
+                        )}
+                      </span>
+                    )
+                  })}
                   {(sys.inputModel === 'linear_run' || normalizeInputModel(sys.inputModel) === 'linear') && (
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-ink border border-surface-200"
                       style={{ borderRadius: 'var(--radius)' }}>
@@ -317,7 +363,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
       {/* ── Step 3: Criteria + Warnings ── */}
       <StepHeader step={STEPS[2]}>
         <CriteriaPanel customCriteria={sys.customCriteria} customDims={sys.customDims} onChange={c => onUpdate({ customCriteria: c })} />
-        <WarningsPanel warnings={sys.warnings} onChange={w => onUpdate({ warnings: w })} customDims={sys.customDims} inputModel={sys.inputModel} />
+        <WarningsPanel warnings={sys.warnings} onChange={w => onUpdate({ warnings: w })} customDims={sys.customDims} inputModel={sys.inputModel} dimOverrides={sys.dimOverrides} />
       </StepHeader>
 
       {/* ── Step 4: Variants ── */}
@@ -367,6 +413,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
           customCriteria={sys.customCriteria}
           customBrackets={sys.customBrackets ?? []}
           onChange={a => onUpdate({ workActivities: a })}
+          dimOverrides={sys.dimOverrides}
         />
       </StepHeader>
     </div>

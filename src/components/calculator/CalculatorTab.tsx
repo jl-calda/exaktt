@@ -11,7 +11,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
 import { computeWorkSchedule, computeBracketQtys, computeBracketBOM } from '@/lib/engine/work'
-import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, getDimLabel, getDimUnit } from '@/lib/engine/constants'
 import { normalizeInputModel } from '@/types'
 import SystemOverviewPanel from './SystemOverviewPanel'
 
@@ -202,11 +202,12 @@ function getFormulaDef(activeRow: any, dims: Record<string, number>, sys: MtoSys
       rightTags = ['kg/item']
       break
     case 'tile_size': {
-      const tw = (activeRow.ruleTileW || 600) / 1000
-      const th = (activeRow.ruleTileH || 600) / 1000
+      const tileU = getDimUnit('length', sys.dimOverrides)
+      const tw = activeRow.ruleTileW || 600
+      const th = activeRow.ruleTileH || 600
       leftTags = ['area']
-      core = `${fmt(L)}m × ${fmt(W)}m ÷ (${tw}m × ${th}m)`
-      rightTags = [`${activeRow.ruleTileW}×${activeRow.ruleTileH}mm tile`]
+      core = `${fmt(L)} × ${fmt(W)} ÷ (${tw} × ${th})`
+      rightTags = [`${tw}×${th}${tileU} tile`]
       break
     }
     default:
@@ -652,9 +653,10 @@ const SEG_TYPES = [
   { value: 'end_end',       label: 'End→End',  ends: 2, corners: 0 },
 ]
 
-function SegmentEditor({ segments, onChange, hasSpacing, spacingLabel }: {
+function SegmentEditor({ segments, onChange, hasSpacing, spacingLabel, dimOverrides }: {
   segments: Segment[]; onChange: (s: Segment[]) => void
   hasSpacing: boolean; spacingLabel?: string
+  dimOverrides?: Record<string, { label?: string; unit?: string }>
 }) {
   const add    = () => onChange([...segments, { id: nanoid(), type: 'end_corner', length: '', spacing: '' }])
   const update = (id: string, k: keyof Segment, v: string) => onChange(segments.map(s => s.id === id ? { ...s, [k]: v } : s))
@@ -686,13 +688,13 @@ function SegmentEditor({ segments, onChange, hasSpacing, spacingLabel }: {
             </div>
             <div className="flex gap-2 p-2">
               <div className="flex flex-col gap-0.5 flex-1">
-                <span className="text-[9px] font-semibold uppercase text-ink-faint">Length</span>
+                <span className="text-[9px] font-semibold uppercase text-ink-faint">{getDimLabel('length', dimOverrides)}</span>
                 <div className="relative">
                   <input type="number" value={seg.length} min={0} step="0.1" placeholder="0"
                     onChange={e => update(seg.id, 'length', e.target.value)}
                     className="input text-xs py-1 pr-6 font-semibold"
                     style={{ borderColor: parseFloat(seg.length) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">m</span>
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{getDimUnit('length', dimOverrides)}</span>
                 </div>
               </div>
               {hasSpacing && (
@@ -703,7 +705,7 @@ function SegmentEditor({ segments, onChange, hasSpacing, spacingLabel }: {
                       onChange={e => update(seg.id, 'spacing', e.target.value)}
                       className="input text-xs py-1 pr-6"
                       style={{ borderColor: parseFloat(seg.spacing) > 0 ? '#a78bfa' : undefined }} />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">m</span>
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{getDimUnit('length', dimOverrides)}</span>
                   </div>
                 </div>
               )}
@@ -1060,6 +1062,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
       limits.pricing ?? false,
       brackets,
       bracketQtys,
+      sys.dimOverrides,
     )
   })()
 
@@ -1189,15 +1192,15 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
                     {sys.inputModel === 'area' && (
                       <div className="grid grid-cols-2 gap-2">
-                        {[{ key: 'length', label: 'Length', unit: 'm' }, { key: 'width', label: 'Width', unit: 'm' }].map(f => (
-                          <div key={f.key}>
-                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{f.label}</div>
+                        {['length', 'width'].map(key => (
+                          <div key={key}>
+                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{getDimLabel(key, sys.dimOverrides)}</div>
                             <div className="relative">
-                              <input type="number" value={(run.job as any)[f.key] ?? ''} min={0} step="0.1" placeholder="0"
-                                onChange={e => calc.updateRun(run.id, { job: { ...run.job, [f.key]: e.target.value } })}
+                              <input type="number" value={(run.job as any)[key] ?? ''} min={0} step="0.1" placeholder="0"
+                                onChange={e => calc.updateRun(run.id, { job: { ...run.job, [key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)[f.key]) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{f.unit}</span>
+                                style={{ borderColor: parseFloat((run.job as any)[key]) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{getDimUnit(key, sys.dimOverrides)}</span>
                             </div>
                           </div>
                         ))}
@@ -1234,14 +1237,14 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                           const dimDef = PRIMITIVE_DIMS.find(p => p.key === key)
                           return (
                           <div key={key}>
-                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{dimDef?.icon} {dimDef?.label ?? key}</div>
+                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{dimDef?.icon} {getDimLabel(key, sys.dimOverrides)}</div>
                             <div className="relative">
                               <input type="number" value={(run.job as any)[key] ?? ''} min={0} step="0.1" placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
                                 style={{ borderColor: parseFloat((run.job as any)[key]) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
                               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">
-                                {dimDef?.unit ?? ''}
+                                {getDimUnit(key, sys.dimOverrides)}
                               </span>
                             </div>
                           </div>
@@ -1254,7 +1257,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, ['__spacing_' + cd.key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
                                 style={{ borderColor: parseFloat((run.job as any)['__spacing_' + cd.key]) > 0 ? '#a78bfa' : '#fcd34d' }} />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">m</span>
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{getDimUnit(cd.spacingTargetDim ?? 'length', sys.dimOverrides)}</span>
                             </div>
                           </div>
                         ))}
@@ -1302,13 +1305,13 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                     {(sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple' && (
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">Length</div>
+                          <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{getDimLabel('length', sys.dimOverrides)}</div>
                           <div className="relative">
                             <input type="number" value={run.simpleJob?.length ?? ''} min={0} step="0.1" placeholder="0"
                               onChange={e => calc.updateRun(run.id, { simpleJob: { ...run.simpleJob, length: e.target.value } as any })}
                               className="input text-xs py-1.5"
                               style={{ borderColor: parseFloat(run.simpleJob?.length as any) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">m</span>
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{getDimUnit('length', sys.dimOverrides)}</span>
                           </div>
                         </div>
                         {spacingDims.map(cd => (
@@ -1319,7 +1322,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, ['__spacing_' + cd.key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
                                 style={{ borderColor: parseFloat((run.job as any)['__spacing_' + cd.key]) > 0 ? '#a78bfa' : 'var(--color-secondary-200)' }} />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">m</span>
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{getDimUnit('length', sys.dimOverrides)}</span>
                             </div>
                           </div>
                         ))}
@@ -1371,6 +1374,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                           onChange={segs => calc.updateRun(run.id, { segments: segs })}
                           hasSpacing={spacingDims.length > 0}
                           spacingLabel={spacingDims[0]?.spacingLabel || spacingDims[0]?.name}
+                          dimOverrides={sys.dimOverrides}
                         />
                         {/* Custom dim inputs for segment mode */}
                         {(userInputDims.length > 0 || overrideDims.length > 0) && (

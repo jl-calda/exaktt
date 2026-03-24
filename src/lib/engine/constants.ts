@@ -32,6 +32,38 @@ export const INPUT_MODELS = [
   { value: 'time',    label: 'Time',       icon: '⏱️',  desc: 'Duration-based',                  dims: ['duration'] },
 ] as const
 
+// ─── Unit system ────────────────────────────────────────────────────────────
+
+export type DimOverride = { label?: string; unit?: string }
+
+export const LINEAR_UNITS = [
+  { value: 'm',   label: 'm',   toMeters: 1 },
+  { value: 'mm',  label: 'mm',  toMeters: 0.001 },
+  { value: 'cm',  label: 'cm',  toMeters: 0.01 },
+  { value: 'ft',  label: 'ft',  toMeters: 0.3048 },
+  { value: 'in',  label: 'in',  toMeters: 0.0254 },
+] as const
+
+/** Dim keys that can have a unit dropdown (linear measurement dims) */
+export const UNIT_SELECTABLE_DIMS = new Set(['length', 'width', 'height'])
+
+/** Get the toMeters conversion factor for a unit value. Defaults to 1 (meters). */
+export function getUnitFactor(unitValue: string): number {
+  return LINEAR_UNITS.find(u => u.value === unitValue)?.toMeters ?? 1
+}
+
+/** Resolve a primitive dim label — uses system override if set, otherwise the default from PRIMITIVE_DIMS */
+export function getDimLabel(key: string, dimOverrides?: Record<string, DimOverride>): string {
+  if (dimOverrides?.[key]?.label) return dimOverrides[key].label!
+  return PRIMITIVE_DIMS.find(d => d.key === key)?.label ?? key
+}
+
+/** Resolve a primitive dim unit — uses system override if set, otherwise the default from PRIMITIVE_DIMS */
+export function getDimUnit(key: string, dimOverrides?: Record<string, DimOverride>): string {
+  if (dimOverrides?.[key]?.unit) return dimOverrides[key].unit!
+  return PRIMITIVE_DIMS.find(d => d.key === key)?.unit ?? ''
+}
+
 /** Map every inputModel value (incl. legacy) to its available primitive dim keys */
 export const DIMS_FOR_INPUT_MODEL: Record<string, string[]> = Object.fromEntries([
   ...INPUT_MODELS.map(m => [m.value, m.dims]),

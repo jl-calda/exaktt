@@ -7,6 +7,7 @@ import type {
   BracketBOMItem, MtoSystem, RuleRow,
 } from '@/types'
 import { computeResults } from './compute'
+import { getUnitFactor } from './constants'
 
 // ─── Safe formula evaluator ───────────────────────────────────────────────────
 // Supports: numbers, +, -, *, /, (, ), and parameter names
@@ -174,6 +175,7 @@ export function computeWorkSchedule(
   showCost:      boolean,
   brackets:      WorkBracket[] = [],
   bracketQtys:   Record<string, number> = {},
+  dimOverrides?: Record<string, { label?: string; unit?: string }>,
 ): WorkScheduleSummary {
   // Roll up bracket fab activities as auto-generated fabrication results
   const bracketFabResults: WorkScheduleResult[] = []
@@ -276,6 +278,18 @@ export function computeWorkSchedule(
         timePerUnit = 60 / act.ratePerHr
       } else {
         timePerUnit = act.timePerUnit ?? 0
+      }
+      // For per_dim rates on dims with unit overrides, convert rate to meters
+      // (sourceQty is already normalized to meters, but rate is in user's unit)
+      if (act.rateType === 'per_dim' && act.sourceDimKey && dimOverrides?.[act.sourceDimKey]?.unit) {
+        const factor = getUnitFactor(dimOverrides[act.sourceDimKey].unit!)
+        if (factor !== 1) {
+          if (act.speedMode === 'rate' && act.ratePerHr && act.ratePerHr > 0) {
+            timePerUnit = 60 / (act.ratePerHr * factor)
+          } else {
+            timePerUnit = (act.timePerUnit ?? 0) / factor
+          }
+        }
       }
       totalMinutes = timePerUnit * sourceQty
     }
