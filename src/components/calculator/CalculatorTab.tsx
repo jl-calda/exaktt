@@ -11,7 +11,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
 import { computeWorkSchedule, computeBracketQtys, computeBracketBOM } from '@/lib/engine/work'
-import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
+import { normalizeInputModel } from '@/types'
 import SystemOverviewPanel from './SystemOverviewPanel'
 
 interface Props {
@@ -93,12 +94,12 @@ function buildLastResults(
 
 function getRelevantKeys(sys: MtoSystem): Set<string> {
   const keys = new Set<string>()
-  if (sys.inputModel === 'area') {
-    keys.add('length'); keys.add('width')
-  } else if (sys.inputModel === 'linear_run') {
-    keys.add('length'); keys.add('corners'); keys.add('ends')
+  const dimKeys = DIMS_FOR_INPUT_MODEL[sys.inputModel]
+  if (dimKeys) {
+    for (const k of dimKeys) keys.add(k)
   } else {
-    for (const k of ['height','length','width','perimeter','corners','custom_a','custom_b']) {
+    // fallback: only dims actively referenced
+    for (const k of PRIMITIVE_DIMS.map(d => d.key)) {
       const cds = sys.customDims ?? []
       if (cds.some(cd => cd.derivType === 'stock_length' && cd.stockTargetDim === k)
         || cds.some(cd => cd.derivType === 'spacing'     && cd.spacingTargetDim === k)
@@ -115,7 +116,7 @@ function getRelevantKeys(sys: MtoSystem): Set<string> {
 function getRunDims(run: Run, sys: MtoSystem): Record<string, number> {
   const relevant = getRelevantKeys(sys)
   const dims: Record<string, number> = {}
-  if (sys.inputModel === 'linear_run' && run.inputMode === 'simple') {
+  if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple') {
     dims.length  = parseFloat(run.simpleJob?.length  as any) || 0
     dims.corners = parseInt(run.simpleJob?.corners   as any) || 0
     dims.ends    = 2
@@ -959,7 +960,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
         jobDims[k] = parseFloat(String(v)) || 0
       }
       // Handle linear_run simple mode dims
-      if (sys.inputModel === 'linear_run' && run.inputMode === 'simple') {
+      if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple') {
         jobDims.length  = parseFloat(run.simpleJob?.length as any) || 0
         jobDims.corners = parseInt(run.simpleJob?.corners as any) || 0
         jobDims.ends    = (run.criteriaState ?? {} as any)['loop'] ? 0 : 2
@@ -1053,7 +1054,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
   // Total run length for rate calculations
   const totalRunLength = calc.runs.reduce((sum: number, run: Run) => {
-    if (sys.inputModel === 'linear_run') {
+    if ((sys.inputModel === 'linear_run' || sys.inputModel === 'linear')) {
       if (run.inputMode === 'segment') {
         return sum + (run.segments ?? []).reduce((s: number, seg: Segment) => s + (parseFloat(seg.length) || 0), 0) * run.qty
       }
@@ -1164,7 +1165,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                       <VariantSelector sys={sys} run={run} onUpdate={patch => calc.updateRun(run.id, patch)} />
                     )}
 
-                    {sys.inputModel === 'linear_run' && (
+                    {(sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && (
                       <div className="flex gap-0 rounded-lg overflow-hidden border border-secondary-200">
                         {([['simple', '📐 Simple'], ['segment', '🗺 Segments']] as const).map(([mode, label], i) => (
                           <button key={mode} onClick={() => calc.updateRun(run.id, { inputMode: mode })}
@@ -1206,9 +1207,13 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                       </div>
                     )}
 
-                    {sys.inputModel === 'simple_dims' && (
+                    {!['linear_run','linear','area'].includes(sys.inputModel) && (
                       <div className="grid grid-cols-2 gap-2">
-                        {PRIMITIVE_DIMS.map(p => p.key).filter(key => {
+                        {(DIMS_FOR_INPUT_MODEL[sys.inputModel] ?? PRIMITIVE_DIMS.map(p => p.key)).filter(key => {
+                          // Always show dims defined by the input model
+                          const modelDims = DIMS_FOR_INPUT_MODEL[sys.inputModel]
+                          if (modelDims?.includes(key)) return true
+                          // For legacy/unknown: only show dims actively referenced
                           const cds = sys.customDims ?? []
                           return cds.some(cd => cd.derivType === 'stock_length' && cd.stockTargetDim === key)
                               || cds.some(cd => cd.derivType === 'spacing'      && cd.spacingTargetDim === key)
@@ -1259,7 +1264,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                       </div>
                     )}
 
-                    {sys.inputModel === 'linear_run' && run.inputMode === 'simple' && (
+                    {(sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'simple' && (
                       <div className="grid grid-cols-2 gap-2">
                         {[{key:'length',label:'Length',unit:'m'},{key:'corners',label:'Corners',unit:''},{key:'spacing',label:'Spacing',unit:'m'}].map(f => (
                           <div key={f.key}>
@@ -1301,7 +1306,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                       </div>
                     )}
 
-                    {sys.inputModel === 'linear_run' && run.inputMode === 'segment' && (
+                    {(sys.inputModel === 'linear_run' || sys.inputModel === 'linear') && run.inputMode === 'segment' && (
                       <SegmentEditor segments={run.segments ?? []} onChange={segs => calc.updateRun(run.id, { segments: segs })} />
                     )}
 

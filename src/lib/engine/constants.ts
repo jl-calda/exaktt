@@ -11,9 +11,32 @@ export const PRIMITIVE_DIMS = [
   { key: 'workers',   label: 'Workers',       unit: 'workers', icon: '👷', step: '1'   },
   { key: 'levels',    label: 'Levels/Floors', unit: 'levels',  icon: '🏢', step: '1'   },
   { key: 'openings',  label: 'Openings',      unit: 'openings',icon: '🚪', step: '1'   },
+  { key: 'mass',      label: 'Mass',          unit: 'kg',      icon: '⚖️',  step: '0.1' },
+  { key: 'volume',    label: 'Volume',        unit: 'm³',     icon: '📦', step: '0.01'},
+  { key: 'quantity',  label: 'Quantity',       unit: 'pcs',     icon: '🔢', step: '1'   },
+  { key: 'duration',  label: 'Duration',       unit: 'hrs',     icon: '⏱️',  step: '0.5' },
   { key: 'custom_a',  label: 'Custom A',      unit: '',        icon: '🔧', step: '1'   },
   { key: 'custom_b',  label: 'Custom B',      unit: '',        icon: '⚙️',  step: '1'   },
 ] as const
+
+// ─── Input model definitions ─────────────────────────────────────────────────
+
+export const INPUT_MODELS = [
+  { value: 'linear',  label: 'Linear',    icon: '📏', desc: 'Length + corners + segments',     dims: ['length', 'corners', 'ends'] },
+  { value: 'area',    label: 'Area',       icon: '⬛', desc: 'Length x width',                  dims: ['length', 'width', 'perimeter'] },
+  { value: 'volume',  label: 'Volume',     icon: '📦', desc: 'Length x width x height',         dims: ['length', 'width', 'height'] },
+  { value: 'mass',    label: 'Mass',       icon: '⚖️',  desc: 'Weight-based inputs',             dims: ['mass'] },
+  { value: 'count',   label: 'Count',      icon: '🔢', desc: 'Discrete quantity',               dims: ['quantity', 'workers', 'levels', 'openings'] },
+  { value: 'time',    label: 'Time',       icon: '⏱️',  desc: 'Duration-based',                  dims: ['duration'] },
+] as const
+
+/** Map every inputModel value (incl. legacy) to its available primitive dim keys */
+export const DIMS_FOR_INPUT_MODEL: Record<string, string[]> = Object.fromEntries([
+  ...INPUT_MODELS.map(m => [m.value, m.dims]),
+  // legacy aliases
+  ['linear_run',  INPUT_MODELS[0].dims],
+  ['simple_dims', PRIMITIVE_DIMS.filter(d => d.key !== 'ends').map(d => d.key)],
+])
 
 export const LIBRARY_CATEGORIES = [
   { id: 'plates',      label: 'Plates & Sections', icon: '⬛' },

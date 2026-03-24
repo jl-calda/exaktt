@@ -111,6 +111,7 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
 
       {subTab === 'all' && (
         <MaterialsTable
+          inputModel={sys.inputModel}
           materials={filteredMaterials}
           customDims={sys.customDims}
           customCriteria={sys.customCriteria}

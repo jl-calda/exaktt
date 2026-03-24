@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { SAMPLE_SYSTEMS } from '@/lib/sample-systems'
+import { INPUT_MODELS } from '@/lib/engine/constants'
+import { normalizeInputModel } from '@/types'
 
 interface Props {
   onCreated: (system: any) => void
@@ -128,7 +130,7 @@ export default function SampleSystemsGuide({ onCreated, atLimit }: Props) {
                       <div className="min-w-0">
                         <div className="font-bold text-sm text-ink leading-tight">{s.label}</div>
                         <span className="badge bg-surface-100 text-ink-muted text-[10px] mt-1 inline-block">
-                          {s.template.inputModel === 'linear_run' ? '🗺 Linear Run' : s.template.inputModel === 'area' ? '⬛ Area' : '📐 Simple Dims'}
+                          {(() => { const m = INPUT_MODELS.find(im => im.value === normalizeInputModel(s.template.inputModel ?? 'linear')); return m ? `${m.icon} ${m.label}` : s.template.inputModel })()}
                         </span>
                       </div>
                     </div>

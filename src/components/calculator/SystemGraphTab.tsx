@@ -4,7 +4,7 @@
 import { useMemo, useState } from 'react'
 import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
 import type { MtoSystem } from '@/types'
-import { PRIMITIVE_DIMS } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
 
 // ── Layout constants ───────────────────────────────────────────────────────────
 const NODE_W      = 148
@@ -77,8 +77,7 @@ function usedPrimKeys(sys: MtoSystem) {
   for (const w of sys.warnings ?? []) if (ps.has(w.dimKey)) s.add(w.dimKey)
   for (const a of sys.workActivities ?? [])
     if (a.rateType === 'per_dim' && a.sourceDimKey && ps.has(a.sourceDimKey)) s.add(a.sourceDimKey)
-  if (sys.inputModel === 'linear_run') { s.add('length'); s.add('corners'); s.add('ends') }
-  if (sys.inputModel === 'area')       { s.add('length'); s.add('width') }
+  for (const dk of DIMS_FOR_INPUT_MODEL[sys.inputModel] ?? []) s.add(dk)
   return PRIMITIVE_DIMS.filter(p => s.has(p.key)).map(p => p.key)
 }
 

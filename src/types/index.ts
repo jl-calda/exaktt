@@ -2,7 +2,15 @@
 // Complete domain types for MaterialMTO SaaS
 
 export type Plan = 'FREE' | 'PRO'
-export type InputModel = 'simple_dims' | 'linear_run' | 'area'
+export type InputModel = 'linear' | 'area' | 'volume' | 'mass' | 'count' | 'time'
+  | 'simple_dims' | 'linear_run'  // legacy aliases
+
+/** Normalize legacy inputModel values to current ones */
+export function normalizeInputModel(raw: string): InputModel {
+  if (raw === 'linear_run')  return 'linear'
+  if (raw === 'simple_dims') return 'linear'
+  return raw as InputModel
+}
 export type CompanyRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
 
 // ─── Company + Team ───────────────────────────────────────────────────────────
