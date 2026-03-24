@@ -10,7 +10,7 @@ import { getLimits } from '@/lib/limits'
 import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
-import { computeWorkSchedule, computeBracketQtys, computeBracketBOM } from '@/lib/engine/work'
+import { computeWorkSchedule, computeBracketQtys, computeBracketBOM, resolveBracketParams } from '@/lib/engine/work'
 import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, getDimLabel, getDimUnit } from '@/lib/engine/constants'
 import { normalizeInputModel } from '@/types'
 import SystemOverviewPanel from './SystemOverviewPanel'
@@ -967,7 +967,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
       for (const bracket of brackets) {
         const bQty = bracketQtys[bracket.id] ?? 0
         if (bQty <= 0) continue
-        const params = Object.fromEntries((bracket.parameters ?? []).map(p => [p.key, p.default]))
+        const params = resolveBracketParams(bracket, {}, sys.materials)
         const expanded = computeBracketBOM(bracket, bQty, params, sys.materials)
         for (const item of expanded) {
           if (!item.materialId) continue

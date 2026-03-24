@@ -373,14 +373,35 @@ function getStockLengthMm(mat: Material): number {
   return mat.spec?.stockLengthMm ?? 0
 }
 
+// Resolve bracket parameters — stock_length params pull from the material's spec
+export function resolveBracketParams(
+  bracket:   WorkBracket,
+  overrides: Record<string, number> = {},
+  materials: Material[] = [],
+): Record<string, number> {
+  const resolved: Record<string, number> = {}
+  for (const p of bracket.parameters ?? []) {
+    if (p.source === 'stock_length' && p.stockMaterialId) {
+      const mat = materials.find(m => m.id === p.stockMaterialId)
+      resolved[p.key] = mat?.spec?.stockLengthMm ?? p.default
+    } else {
+      resolved[p.key] = overrides[p.key] ?? p.default
+    }
+  }
+  return resolved
+}
+
 export function computeBracketBOM(
   bracket:    WorkBracket,
   qty:        number,
   params:     Record<string, number> = {},
   materials:  Material[] = [],
 ): BracketBOMExpanded[] {
+  // Resolve stock_length params from materials if not already in overrides
+  const resolved = resolveBracketParams(bracket, params, materials)
+
   return bracket.bom.map(item => {
-    const unitQty = evaluateFormula(item.qtyFormula, { ...params })
+    const unitQty = evaluateFormula(item.qtyFormula, { ...resolved })
     const raw     = unitQty * qty
 
     // Auto-calculate wastage when material has a stock length and BOM uses a length unit
@@ -433,7 +454,7 @@ export function computeAllBracketBOM(
   for (const bracket of brackets) {
     const qty = bracketQtys[bracket.id] ?? 0
     if (qty <= 0) continue
-    const params = Object.fromEntries((bracket.parameters ?? []).map(p => [p.key, p.default]))
+    const params = resolveBracketParams(bracket, {}, sys.materials)
     const expanded = computeBracketBOM(bracket, qty, params, sys.materials)
     const items = expanded.map((item, idx) => {
       const sysMat    = item.materialId ? sys.materials.find(m => m.id === item.materialId) : null

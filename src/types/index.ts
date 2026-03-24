@@ -647,6 +647,8 @@ export interface BracketParameter {
   min?:    number
   max?:    number
   dimKey?: string    // optional: pull value from a system dim at calc time instead of using default
+  source?: 'input' | 'stock_length'   // where the value comes from
+  stockMaterialId?: string            // when source='stock_length', which BOM material to read spec from
 }
 
 export interface BracketBOMItem {
