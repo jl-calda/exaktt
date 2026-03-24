@@ -1,7 +1,7 @@
 // src/components/calculator/panels/BracketRulesPanel.tsx
 'use client'
-import { useState } from 'react'
-import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { ChevronDown, ChevronUp, Search, Trash2 } from 'lucide-react'
 import type { WorkBracket, Material, CustomDim, CustomCriterion, Variant } from '@/types'
 import { InlineRuleEditor } from './MatRow'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
@@ -12,6 +12,87 @@ interface Props {
   customCriteria: CustomCriterion[]
   variants:       Variant[]
   onChange:        (brackets: WorkBracket[]) => void
+}
+
+function BracketDropdown({
+  brackets,
+  expandedId,
+  onSelect,
+}: {
+  brackets:   WorkBracket[]
+  expandedId: string | null
+  onSelect:   (id: string) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [open,  setOpen]  = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const q = query.toLowerCase().trim()
+  const filtered = q
+    ? brackets.filter(b => b.name.toLowerCase().includes(q) || (b.code ?? '').toLowerCase().includes(q))
+    : brackets
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-faint pointer-events-none" />
+        <input
+          value={query}
+          onChange={e => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+          placeholder="Jump to sub-assembly…"
+          autoComplete="off"
+          className="input text-xs py-1.5 pl-8 pr-3 w-52"
+        />
+      </div>
+
+      {open && filtered.length > 0 && (
+        <ul
+          className="absolute z-50 top-full mt-1 right-0 w-64 bg-surface-50 border border-surface-200 shadow-float max-h-52 overflow-y-auto py-1"
+          style={{ borderRadius: 'var(--radius-card)' }}
+        >
+          {filtered.map(b => {
+            const hasRules = (b.ruleSet ?? []).some(r => r.ruleType)
+            const isActive = expandedId === b.id
+            return (
+              <li key={b.id}>
+                <button
+                  type="button"
+                  onMouseDown={e => { e.preventDefault(); onSelect(b.id); setQuery(''); setOpen(false) }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors text-left ${isActive ? 'bg-primary/5' : 'hover:bg-surface-100'}`}
+                >
+                  <span className="text-base flex-shrink-0">{b.icon}</span>
+                  <span className="flex-1 font-medium text-ink truncate">{b.name}</span>
+                  {hasRules ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold text-primary" style={{ background: 'var(--color-primary-50, #eff6ff)' }}>rules</span>
+                  ) : (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold text-amber-700 bg-amber-50">no rules</span>
+                  )}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+
+      {open && filtered.length === 0 && q && (
+        <div
+          className="absolute z-50 top-full mt-1 right-0 w-64 bg-surface-50 border border-surface-200 shadow-float py-3 px-3 text-xs text-ink-faint italic text-center"
+          style={{ borderRadius: 'var(--radius-card)' }}
+        >
+          No matching sub-assemblies
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function BracketRulesPanel({ brackets, customDims, customCriteria, variants, onChange }: Props) {
@@ -33,6 +114,9 @@ export default function BracketRulesPanel({ brackets, customDims, customCriteria
           <h3 className="font-semibold text-sm text-ink">Sub-assembly Quantity Rules</h3>
           <p className="text-xs text-ink-muted mt-0.5">Set how many of each sub-assembly are needed per job.</p>
         </div>
+        {brackets.length > 0 && (
+          <BracketDropdown brackets={brackets} expandedId={expandedId} onSelect={id => setExpandedId(expandedId === id ? null : id)} />
+        )}
       </div>
 
       {brackets.length === 0 && (
