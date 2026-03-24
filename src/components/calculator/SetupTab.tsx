@@ -1,9 +1,9 @@
 // src/components/calculator/SetupTab.tsx
 'use client'
 import { useState, useEffect } from 'react'
-import type { MtoSystem, GlobalTag, Material, CustomDim } from '@/types'
+import type { MtoSystem, GlobalTag, Material } from '@/types'
 import { nanoid } from 'nanoid'
-import { Plus, X, BookOpen } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
 import { PRIMITIVE_DIMS, INPUT_MODELS, DIMS_FOR_INPUT_MODEL, LINEAR_UNITS, UNIT_SELECTABLE_DIMS } from '@/lib/engine/constants'
 import { normalizeInputModel } from '@/types'
 import { Button }          from '@/components/ui/Button'
@@ -25,8 +25,6 @@ interface Props {
   globalTags?:  GlobalTag[]
   onViewGraph?: () => void
 }
-
-const INPUT_BLANK = { name: '', unit: '', icon: '📥', inputStep: 1 }
 
 const STEPS = [
   { n: 1, label: 'Inputs',        desc: 'What the calculator asks the user for' },
@@ -59,33 +57,7 @@ function StepHeader({ step, children }: { step: typeof STEPS[number]; children: 
 
 export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }: Props) {
   const [library,       setLibrary]       = useState<any[]>([])
-  const [addingInput,   setAddingInput]   = useState(false)
-  const [inputDraft,    setInputDraft]    = useState({ ...INPUT_BLANK })
   const [showOverview,  setShowOverview]  = useState(false)
-
-  const userInputDims = (sys.customDims ?? []).filter(cd => cd.derivType === 'user_input')
-
-  const addUserInput = () => {
-    if (!inputDraft.name.trim()) return
-    const key = 'ui_' + inputDraft.name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Math.random().toString(36).slice(2, 5)
-    const newDim: CustomDim = {
-      id: nanoid(), key, name: inputDraft.name.trim(),
-      unit: inputDraft.unit.trim(), icon: inputDraft.icon, color: '#3b82f6',
-      derivType: 'user_input', inputStep: inputDraft.inputStep,
-      spacing: 1, spacingMode: 'fixed', spacingLabel: '', spacingTargetDim: 'length',
-      firstSupportMode: 'none', firstGap: 300, firstGapLabel: '', firstGapMode: 'fixed',
-      includesEndpoints: false, sumKeys: [], formulaQty: 1, formulaDimKey: 'length',
-      stockLengths: [], stockTargetDim: 'length', stockOptimMode: 'min_waste',
-      plateMaterialId: '', partW: 600, partH: 400, kerf: 3,
-      sheetAllowRotation: true, sheetPartsNeededDim: 'custom_a',
-    }
-    onUpdate({ customDims: [...(sys.customDims ?? []), newDim] })
-    setInputDraft({ ...INPUT_BLANK })
-    setAddingInput(false)
-  }
-
-  const removeUserInput = (id: string) =>
-    onUpdate({ customDims: (sys.customDims ?? []).filter(cd => cd.id !== id) })
 
   useEffect(() => {
     fetch('/api/mto/library').then(r => r.json()).then(({ data }) => { if (data) setLibrary(data) })
@@ -212,142 +184,97 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
               )
             })}
 
-            {/* Additional user-input dim cards */}
-            {userInputDims.map(cd => (
-              <div key={cd.id}
-                className="relative flex-1 min-w-36 text-left p-4 border border-primary/20 bg-primary/5"
-                style={{ borderRadius: 'var(--radius-card)' }}>
-                <span className="absolute top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 bg-surface-100 text-ink-faint uppercase tracking-wide"
-                  style={{ borderRadius: 'var(--radius)' }}>
-                  + input
-                </span>
-                <div className="text-lg mb-1">{cd.icon}</div>
-                <div className="font-semibold text-xs text-ink">{cd.name}</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">{cd.unit ? `(${cd.unit})` : 'custom'}</div>
-                <button onClick={() => removeUserInput(cd.id)}
-                  className="absolute bottom-2 right-2 text-ink-faint hover:text-red-500 transition-colors">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-
-            {/* Add input card */}
-            {addingInput ? (
-              <div className="w-full border border-surface-200 bg-surface-50 p-4 flex items-end gap-4 flex-wrap" style={{ borderRadius: 'var(--radius-card)' }}>
-                <div className="flex flex-col gap-1 flex-1 min-w-36">
-                  <label className="label text-ink-muted">Label</label>
-                  <input value={inputDraft.name}
-                    onChange={e => setInputDraft(d => ({ ...d, name: e.target.value }))}
-                    className="input" placeholder="e.g. Volume" autoFocus
-                    style={{ borderColor: 'var(--color-surface-200)' }}
-                    onKeyDown={e => e.key === 'Enter' && addUserInput()} />
-                </div>
-                <div className="flex flex-col gap-1 w-24">
-                  <label className="label text-ink-muted">Unit</label>
-                  <input value={inputDraft.unit}
-                    onChange={e => setInputDraft(d => ({ ...d, unit: e.target.value }))}
-                    className="input" placeholder="L"
-                    style={{ borderColor: 'var(--color-surface-200)' }} />
-                </div>
-                <div className="flex flex-col gap-1 w-24">
-                  <label className="label text-ink-muted">Step</label>
-                  <input type="number" value={inputDraft.inputStep}
-                    onChange={e => setInputDraft(d => ({ ...d, inputStep: parseFloat(e.target.value) || 1 }))}
-                    className="input" min={0.001} step={0.1}
-                    style={{ borderColor: 'var(--color-surface-200)' }} />
-                </div>
-                <IconPicker label="Icon" value={inputDraft.icon}
-                  onChange={v => setInputDraft(d => ({ ...d, icon: v }))} />
-                <div className="flex gap-2 pb-0.5">
-                  <Button size="sm" variant="primary" onClick={addUserInput}>Add</Button>
-                  <Button size="sm" variant="secondary" onClick={() => { setAddingInput(false); setInputDraft({ ...INPUT_BLANK }) }}>Cancel</Button>
-                </div>
-              </div>
-            ) : (
-              <button onClick={() => setAddingInput(true)}
-                className="flex-1 min-w-36 p-4 text-left border border-dashed border-surface-300 hover:border-surface-300 hover:bg-surface-100 transition-all group"
-                style={{ borderRadius: 'var(--radius-card)' }}>
-                <div className="text-lg mb-1 text-ink-muted group-hover:text-ink transition-colors">
-                  <Plus className="w-5 h-5" />
-                </div>
-                <div className="font-semibold text-xs text-ink-muted group-hover:text-ink transition-colors">Add input</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">volume, weight, qty…</div>
-              </button>
-            )}
           </div>
 
-          {/* Primitive dim pills — click label to rename (structural dims like corners/ends are fixed) */}
+          {/* Primitive dim pills — split into user-entered (editable labels) and auto-counted */}
           {(() => {
             const dimKeys = DIMS_FOR_INPUT_MODEL[sys.inputModel] ?? DIMS_FOR_INPUT_MODEL[normalizeInputModel(sys.inputModel)] ?? []
             const available = PRIMITIVE_DIMS.filter(d => dimKeys.includes(d.key))
-            const fixedDims = new Set(['corners', 'end1', 'end2', 'both_ends', 'perimeter'])
-            return (
-              <div className="mt-4">
-                <div className="text-[10px] font-semibold text-ink-muted uppercase tracking-wide mb-2">
-                  Inputs for this model
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {available.map(d => {
-                    const editable = !fixedDims.has(d.key)
-                    const customLabel = sys.dimOverrides?.[d.key]?.label
-                    const displayLabel = customLabel || d.label
-                    return (
-                      <span key={d.key}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-ink border border-surface-200"
-                        style={{ borderRadius: 'var(--radius)' }}>
-                        <span className="text-sm leading-none">{d.icon}</span>
-                        {editable ? (
-                          <input
-                            type="text"
-                            value={displayLabel}
-                            placeholder={d.label}
-                            onChange={e => onUpdate({ dimOverrides: { ...sys.dimOverrides, [d.key]: { ...sys.dimOverrides?.[d.key], label: e.target.value } } })}
-                            onBlur={e => {
-                              if (!e.target.value.trim()) {
-                                const existing = sys.dimOverrides?.[d.key]
-                                if (existing) {
-                                  const { label: _, ...rest } = existing
-                                  const next = { ...sys.dimOverrides, [d.key]: rest }
-                                  if (!rest.unit) delete next[d.key]
-                                  onUpdate({ dimOverrides: next })
-                                }
-                              }
-                            }}
-                            className="bg-transparent border-none outline-none text-[11px] font-medium text-ink w-16 p-0 focus:ring-0 focus:underline"
-                            style={{ minWidth: '3ch', width: `${Math.max(3, displayLabel.length)}ch` }}
-                          />
-                        ) : (
-                          <span>{d.label}</span>
-                        )}
-                        {d.unit && (
-                          editable ? (
-                            UNIT_SELECTABLE_DIMS.has(d.key) ? (
-                              <select
-                                value={sys.dimOverrides?.[d.key]?.unit ?? d.unit}
-                                onChange={e => onUpdate({
-                                  dimOverrides: { ...sys.dimOverrides, [d.key]: { ...sys.dimOverrides?.[d.key], unit: e.target.value } }
-                                })}
-                                className="text-[10px] text-ink-faint opacity-70 bg-transparent border-none outline-none cursor-pointer p-0 focus:ring-0"
-                              >
-                                {LINEAR_UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
-                              </select>
-                            ) : d.unit ? (
-                              <span className="text-[10px] text-ink-faint opacity-70">({d.unit})</span>
-                            ) : null
-                          ) : (
-                            <span className="text-[10px] text-ink-faint opacity-70">({d.unit})</span>
-                          )
-                        )}
-                      </span>
-                    )
-                  })}
-                  {(sys.inputModel === 'linear_run' || normalizeInputModel(sys.inputModel) === 'linear') && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-ink border border-surface-200"
-                      style={{ borderRadius: 'var(--radius)' }}>
-                      + segment mode
-                    </span>
+            const autoCounted = new Set(['corners', 'end1', 'end2', 'both_ends', 'perimeter'])
+            const userEntered = available.filter(d => !autoCounted.has(d.key))
+            const autoEntries = available.filter(d => autoCounted.has(d.key))
+
+            const renderDimPill = (d: typeof PRIMITIVE_DIMS[number], editable: boolean) => {
+              const customLabel = sys.dimOverrides?.[d.key]?.label
+              const displayLabel = customLabel || d.label
+              return (
+                <span key={d.key}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-ink border border-surface-200"
+                  style={{ borderRadius: 'var(--radius)' }}>
+                  <span className="text-sm leading-none">{d.icon}</span>
+                  {editable ? (
+                    <input
+                      type="text"
+                      value={displayLabel}
+                      placeholder={d.label}
+                      onChange={e => onUpdate({ dimOverrides: { ...sys.dimOverrides, [d.key]: { ...sys.dimOverrides?.[d.key], label: e.target.value } } })}
+                      onBlur={e => {
+                        if (!e.target.value.trim()) {
+                          const existing = sys.dimOverrides?.[d.key]
+                          if (existing) {
+                            const { label: _, ...rest } = existing
+                            const next = { ...sys.dimOverrides, [d.key]: rest }
+                            if (!rest.unit) delete next[d.key]
+                            onUpdate({ dimOverrides: next })
+                          }
+                        }
+                      }}
+                      className="bg-transparent border-none outline-none text-[11px] font-medium text-ink w-16 p-0 focus:ring-0 focus:underline"
+                      style={{ minWidth: '3ch', width: `${Math.max(3, displayLabel.length)}ch` }}
+                    />
+                  ) : (
+                    <span>{d.label}</span>
                   )}
-                </div>
+                  {d.unit && (
+                    editable && UNIT_SELECTABLE_DIMS.has(d.key) ? (
+                      <select
+                        value={sys.dimOverrides?.[d.key]?.unit ?? d.unit}
+                        onChange={e => onUpdate({
+                          dimOverrides: { ...sys.dimOverrides, [d.key]: { ...sys.dimOverrides?.[d.key], unit: e.target.value } }
+                        })}
+                        className="text-[10px] text-ink-faint opacity-70 bg-transparent border-none outline-none cursor-pointer p-0 focus:ring-0"
+                      >
+                        {LINEAR_UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+                      </select>
+                    ) : (
+                      <span className="text-[10px] text-ink-faint opacity-70">({d.unit})</span>
+                    )
+                  )}
+                </span>
+              )
+            }
+
+            return (
+              <div className="mt-4 space-y-3">
+                {/* User-entered measurements */}
+                {userEntered.length > 0 && (
+                  <div>
+                    <div className="text-[10px] font-semibold text-ink-muted uppercase tracking-wide mb-2">
+                      Measurements — click label to rename
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {userEntered.map(d => renderDimPill(d, true))}
+                      {(sys.inputModel === 'linear_run' || normalizeInputModel(sys.inputModel) === 'linear') && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 bg-surface-100 text-ink border border-surface-200"
+                          style={{ borderRadius: 'var(--radius)' }}>
+                          + segment mode
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Auto-counted dims */}
+                {autoEntries.length > 0 && (
+                  <div>
+                    <div className="text-[10px] font-semibold text-ink-muted uppercase tracking-wide mb-2">
+                      Automatically counted
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {autoEntries.map(d => renderDimPill(d, false))}
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })()}
