@@ -317,11 +317,12 @@ function DependencyChain({ mat, ruleSet, criteriaKeys, customDims, customCriteri
 }
 
 // ─── InlineRuleEditor ─────────────────────────────────────────────────────────
-export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCriteria, variants, embedded = false, inputModel = 'linear' }: {
+export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCriteria, variants, embedded = false, inputModel = 'linear', hideCondition = false }: {
   mat: Material; onSave: (m: Material) => void; onClose: () => void
   customDims: CustomDim[]; customCriteria: CustomCriterion[]; variants: Variant[]
   embedded?: boolean   // when true: auto-saves on every change, hides header/footer buttons
   inputModel?: InputModel
+  hideCondition?: boolean  // when true: hides the per-row "When" condition (used for brackets)
 }) {
   const [ruleSet, setRuleSet]           = useState<RuleRow[]>(mat.ruleSet ?? [])
   const [criteriaKeys, setCriteriaKeys] = useState<string[]>(mat.criteriaKeys ?? [])
@@ -412,6 +413,7 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
 
                   <div className="px-4 py-3 flex flex-wrap gap-4 items-end bg-surface-50">
                     {/* Condition */}
+                    {!hideCondition && (
                     <div>
                       <div className="flex items-center gap-1 mb-1">
                         <span className="label mb-0">When</span>
@@ -431,6 +433,7 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
                         ])}
                       </select>
                     </div>
+                    )}
 
                     {/* Rule type */}
                     <div>

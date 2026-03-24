@@ -332,6 +332,7 @@ export default function BracketRulesPanel({ brackets, customDims, customCriteria
                       _createdAt: null, _updatedAt: null, _wasLibrary: null, _madeUniqueAt: null,
                     } as Material}
                     embedded
+                    hideCondition
                     customDims={customDims}
                     customCriteria={customCriteria}
                     variants={variants}
