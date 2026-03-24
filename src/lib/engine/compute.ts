@@ -350,7 +350,9 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
       }
     }
 
-    const withWaste = raw * (1 + (activeRow.waste || 0) / 100)
+    // Solver-driven rules already account for waste — skip manual waste multiplier
+    const skipWaste = activeRow.ruleType === 'stock_length_qty'
+    const withWaste = skipWaste ? raw : raw * (1 + (activeRow.waste || 0) / 100)
     const qty = Math.ceil(withWaste)
 
     return { ...mat, raw: parseFloat(raw.toFixed(4)), withWaste: parseFloat(withWaste.toFixed(4)), qty, blocked: false, blockedBy: [], activeRow } as MaterialResult

@@ -473,8 +473,8 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
                       </div>
                     )}
 
-                    {/* Waste */}
-                    {row.ruleType && (
+                    {/* Waste — hidden for solver-driven rules where waste is already computed */}
+                    {row.ruleType && row.ruleType !== 'stock_length_qty' && (
                       <div>
                         <div className="flex items-center gap-1 mb-1">
                           <span className="label mb-0">Waste %</span>
