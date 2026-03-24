@@ -252,7 +252,7 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
   // Materials used as bracket BOM components get their quantities from bracket
   // expansion only — exclude them from direct rule evaluation to avoid doubling
   const bracketMatIds = new Set(
-    (sys.customBrackets ?? []).flatMap((b: any) => (b.bom ?? []).map((item: any) => item.materialId).filter(Boolean))
+    (sys.customBrackets ?? []).filter((b: any) => b.setupEnabled !== false).flatMap((b: any) => (b.bom ?? []).map((item: any) => item.materialId).filter(Boolean))
   )
 
   const active = materials

@@ -939,7 +939,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
   // ── Merge bracket BOM materials into combined results ────────────────────
   const combinedWithBrackets: any[] = (() => {
     const combined = [...(calc.multiResults?.combined ?? [])]
-    const brackets = sys.customBrackets ?? []
+    const brackets = (sys.customBrackets ?? []).filter(b => b.setupEnabled !== false)
     if (!calc.multiResults || brackets.length === 0) return combined
 
     // Compute bracket quantities per-run so run.qty multipliers are respected
@@ -967,7 +967,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
       for (const bracket of brackets) {
         const bQty = bracketQtys[bracket.id] ?? 0
         if (bQty <= 0) continue
-        const params = resolveBracketParams(bracket, {}, sys.materials)
+        const params = resolveBracketParams(bracket, bracket.paramOverrides ?? {}, sys.materials)
         const expanded = computeBracketBOM(bracket, bQty, params, sys.materials)
         for (const item of expanded) {
           if (!item.materialId) continue
@@ -1033,7 +1033,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     const mergedVariants = calc.runs.reduce((acc: Record<string, string>, r: Run) => {
       return { ...acc, ...(r.variantState ?? {}) }
     }, {} as Record<string, string>)
-    const brackets    = sys.customBrackets ?? []
+    const brackets    = (sys.customBrackets ?? []).filter(b => b.setupEnabled !== false)
     const bracketQtys = computeBracketQtys(brackets, dimValues, sys, mergedCriteria, mergedVariants)
     return computeWorkSchedule(
       sys.workActivities ?? [],

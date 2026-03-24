@@ -108,6 +108,9 @@ export function evaluateFormula(formula: string, params: Record<string, number> 
 // ─── migrateBracket ───────────────────────────────────────────────────────────
 
 export function migrateBracket(b: any): WorkBracket {
+  // Backward compat: existing brackets default to setupEnabled: true
+  if (b.setupEnabled === undefined) b.setupEnabled = true
+  if (!b.paramOverrides) b.paramOverrides = {}
   if (b.ruleSet) return b as WorkBracket
   // Legacy bracket with qtyFormula — convert to a fixed_qty rule row
   const row: RuleRow = {
@@ -180,7 +183,7 @@ export function computeWorkSchedule(
   for (const bracket of brackets) {
     const bQty = bracketQtys[bracket.id] ?? 0
     if (bQty <= 0) continue
-    const params = Object.fromEntries((bracket.parameters ?? []).map(p => [p.key, p.default]))
+    const params = resolveBracketParams(bracket, bracket.paramOverrides ?? {}, [])
     for (const fa of bracket.fabActivities ?? []) {
       const timePerBracket = evaluateFormula(fa.timeFormula, params)
       const totalMinutes   = timePerBracket * bQty
@@ -454,7 +457,7 @@ export function computeAllBracketBOM(
   for (const bracket of brackets) {
     const qty = bracketQtys[bracket.id] ?? 0
     if (qty <= 0) continue
-    const params = resolveBracketParams(bracket, {}, sys.materials)
+    const params = resolveBracketParams(bracket, bracket.paramOverrides ?? {}, sys.materials)
     const expanded = computeBracketBOM(bracket, qty, params, sys.materials)
     const items = expanded.map((item, idx) => {
       const sysMat    = item.materialId ? sys.materials.find(m => m.id === item.materialId) : null

@@ -681,6 +681,8 @@ export interface WorkBracket {
   parameters:    BracketParameter[]       // drive BOM item formulas (parametric dims)
   bom:           BracketBOMItem[]
   fabActivities: BracketFabActivity[]
+  setupEnabled?:   boolean                  // true = included in Setup Step 5
+  paramOverrides?: Record<string, number>   // setup-specific param values (override defaults)
 }
 
 // ─── Work Activities ──────────────────────────────────────────────────────────

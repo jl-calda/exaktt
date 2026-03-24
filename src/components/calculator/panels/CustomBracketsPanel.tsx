@@ -32,6 +32,8 @@ const BLANK_BRACKET: Omit<WorkBracket, 'id'> = {
   parameters:    [],
   bom:           [],
   fabActivities: [],
+  setupEnabled:  false,
+  paramOverrides: {},
 }
 
 const QTY_UNITS = ['pcs', 'mm', 'm', 'kg', 'L', 'each']
@@ -496,7 +498,11 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
       <ConfirmModal
         open={deleteId !== null}
         title="Delete bracket?"
-        message="This custom bracket and all its BOM items and fabrication activities will be permanently removed."
+        message={
+          deleteId && customBrackets.find(b => b.id === deleteId)?.setupEnabled
+            ? "This sub-assembly is currently used in setup. Deleting it will remove it everywhere — including its quantity rules and parameter values."
+            : "This custom bracket and all its BOM items and fabrication activities will be permanently removed."
+        }
         onConfirm={() => { remove(deleteId!); setDeleteId(null) }}
         onCancel={() => setDeleteId(null)}
       />
