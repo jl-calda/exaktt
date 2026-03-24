@@ -38,6 +38,12 @@ export function getDimLabel(key: string, dimLabels?: Record<string, string>): st
   return PRIMITIVE_DIMS.find(d => d.key === key)?.label ?? key
 }
 
+/** Resolve a primitive dim unit — uses system override if set, otherwise the default from PRIMITIVE_DIMS */
+export function getDimUnit(key: string, dimUnits?: Record<string, string>): string {
+  if (dimUnits?.[key]) return dimUnits[key]
+  return PRIMITIVE_DIMS.find(d => d.key === key)?.unit ?? ''
+}
+
 /** Map every inputModel value (incl. legacy) to its available primitive dim keys */
 export const DIMS_FOR_INPUT_MODEL: Record<string, string[]> = Object.fromEntries([
   ...INPUT_MODELS.map(m => [m.value, m.dims]),

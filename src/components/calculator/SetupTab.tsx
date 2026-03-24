@@ -315,7 +315,31 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
                         ) : (
                           <span>{d.label}</span>
                         )}
-                        {d.unit && <span className="text-[10px] text-ink-faint opacity-70">({d.unit})</span>}
+                        {d.unit && (
+                          editable ? (
+                            <span className="text-[10px] text-ink-faint opacity-70 inline-flex items-center">
+                              (
+                              <input
+                                type="text"
+                                value={sys.dimUnits?.[d.key] || d.unit}
+                                placeholder={d.unit}
+                                onChange={e => onUpdate({ dimUnits: { ...sys.dimUnits, [d.key]: e.target.value } })}
+                                onBlur={e => {
+                                  if (!e.target.value.trim()) {
+                                    const next = { ...sys.dimUnits }
+                                    delete next[d.key]
+                                    onUpdate({ dimUnits: next })
+                                  }
+                                }}
+                                className="bg-transparent border-none outline-none text-[10px] text-ink-faint opacity-70 p-0 focus:ring-0 focus:underline"
+                                style={{ minWidth: '1ch', width: `${Math.max(1, (sys.dimUnits?.[d.key] || d.unit).length)}ch` }}
+                              />
+                              )
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-ink-faint opacity-70">({d.unit})</span>
+                          )
+                        )}
                       </span>
                     )
                   })}
