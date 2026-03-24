@@ -948,11 +948,9 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
   const [showFieldGuide, setShowFieldGuide] = useState(false)
 
   const runsAtLimit  = limits.maxRuns !== -1 && calc.runs.length >= limits.maxRuns
-  const resolvedDerivType = (cd: any) => cd.modelStrategies?.[sys.inputModel]?.derivType ?? cd.derivType
-  const resolvedSpacingMode = (cd: any) => cd.modelStrategies?.[sys.inputModel]?.spacingMode ?? cd.spacingMode
-  const spacingDims  = (sys.customDims ?? []).filter(cd => resolvedDerivType(cd) === 'spacing' && resolvedSpacingMode(cd) === 'user')
-  const userInputDims = (sys.customDims ?? []).filter(cd => resolvedDerivType(cd) === 'user_input')
-  const overrideDims = (sys.customDims ?? []).filter(cd => cd.allowOverride && resolvedDerivType(cd) !== 'user_input')
+  const spacingDims  = (sys.customDims ?? []).filter(cd => cd.derivType === 'spacing' && cd.spacingMode === 'user')
+  const userInputDims = (sys.customDims ?? []).filter(cd => cd.derivType === 'user_input')
+  const overrideDims = (sys.customDims ?? []).filter(cd => cd.allowOverride && cd.derivType !== 'user_input')
 
   // ── Merge bracket BOM materials into combined results ────────────────────
   const combinedWithBrackets: any[] = (() => {

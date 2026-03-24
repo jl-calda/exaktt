@@ -2,7 +2,7 @@
 'use client'
 import { useState } from 'react'
 import type { CustomDim, CriteriaParamOverride, MtoSystem } from '@/types'
-import { DERIV_TYPES, PRIMITIVE_DIMS, INPUT_MODELS, DIMS_FOR_INPUT_MODEL, getDimLabel, getDimUnit } from '@/lib/engine/constants'
+import { DERIV_TYPES, PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, getDimLabel, getDimUnit } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
 import { Plus, Trash2, Edit3, Check, X, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -113,84 +113,6 @@ function FieldGuide({ derivType, items }: { derivType: string; items: { label: s
   )
 }
 
-// ─── Model Strategies Section (#5) ────────────────────────────────────────────
-
-function ModelStrategiesSection({ d, set, dimOptions }: {
-  d: any; set: (k: any) => (v: any) => void
-  dimOptions: { value: string; label: string }[]
-}) {
-  const [open, setOpen] = useState(false)
-  const strategies: Record<string, any> = (d as any).modelStrategies ?? {}
-  const activeModels = Object.keys(strategies)
-
-  const toggle = (model: string) => {
-    const next = { ...strategies }
-    if (next[model]) { delete next[model] } else { next[model] = {} }
-    set('modelStrategies')(Object.keys(next).length > 0 ? next : undefined)
-  }
-
-  const updateStrategy = (model: string, key: string, value: any) => {
-    const next = { ...strategies, [model]: { ...strategies[model], [key]: value } }
-    set('modelStrategies')(next)
-  }
-
-  return (
-    <div className="border-t border-surface-200 pt-3 mt-1">
-      <button type="button" onClick={() => setOpen(v => !v)}
-        className="text-[10px] font-semibold uppercase tracking-wide text-ink-faint hover:text-ink flex items-center gap-1">
-        {open ? '▾' : '▸'} Per-model overrides
-        {activeModels.length > 0 && <span className="text-primary ml-1">({activeModels.length})</span>}
-      </button>
-      {open && (
-        <div className="mt-2 space-y-2">
-          {INPUT_MODELS.map(m => {
-            const active = !!strategies[m.value]
-            const strat = strategies[m.value] ?? {}
-            return (
-              <div key={m.value} className={`border px-3 py-2 ${active ? 'border-primary/30 bg-primary/5' : 'border-surface-200 bg-surface-50'}`}
-                style={{ borderRadius: 'var(--radius)' }}>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={active} onChange={() => toggle(m.value)} className="w-3.5 h-3.5 accent-primary" />
-                  <span className="text-xs font-semibold">{m.icon} {m.label}</span>
-                  <span className="text-[10px] text-ink-faint">{m.desc}</span>
-                </label>
-                {active && (
-                  <div className="flex flex-wrap gap-3 mt-2 pl-5">
-                    <Select label="Derivation type" value={strat.derivType ?? d.derivType}
-                      onChange={e => updateStrategy(m.value, 'derivType', e.target.value || undefined)}
-                      options={[
-                        { value: '', label: '(inherit default)' },
-                        ...DERIV_TYPES.map(t => ({ value: t.value, label: t.icon + ' ' + t.label })),
-                      ]}
-                      className="w-48" />
-                    {(strat.derivType ?? d.derivType) === 'spacing' && (
-                      <>
-                        <NumberInput label="Spacing" value={strat.spacing ?? d.spacing ?? 1} min={0.01} step={0.1}
-                          onChange={e => updateStrategy(m.value, 'spacing', parseFloat(e.target.value))} className="w-24" />
-                        <Select label="Along" value={strat.spacingTargetDim ?? d.spacingTargetDim ?? 'length'}
-                          onChange={e => updateStrategy(m.value, 'spacingTargetDim', e.target.value)}
-                          options={dimOptions} className="w-36" />
-                      </>
-                    )}
-                    {(strat.derivType ?? d.derivType) === 'formula' && (
-                      <>
-                        <NumberInput label="Multiplier" value={strat.formulaQty ?? d.formulaQty ?? 1} step={0.1}
-                          onChange={e => updateStrategy(m.value, 'formulaQty', parseFloat(e.target.value))} className="w-24" />
-                        <Select label="x Dimension" value={strat.formulaDimKey ?? d.formulaDimKey ?? 'length'}
-                          onChange={e => updateStrategy(m.value, 'formulaDimKey', e.target.value)}
-                          options={dimOptions} className="w-36" />
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
 
 // ─── Criteria Overrides Section (#1) ──────────────────────────────────────────
 
@@ -222,25 +144,34 @@ function CriteriaOverridesSection({ d, set, criteria }: {
 
   if (inputCriteria.length === 0) return null
 
+  const PARAMS_BY_DERIV: Record<string, { value: string; label: string }[]> = {
+    spacing:      [
+      { value: 'spacing',            label: 'Spacing value' },
+      { value: 'spacingTargetDim',   label: 'Spacing dim' },
+      { value: 'includesEndpoints',  label: 'Includes endpoints' },
+      { value: 'firstSupportMode',   label: 'First support mode' },
+      { value: 'firstGap',           label: 'First gap' },
+    ],
+    formula:      [
+      { value: 'formulaQty',         label: 'Multiplier' },
+      { value: 'formulaDimKey',      label: 'Formula dim' },
+    ],
+    stock_length: [
+      { value: 'stockTargetDim',     label: 'Stock target dim' },
+      { value: 'stockLengths',       label: 'Stock lengths' },
+      { value: 'stockOptimMode',     label: 'Stock optim mode' },
+    ],
+    sheet_cut:    [
+      { value: 'plateMaterialId',    label: 'Plate material' },
+      { value: 'partW',              label: 'Part width' },
+      { value: 'partH',              label: 'Part height' },
+      { value: 'kerf',               label: 'Kerf' },
+      { value: 'sheetAllowRotation', label: 'Allow rotation' },
+    ],
+  }
   const OVERRIDABLE_PARAMS = [
-    { value: 'derivType',          label: 'Derivation type' },
-    { value: 'spacing',            label: 'Spacing value' },
-    { value: 'formulaQty',         label: 'Multiplier' },
-    { value: 'formulaDimKey',      label: 'Formula dim' },
-    { value: 'spacingTargetDim',   label: 'Spacing dim' },
-    { value: 'includesEndpoints',  label: 'Includes endpoints' },
-    { value: 'firstSupportMode',   label: 'First support mode' },
-    { value: 'firstGap',           label: 'First gap' },
-    // stock_length
-    { value: 'stockTargetDim',     label: 'Stock target dim' },
-    { value: 'stockLengths',       label: 'Stock lengths' },
-    { value: 'stockOptimMode',     label: 'Stock optim mode' },
-    // sheet_cut
-    { value: 'plateMaterialId',    label: 'Plate material' },
-    { value: 'partW',              label: 'Part width' },
-    { value: 'partH',              label: 'Part height' },
-    { value: 'kerf',               label: 'Kerf' },
-    { value: 'sheetAllowRotation', label: 'Allow rotation' },
+    { value: 'derivType', label: 'Derivation type' },
+    ...(PARAMS_BY_DERIV[d.derivType] ?? []),
   ]
 
   return (
@@ -378,6 +309,10 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
                 // area needs length+width; spacing needs length
                 if (t.value === 'area' && (!modelDims.has('length') || !modelDims.has('width'))) return false
                 if (t.value === 'spacing' && !modelDims.has('length')) return false
+                if (t.value === 'sum') {
+                  const summable = ['length', 'width', 'height', 'perimeter']
+                  if (summable.filter(d => modelDims.has(d)).length < 2) return false
+                }
                 return true
               }).map(t => ({ value: t.value, label: t.icon + ' ' + t.label }))}
               className="w-52" />
@@ -543,9 +478,6 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
             </FloatingPanel>
           </>
         )}
-
-        {/* Model strategy overrides (#5) */}
-        <ModelStrategiesSection d={d} set={set} dimOptions={dimOptions} />
 
         {/* Criteria param overrides (#1) */}
         {sys && <CriteriaOverridesSection d={d} set={set} criteria={sys.customCriteria ?? []} />}
