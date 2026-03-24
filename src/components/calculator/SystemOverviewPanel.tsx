@@ -83,7 +83,8 @@ const DERIV_LABELS: Record<string, { label: string }> = {
   stock_length: { label: 'Stock solver' },
   formula:      { label: 'Formula'      },
   sum:          { label: 'Sum'          },
-  plate_nesting:{ label: 'Plate nest'   },
+  sheet_cut:    { label: 'Sheet cut'    },
+  area:         { label: 'Area'        },
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -217,7 +218,9 @@ export default function SystemOverviewPanel({ sys, onViewGraph }: Props) {
               cd.derivType === 'spacing'      ? `Along: ${cd.spacingTargetDim} · ${cd.spacing} ${getDimUnit(cd.spacingTargetDim ?? 'length', sys.dimOverrides)}` :
               cd.derivType === 'stock_length' ? `Solver: ${cd.stockTargetDim} · ${(cd.stockLengths ?? []).map(l => l + ' ' + getDimUnit(cd.stockTargetDim ?? 'length', sys.dimOverrides)).join(', ')}` :
               cd.derivType === 'formula'      ? `Formula from: ${cd.formulaDimKey}` :
-              cd.derivType === 'sum'          ? `Sum of: ${(cd.sumKeys ?? []).join(', ') || '—'}` : undefined
+              cd.derivType === 'sum'          ? `Sum of: ${(cd.sumKeys ?? []).join(', ') || '—'}` :
+              cd.derivType === 'sheet_cut'    ? `Part: ${cd.partW}×${cd.partH} · kerf: ${cd.kerf}` :
+              cd.derivType === 'area'         ? 'Length × Width' : undefined
             return (
               <Row key={cd.key} icon={cd.icon ?? '🔗'} label={cd.name} keyTag={cd.key} sub={sub}
                 right={<Pill label={dt.label} />} />

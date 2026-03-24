@@ -25,7 +25,6 @@ const BLANK: Omit<CustomDim, 'id'> = {
   derivType: 'spacing', spacing: 1, spacingMode: 'fixed',
   spacingLabel: 'Spacing', spacingTargetDim: 'length',
   firstSupportMode: 'offset', firstGap: 300,
-  firstGapLabel: 'First support from ground', firstGapMode: 'fixed',
   includesEndpoints: false, sumKeys: [], formulaQty: 1, formulaDimKey: 'length',
   stockLengths: [], stockTargetDim: 'height', stockOptimMode: 'min_waste',
   plateMaterialId: '', partW: 600, partH: 400, kerf: 3,
@@ -224,14 +223,24 @@ function CriteriaOverridesSection({ d, set, criteria }: {
   if (inputCriteria.length === 0) return null
 
   const OVERRIDABLE_PARAMS = [
-    { value: 'derivType', label: 'Derivation type' },
-    { value: 'spacing', label: 'Spacing (m)' },
-    { value: 'formulaQty', label: 'Multiplier' },
-    { value: 'formulaDimKey', label: 'Formula dim' },
-    { value: 'spacingTargetDim', label: 'Spacing dim' },
-    { value: 'includesEndpoints', label: 'Includes endpoints' },
-    { value: 'firstSupportMode', label: 'First support mode' },
-    { value: 'firstGap', label: 'First gap (mm)' },
+    { value: 'derivType',          label: 'Derivation type' },
+    { value: 'spacing',            label: 'Spacing value' },
+    { value: 'formulaQty',         label: 'Multiplier' },
+    { value: 'formulaDimKey',      label: 'Formula dim' },
+    { value: 'spacingTargetDim',   label: 'Spacing dim' },
+    { value: 'includesEndpoints',  label: 'Includes endpoints' },
+    { value: 'firstSupportMode',   label: 'First support mode' },
+    { value: 'firstGap',           label: 'First gap' },
+    // stock_length
+    { value: 'stockTargetDim',     label: 'Stock target dim' },
+    { value: 'stockLengths',       label: 'Stock lengths' },
+    { value: 'stockOptimMode',     label: 'Stock optim mode' },
+    // sheet_cut
+    { value: 'plateMaterialId',    label: 'Plate material' },
+    { value: 'partW',              label: 'Part width' },
+    { value: 'partH',              label: 'Part height' },
+    { value: 'kerf',               label: 'Kerf' },
+    { value: 'sheetAllowRotation', label: 'Allow rotation' },
   ]
 
   return (
@@ -373,6 +382,11 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
           </div>
 
           {/* Row 2: type-specific fields */}
+          {d.derivType === 'area' && (
+            <p className="text-[10px] text-ink-faint italic col-span-2">
+              Automatically computes Length × Width — no additional configuration needed.
+            </p>
+          )}
           {d.derivType === 'spacing' && (
             <div className="flex flex-wrap gap-4 items-start">
               <Select label="Spacing along" value={(d as any).spacingTargetDim ?? 'length'}

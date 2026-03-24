@@ -65,7 +65,7 @@ function dim(overrides: Partial<CustomDim> & { id: string; key: string; name: st
     icon: '🔗', color: '#7c3aed',
     spacing: 1, spacingMode: 'fixed', spacingLabel: '',
     spacingTargetDim: 'length',
-    firstSupportMode: 'half', firstGap: 0, firstGapLabel: '', firstGapMode: 'half',
+    firstSupportMode: 'half', firstGap: 0,
     includesEndpoints: true,
     sumKeys: [],
     formulaQty: 1, formulaDimKey: 'length',
@@ -144,8 +144,6 @@ const HLL: SampleSystem = {
         includesEndpoints: false,
         firstSupportMode: 'half',
         firstGap:         6,
-        firstGapLabel:    'First span (m)',
-        firstGapMode:     'fixed',
       }),
     ],
 
@@ -463,8 +461,6 @@ const EVORAIL: SampleSystem = {
         includesEndpoints: true,   // includes end posts
         firstSupportMode:  'half',
         firstGap:          0,
-        firstGapLabel:     '',
-        firstGapMode:      'half',
       }),
     ],
 
