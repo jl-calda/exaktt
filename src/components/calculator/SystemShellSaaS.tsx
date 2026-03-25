@@ -2,7 +2,7 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, FileText, Settings, BookOpen, Calculator, Lock, GitBranch, Copy, Link as LinkIcon, X } from 'lucide-react'
+import { ArrowLeft, Save, FileText, Settings, BookOpen, Calculator, Lock, GitBranch, Copy, Link as LinkIcon, X, Network } from 'lucide-react'
 import type { MtoSystem, GlobalTag, CompanyProfile } from '@/types'
 import type { Plan } from '@prisma/client'
 import { useCalcStore } from '@/store'
@@ -17,7 +17,8 @@ import ReportBuilder from '@/components/report/ReportBuilder'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft'
 
-type Tab = 'setup' | 'materials' | 'calculator' | 'graph'
+type Tab = 'setup' | 'calculator'
+type SetupSubTab = 'setup' | 'materials' | 'dependency'
 
 interface Props {
   system:      any
@@ -38,6 +39,7 @@ export default function SystemShellSaaS({
   const calc     = useCalcStore()
 
   const [tab, setTab] = useState<Tab>('setup')
+  const [setupSubTab, setSetupSubTab] = useState<SetupSubTab>('setup')
   const [sys,          setSys]          = useState<MtoSystem>(initialSystem)
   const [jobs,         setJobs]         = useState(initialJobs)
   const [tags,         setTags]         = useState<GlobalTag[]>(initialTags)
@@ -216,11 +218,15 @@ export default function SystemShellSaaS({
     setAddingToTender(false)
   }
 
-  const NAV_TABS: { id: Tab; label: string; Icon: React.ElementType; locked?: boolean }[] = [
+  const NAV_TABS: { id: Tab; label: string; Icon: React.ElementType }[] = [
+    { id: 'setup',      label: 'Setup',      Icon: Settings   },
+    { id: 'calculator', label: 'Calculator', Icon: Calculator },
+  ]
+
+  const SETUP_SUB_TABS: { id: SetupSubTab; label: string; Icon: React.ElementType }[] = [
     { id: 'setup',      label: 'Setup',      Icon: Settings   },
     { id: 'materials',  label: 'Materials',  Icon: BookOpen   },
-    { id: 'calculator', label: 'Calculator', Icon: Calculator },
-    { id: 'graph',      label: 'Graph',      Icon: GitBranch  },
+    { id: 'dependency', label: 'Dependency', Icon: Network    },
   ]
 
   return (
@@ -242,18 +248,14 @@ export default function SystemShellSaaS({
 
       {/* Mobile tab bar */}
       <nav className="md:hidden flex items-center gap-1 px-2 py-1.5 border-b border-surface-200 bg-surface-50 overflow-x-auto">
-        {NAV_TABS.map(({ id, label, Icon, locked }) => (
+        {NAV_TABS.map(({ id, label, Icon }) => (
           <button key={id}
-            onClick={() => {
-              if (locked) { setLimitWarning('Tags require a higher plan'); return }
-              setTab(id)
-            }}
+            onClick={() => setTab(id)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
               tab === id ? 'bg-primary/10 text-primary font-semibold' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
-            } ${locked ? 'opacity-40' : ''}`}>
+            }`}>
             <Icon className="w-3.5 h-3.5" strokeWidth={tab === id ? 2.2 : 1.8} />
             {label}
-            {locked && <Lock className="w-2.5 h-2.5" />}
           </button>
         ))}
       </nav>
@@ -285,16 +287,12 @@ export default function SystemShellSaaS({
 
         {/* Nav */}
         <nav className="flex-1 py-2 px-2 flex flex-col gap-px">
-          {NAV_TABS.map(({ id, label, Icon, locked }) => (
+          {NAV_TABS.map(({ id, label, Icon }) => (
             <button key={id}
-              onClick={() => {
-                if (locked) { setLimitWarning('Tags require a higher plan'); return }
-                setTab(id)
-              }}
-              className={`sidebar-item text-[11px] ${tab === id ? 'active' : ''} ${locked ? 'opacity-40 cursor-default' : ''}`}>
+              onClick={() => setTab(id)}
+              className={`sidebar-item text-[11px] ${tab === id ? 'active' : ''}`}>
               <Icon className="w-[15px] h-[15px] shrink-0" strokeWidth={tab === id ? 2.2 : 1.8} />
               <span>{label}</span>
-              {locked && <Lock className="w-2.5 h-2.5 ml-auto" />}
             </button>
           ))}
         </nav>
@@ -351,36 +349,61 @@ export default function SystemShellSaaS({
           </div>
         )}
 
-        {/* Graph tab — full bleed, no padding */}
-        {tab === 'graph' && <SystemGraphTab sys={sys} />}
+        {/* Setup tab with sub-tabs */}
+        {tab === 'setup' && (
+          <>
+            {/* Sub-tab bar */}
+            <div className="flex items-center gap-1 px-3 md:px-6 py-2 border-b border-surface-200 bg-surface-50">
+              {SETUP_SUB_TABS.map(({ id, label, Icon }) => (
+                <button key={id} onClick={() => setSetupSubTab(id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                    setupSubTab === id
+                      ? 'bg-primary/10 text-primary font-semibold'
+                      : 'text-ink-muted hover:text-ink hover:bg-surface-100'
+                  }`}
+                  style={{ borderRadius: 'var(--radius)' }}>
+                  <Icon className="w-3.5 h-3.5" strokeWidth={setupSubTab === id ? 2.2 : 1.8} />
+                  {label}
+                </button>
+              ))}
+            </div>
 
-        {/* Padded content for all other tabs */}
-        {tab !== 'graph' && (
+            {/* Dependency sub-tab — full bleed, no padding */}
+            {setupSubTab === 'dependency' && <SystemGraphTab sys={sys} />}
+
+            {/* Padded content for setup and materials sub-tabs */}
+            {setupSubTab !== 'dependency' && (
+              <div className="px-3 pt-3 pb-4 md:px-6 md:pt-4 md:pb-6">
+                {setupSubTab === 'setup' && (
+                  <SetupTab sys={sys} onUpdate={updateSystemGated} globalTags={tags} onViewGraph={() => setSetupSubTab('dependency')}
+                    isLocked={!!sys.isLocked} onLock={lockSystem} onUnlock={unlockSystem} />
+                )}
+                {setupSubTab === 'materials' && (
+                  <MaterialsTab
+                    sys={sys}
+                    onUpdate={updateSystemGated}
+                    globalTags={tags}
+                    onGoToSetup={() => setSetupSubTab('setup')}
+                    plan={plan}
+                    subTab="all"
+                  />
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Calculator tab */}
+        {tab === 'calculator' && (
           <div className="px-3 pt-3 pb-4 md:px-6 md:pt-4 md:pb-6">
-            {tab === 'setup' && (
-              <SetupTab sys={sys} onUpdate={updateSystemGated} globalTags={tags} onViewGraph={() => setTab('graph')}
-                isLocked={!!sys.isLocked} onLock={lockSystem} onUnlock={unlockSystem} />
-            )}
-            {tab === 'materials' && (
-              <MaterialsTab
-                sys={sys}
-                onUpdate={updateSystemGated}
-                globalTags={tags}
-                onGoToSetup={() => setTab('setup')}
-                plan={plan}
-                subTab="all"
-              />
-            )}
-            {tab === 'calculator' && (
-              <CalculatorTab
-                sys={sys}
-                jobs={jobs}
-                onSaveJob={saveJob}
-                onRunCalc={runCalc}
-                globalTags={tags}
-                plan={plan}
-              />
-            )}
+            <CalculatorTab
+              sys={sys}
+              jobs={jobs}
+              onSaveJob={saveJob}
+              onRunCalc={runCalc}
+              globalTags={tags}
+              plan={plan}
+            />
           </div>
         )}
       </div>
