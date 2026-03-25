@@ -1,7 +1,7 @@
 // src/app/mto/system/[id]/page.tsx — MTO calculator
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getMtoSystem, getMtoJobs, getGlobalTags, getUserWithPlan, getProfile, getUserCompany } from '@/lib/db/queries'
+import { getMtoSystem, getMtoJobs, getGlobalTags, getUserWithPlan, getProfile, getUserCompany, getRunDraft } from '@/lib/db/queries'
 import SystemShellSaaS from '@/components/calculator/SystemShellSaaS'
 
 interface PageProps { params: Promise<{ id: string }> }
@@ -16,12 +16,13 @@ export default async function MtoSystemPage({ params }: PageProps) {
   if (!company) redirect('/auth/login')
   const companyId = company.id
 
-  const [system, jobs, tags, userData, profile] = await Promise.all([
+  const [system, jobs, tags, userData, profile, draft] = await Promise.all([
     getMtoSystem(id, companyId),
     getMtoJobs(companyId, id),
     getGlobalTags(companyId),
     getUserWithPlan(user.id),
     getProfile(user.id),
+    getRunDraft(user.id, id),
   ])
 
   if (!system) notFound()
@@ -47,6 +48,7 @@ export default async function MtoSystemPage({ params }: PageProps) {
       userId={user.id}
       plan={plan}
       profile={profile as any}
+      initialDraft={draft as any}
     />
   )
 }

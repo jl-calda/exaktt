@@ -1,6 +1,6 @@
 // src/lib/db/queries.ts
 import { prisma } from './prisma'
-import type { Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { getLimits, withinLimit } from '@/lib/limits'
 import type { Plan } from '@prisma/client'
 import type { MtoSystem, SavedJob, LibraryItem, GlobalTag, MaterialSpec, Report, Profile, ActivityLibraryItem, Supplier } from '@/types'
@@ -201,6 +201,8 @@ export async function updateMtoSystem(id: string, companyId: string, data: Parti
       ...(data.warnings       !== undefined && { warnings:       asJson(data.warnings) }),
       ...(data.customBrackets !== undefined && { customBrackets: asJson(data.customBrackets) }),
       ...(data.workActivities !== undefined && { workActivities: asJson(data.workActivities) }),
+      ...(data.isLocked         !== undefined && { isLocked:         data.isLocked }),
+      ...(data.materialSnapshot !== undefined && { materialSnapshot: data.materialSnapshot === null ? Prisma.JsonNull : asJson(data.materialSnapshot) }),
     },
   })
 }
@@ -270,6 +272,42 @@ export async function updateMtoJob(id: string, companyId: string, data: Partial<
 export async function archiveMtoJob(id: string, companyId: string) {
   await verifyOwnership(prisma.mtoJob, id, companyId, 'Job')
   return prisma.mtoJob.update({ where: { id }, data: { isArchived: true } })
+}
+
+// ─── Run Drafts (auto-save) ──────────────────────────────────────────────────
+
+export async function getRunDraft(userId: string, mtoSystemId: string) {
+  return prisma.mtoRunDraft.findUnique({
+    where: { userId_mtoSystemId: { userId, mtoSystemId } },
+  })
+}
+
+export async function upsertRunDraft(
+  companyId: string,
+  userId: string,
+  mtoSystemId: string,
+  data: { runs: any[]; stockOptimMode: string },
+) {
+  return prisma.mtoRunDraft.upsert({
+    where: { userId_mtoSystemId: { userId, mtoSystemId } },
+    update: {
+      runs: asJson(data.runs),
+      stockOptimMode: data.stockOptimMode,
+    },
+    create: {
+      companyId,
+      userId,
+      mtoSystemId,
+      runs: asJson(data.runs),
+      stockOptimMode: data.stockOptimMode,
+    },
+  })
+}
+
+export async function deleteRunDraft(userId: string, mtoSystemId: string) {
+  return prisma.mtoRunDraft.deleteMany({
+    where: { userId, mtoSystemId },
+  })
 }
 
 // ─── Material Specs ───────────────────────────────────────────────────────────

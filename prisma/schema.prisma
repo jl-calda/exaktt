@@ -227,6 +227,9 @@ model MtoSystem {
   customBrackets Json @default("[]")
   workActivities Json @default("[]")
 
+  isLocked         Boolean @default(false)
+  materialSnapshot Json?
+
   mtoJobs     MtoJob[]
   reports     Report[]
   tenderItems TenderItem[]
@@ -271,6 +274,26 @@ model MtoJob {
   @@index([companyId])
   @@index([mtoSystemId])
   @@map("jobs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RUN DRAFTS (auto-saved calculator state per user per system)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model MtoRunDraft {
+  id          String   @id @default(cuid())
+  companyId   String
+  userId      String
+  mtoSystemId String
+
+  runs           Json   @default("[]")
+  stockOptimMode String @default("min_waste")
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, mtoSystemId])
+  @@index([companyId])
+  @@map("run_drafts")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

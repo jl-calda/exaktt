@@ -124,7 +124,7 @@ function CalcBreakdownPanel({ sys, runs, multiResults, workSchedule }: {
                     {activeCriteria.map(cr => {
                       const on = runCriteria[cr.key] === true
                       return (
-                        <span key={cr.key} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-semibold ${on ? 'bg-green-50 border-green-200 text-green-700' : 'bg-surface-100 border-surface-200 text-ink-faint'}`}>
+                        <span key={cr.key} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-semibold ${on ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-surface-100 border-surface-200 text-ink-faint'}`}>
                           {cr.icon && <span>{cr.icon}</span>}
                           {cr.name}: <span>{on ? 'YES' : 'NO'}</span>
                         </span>
@@ -157,7 +157,7 @@ function CalcBreakdownPanel({ sys, runs, multiResults, workSchedule }: {
             <div className="overflow-x-auto">
               <table className="w-full text-xs" style={{ minWidth: hasPrice ? 720 : 560 }}>
                 <thead>
-                  <tr className="border-b border-surface-100 bg-white">
+                  <tr className="border-b border-surface-100 bg-surface-50">
                     <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-ink-faint w-44">Material</th>
                     <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-ink-faint w-24">Rule</th>
                     <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-ink-faint">Formula</th>
@@ -176,10 +176,10 @@ function CalcBreakdownPanel({ sys, runs, multiResults, workSchedule }: {
                     const lineTotal = mat.unitPrice != null ? mat.unitPrice * displayQty : null
                     if (!pr && !isBracketOnly) return null
                     return (
-                      <tr key={mat.id} className={(mi % 2 === 0 ? 'bg-white' : 'bg-surface-50') + ' border-b border-surface-100 last:border-0'}>
+                      <tr key={mat.id} className={(mi % 2 === 0 ? 'bg-surface-50' : 'bg-surface-50') + ' border-b border-surface-100 last:border-0'}>
                         <td className="px-4 py-2 font-medium text-ink truncate max-w-44">
                           {mat.name}
-                          {mat._bracketSource && <div className="text-[9px] text-violet-600 font-semibold">🔩 {mat._bracketSource}</div>}
+                          {mat._bracketSource && <div className="text-[9px] text-secondary-700 font-semibold">🔩 {mat._bracketSource}</div>}
                         </td>
                         <td className="px-3 py-2 font-mono text-ink-muted text-[11px]">
                           <span className="px-1.5 py-0.5 rounded bg-surface-100 text-ink-muted text-[10px]">
@@ -187,12 +187,12 @@ function CalcBreakdownPanel({ sys, runs, multiResults, workSchedule }: {
                           </span>
                         </td>
                         <td className="px-3 py-2">{isBracketOnly
-                          ? <span className="text-[11px] text-violet-600 italic">from bracket BOM</span>
+                          ? <span className="text-[11px] text-secondary-700 italic">from bracket BOM</span>
                           : <FormulaCell activeRow={ar} dims={dims} sys={sys} />}</td>
                         <td className="px-3 py-2 text-right font-mono text-ink-muted text-[11px]">{isBracketOnly ? '—' : (pr?.raw ?? 0)}</td>
                         <td className="px-4 py-2 text-right font-semibold text-primary">{displayQty} <span className="text-[10px] font-normal text-ink-faint">{mat.unit}</span></td>
                         {hasPrice && <td className="px-3 py-2 text-right font-mono text-ink-muted text-[11px]">{mat.unitPrice != null ? `$${mat.unitPrice.toFixed(2)}` : '—'}</td>}
-                        {hasPrice && <td className="px-3 py-2 text-right font-semibold text-emerald-700 text-[11px]">{lineTotal != null ? `$${lineTotal.toFixed(2)}` : '—'}</td>}
+                        {hasPrice && <td className="px-3 py-2 text-right font-semibold text-primary text-[11px]">{lineTotal != null ? `$${lineTotal.toFixed(2)}` : '—'}</td>}
                       </tr>
                     )
                   })}
@@ -207,7 +207,7 @@ function CalcBreakdownPanel({ sys, runs, multiResults, workSchedule }: {
                       <tr className="border-t border-surface-200 bg-surface-50">
                         <td colSpan={5} className="px-4 py-1.5 text-right text-[10px] text-ink-faint">Run total</td>
                         <td className="px-3 py-1.5 text-right text-[10px] text-ink-faint"></td>
-                        <td className="px-3 py-1.5 text-right font-semibold text-emerald-700 text-[11px]">${runTotal.toFixed(2)}</td>
+                        <td className="px-3 py-1.5 text-right font-semibold text-primary text-[11px]">${runTotal.toFixed(2)}</td>
                       </tr>
                     </tfoot>
                   ) : null
@@ -230,7 +230,7 @@ function CalcBreakdownPanel({ sys, runs, multiResults, workSchedule }: {
             <div className="overflow-x-auto">
               <table className="w-full text-xs" style={{ minWidth: 520 }}>
                 <thead>
-                  <tr className="border-b border-surface-100 bg-white">
+                  <tr className="border-b border-surface-100 bg-surface-50">
                     <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-ink-faint w-28">Phase</th>
                     <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-ink-faint">Activity</th>
                     <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-ink-faint w-20">Qty</th>
@@ -242,7 +242,7 @@ function CalcBreakdownPanel({ sys, runs, multiResults, workSchedule }: {
                 <tbody>
                   {phases.flatMap(([phase, items], pi) =>
                     (items as WorkScheduleResult[]).map((item, ii) => (
-                      <tr key={`${pi}-${ii}`} className={((pi + ii) % 2 === 0 ? 'bg-white' : 'bg-surface-50') + ' border-b border-surface-100 last:border-0'}>
+                      <tr key={`${pi}-${ii}`} className={((pi + ii) % 2 === 0 ? 'bg-surface-50' : 'bg-surface-50') + ' border-b border-surface-100 last:border-0'}>
                         <td className="px-4 py-2 text-ink-muted text-[11px]">
                           <span className="px-1.5 py-0.5 rounded bg-surface-100 text-ink-faint text-[10px]">{PHASE_LABELS[phase] ?? phase}</span>
                         </td>
@@ -250,7 +250,7 @@ function CalcBreakdownPanel({ sys, runs, multiResults, workSchedule }: {
                         <td className="px-3 py-2 text-right font-mono text-ink-muted text-[11px]">{item.sourceQty} <span className="text-[10px] text-ink-faint">{item.sourceUnit}</span></td>
                         <td className="px-3 py-2 text-right font-mono text-ink-muted text-[11px]">{item.timePerUnit.toFixed(1)} min</td>
                         <td className="px-3 py-2 text-right font-semibold text-primary text-[11px]">{item.totalHours.toFixed(2)} hr</td>
-                        {workSchedule.totalLabourCost != null && <td className="px-3 py-2 text-right font-mono text-emerald-700 text-[11px]">{item.labourCost != null ? `$${item.labourCost.toFixed(2)}` : '—'}</td>}
+                        {workSchedule.totalLabourCost != null && <td className="px-3 py-2 text-right font-mono text-primary text-[11px]">{item.labourCost != null ? `$${item.labourCost.toFixed(2)}` : '—'}</td>}
                       </tr>
                     ))
                   )}
@@ -259,13 +259,13 @@ function CalcBreakdownPanel({ sys, runs, multiResults, workSchedule }: {
                   <tr className="border-t border-surface-200 bg-surface-50">
                     <td colSpan={4} className="px-4 py-1.5 text-right text-[10px] text-ink-faint">Total hours</td>
                     <td className="px-3 py-1.5 text-right font-semibold text-primary text-[11px]">{workSchedule.totalElapsedHours.toFixed(2)} hr</td>
-                    {workSchedule.totalLabourCost != null && <td className="px-3 py-1.5 text-right font-semibold text-emerald-700 text-[11px]">${workSchedule.totalLabourCost.toFixed(2)}</td>}
+                    {workSchedule.totalLabourCost != null && <td className="px-3 py-1.5 text-right font-semibold text-primary text-[11px]">${workSchedule.totalLabourCost.toFixed(2)}</td>}
                   </tr>
                   {workSchedule.totalThirdPartyCost != null && (
                     <tr className="bg-surface-50">
                       <td colSpan={4} className="px-4 py-1.5 text-right text-[10px] text-ink-faint">Third party cost</td>
                       <td></td>
-                      <td className="px-3 py-1.5 text-right font-semibold text-emerald-700 text-[11px]">${workSchedule.totalThirdPartyCost.toFixed(2)}</td>
+                      <td className="px-3 py-1.5 text-right font-semibold text-primary text-[11px]">${workSchedule.totalThirdPartyCost.toFixed(2)}</td>
                     </tr>
                   )}
                 </tfoot>
@@ -325,7 +325,7 @@ function SegmentEditor({ segments, onChange, hasSpacing, spacingLabel, dimOverri
                   <input type="number" value={seg.length} min={0} step="0.1" placeholder="0"
                     onChange={e => update(seg.id, 'length', e.target.value)}
                     className="input text-xs py-1 pr-6 font-semibold"
-                    style={{ borderColor: parseFloat(seg.length) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
+                    style={{ borderColor: parseFloat(seg.length) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{getDimUnit('length', dimOverrides)}</span>
                 </div>
               </div>
@@ -336,7 +336,7 @@ function SegmentEditor({ segments, onChange, hasSpacing, spacingLabel, dimOverri
                     <input type="number" value={seg.spacing} min={0} step="0.1" placeholder="default"
                       onChange={e => update(seg.id, 'spacing', e.target.value)}
                       className="input text-xs py-1 pr-6"
-                      style={{ borderColor: parseFloat(seg.spacing) > 0 ? '#a78bfa' : undefined }} />
+                      style={{ borderColor: parseFloat(seg.spacing) > 0 ? 'var(--color-secondary)' : undefined }} />
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{getDimUnit('length', dimOverrides)}</span>
                   </div>
                 </div>
@@ -462,7 +462,7 @@ function PhaseCard({ phase, results, showCost, currency }: {
                 {phaseHours.toFixed(1)} hr
               </td>
               {showCost && (
-                <td className="px-3 py-2 text-right font-semibold font-mono text-green-700">
+                <td className="px-3 py-2 text-right font-semibold font-mono text-primary">
                   {phaseCost != null && phaseCost > 0 ? `${currency}${phaseCost.toFixed(0)}` : '—'}
                 </td>
               )}
@@ -489,11 +489,11 @@ function WorkScheduleSection({ schedule, showCost, currency }: { schedule: WorkS
           <span className="font-semibold text-sm text-ink">Work Schedule</span>
         </div>
         <div className="flex items-center gap-3 text-xs font-mono font-semibold text-ink-muted">
-          {schedule.totalFabHours > 0    && <span className="text-violet-600">🔧 {schedule.totalFabHours.toFixed(1)} hr fab</span>}
-          {schedule.totalInstallHours > 0 && <span className="text-sky-600">🏗️ {schedule.totalInstallHours.toFixed(1)} hr install</span>}
+          {schedule.totalFabHours > 0    && <span className="text-secondary-700">🔧 {schedule.totalFabHours.toFixed(1)} hr fab</span>}
+          {schedule.totalInstallHours > 0 && <span className="text-ink-muted">🏗️ {schedule.totalInstallHours.toFixed(1)} hr install</span>}
           <span className="text-primary font-semibold">{schedule.totalElapsedHours.toFixed(1)} hr total</span>
           {showCost && schedule.totalLabourCost != null && (
-            <span className="text-green-700">{cur}{(schedule.totalLabourCost + (schedule.totalThirdPartyCost ?? 0)).toFixed(0)}</span>
+            <span className="text-primary">{cur}{(schedule.totalLabourCost + (schedule.totalThirdPartyCost ?? 0)).toFixed(0)}</span>
           )}
         </div>
       </div>
@@ -509,9 +509,9 @@ function WorkScheduleSection({ schedule, showCost, currency }: { schedule: WorkS
 // ─── Step wrapper (mirrors SetupTab StepHeader) ───────────────────────────────
 
 const CALC_STEPS = [
-  { n: 1, color: '#3b82f6', label: 'Runs',      desc: 'Enter dimensions, conditions and variants for each location' },
-  { n: 2, color: '#7c3aed', label: 'Calculate', desc: 'Run the material takeoff' },
-  { n: 3, color: '#16a34a', label: 'Results',   desc: 'Calculated material quantities and costs' },
+  { n: 1, label: 'Runs',      desc: 'Enter dimensions, conditions and variants for each location' },
+  { n: 2, label: 'Calculate', desc: 'Run the material takeoff' },
+  { n: 3, label: 'Results',   desc: 'Calculated material quantities and costs' },
 ]
 
 function CalcStep({ n, children }: { n: number; children: React.ReactNode }) {
@@ -671,7 +671,9 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
   // Compute work schedule when results are available
   const workSchedule: WorkScheduleSummary | null = (() => {
-    if (!calc.multiResults || !(sys.workActivities?.length)) return null
+    if (!calc.multiResults) return null
+    const hasBracketActivities = (sys.customBrackets ?? []).some(b => (b.workActivityRefs ?? []).length > 0)
+    if (!(sys.workActivities?.length) && !hasBracketActivities) return null
     const dimValues: Record<string, number> = {}
     for (const run of calc.runs) {
       const job = { ...(run.job ?? {}), ...(run.simpleJob ?? {}) } as Record<string, any>
@@ -739,13 +741,38 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     onRunCalc()
   }
 
-  const driftedMats = calc.lastCalcVersions && calc.lastCalcAt
-    ? sys.materials.filter(m => { const s = calc.lastCalcVersions[m.id]; return s !== undefined && (m._updatedAt ?? 0) > s })
+  // Use lastCalcVersions if available, otherwise fall back to the locked materialSnapshot
+  const versionBaseline = (calc.lastCalcVersions && calc.lastCalcAt)
+    ? calc.lastCalcVersions
+    : sys.materialSnapshot ?? null
+
+  const driftedMats = versionBaseline
+    ? sys.materials.filter(m => { const s = versionBaseline[m.id]; return s !== undefined && (m._updatedAt ?? 0) > s })
     : []
 
+  const deletedMats = (() => {
+    const currentIds = new Set(sys.materials.map((m: any) => m.id))
+    // Check version baseline (lastCalcVersions or locked materialSnapshot)
+    if (versionBaseline) {
+      return Object.keys(versionBaseline)
+        .filter(id => !currentIds.has(id))
+        .map(id => {
+          const prev = (calc.multiResults?.combined ?? []).find((m: any) => m.id === id)
+          return { id, name: prev?.name ?? id }
+        })
+    }
+    // Fallback: check multiResults for materials no longer in the system
+    if (calc.multiResults?.combined) {
+      return (calc.multiResults.combined as any[])
+        .filter((m: any) => m.id && !currentIds.has(m.id))
+        .map((m: any) => ({ id: m.id, name: m.name ?? m.id }))
+    }
+    return []
+  })()
+
   return (
-    <div className="flex flex-col gap-6 items-start relative">
-      <div className="w-full flex-shrink-0 space-y-5">
+    <div className="flex flex-col xl:flex-row gap-6 items-start relative">
+      <div className="w-full xl:w-96 flex-shrink-0 space-y-5">
 
         <CalcStep n={1}>
         <div className="card p-4">
@@ -806,7 +833,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                                 onClick={() => calc.updateRun(run.id, { criteriaState: { ...(run.criteriaState ?? {}), [cr.key]: !isOn } })}
                                 style={{ background: isOn ? cr.color : undefined }}
                                 className={"relative w-10 h-5 rounded-full transition-colors flex-shrink-0 border " + (isOn ? 'border-transparent' : 'bg-surface-200 border-surface-300')}>
-                                <span className={"absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all " + (isOn ? 'left-[22px]' : 'left-0.5')} />
+                                <span className={"absolute top-0.5 w-4 h-4 rounded-full bg-surface-50 shadow-sm transition-all " + (isOn ? 'left-[22px]' : 'left-0.5')} />
                               </button>
                             </div>
                           )
@@ -839,7 +866,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                               <input type="number" value={(run.job as any)[key] ?? ''} min={0} step="0.1" placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)[key]) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
+                                style={{ borderColor: parseFloat((run.job as any)[key]) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
                               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{getDimUnit(key, sys.dimOverrides)}</span>
                             </div>
                           </div>
@@ -853,7 +880,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                               <input type="number" value={(run.job as any)[cd.key] ?? ''} min={0} step={String(cd.inputStep ?? 1)} placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [cd.key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
+                                style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
                               {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
                             </div>
                           </div>
@@ -882,7 +909,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                               <input type="number" value={(run.job as any)[key] ?? ''} min={0} step="0.1" placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)[key]) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
+                                style={{ borderColor: parseFloat((run.job as any)[key]) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
                               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">
                                 {getDimUnit(key, sys.dimOverrides)}
                               </span>
@@ -896,7 +923,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                               <input type="number" value={(run.job as any)['__spacing_' + cd.key] ?? ''} min={0.1} step="0.1" placeholder={String(cd.spacing ?? 1)}
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, ['__spacing_' + cd.key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)['__spacing_' + cd.key]) > 0 ? '#a78bfa' : '#fcd34d' }} />
+                                style={{ borderColor: parseFloat((run.job as any)['__spacing_' + cd.key]) > 0 ? 'var(--color-secondary)' : 'var(--color-secondary-200)' }} />
                               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{getDimUnit(cd.spacingTargetDim ?? 'length', sys.dimOverrides)}</span>
                             </div>
                           </div>
@@ -910,7 +937,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                               <input type="number" value={(run.job as any)[cd.key] ?? ''} min={0} step={String(cd.inputStep ?? 1)} placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [cd.key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
+                                style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
                               {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
                             </div>
                           </div>
@@ -933,7 +960,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                                   min={0} step="1"
                                   onChange={e => calc.updateRun(run.id, { job: { ...run.job, [overrideKey]: e.target.value } })}
                                   className="input text-xs py-1.5 pr-7"
-                                  style={{ borderColor: hasOverride ? '#f59e0b' : 'var(--color-secondary-200)', borderStyle: hasOverride ? 'solid' : 'dashed' }} />
+                                  style={{ borderColor: hasOverride ? 'var(--color-secondary)' : 'var(--color-secondary-200)', borderStyle: hasOverride ? 'solid' : 'dashed' }} />
                                 {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
                               </div>
                             </div>
@@ -950,7 +977,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                             <input type="number" value={run.simpleJob?.length ?? ''} min={0} step="0.1" placeholder="0"
                               onChange={e => calc.updateRun(run.id, { simpleJob: { ...run.simpleJob, length: e.target.value } as any })}
                               className="input text-xs py-1.5"
-                              style={{ borderColor: parseFloat(run.simpleJob?.length as any) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
+                              style={{ borderColor: parseFloat(run.simpleJob?.length as any) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
                             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{getDimUnit('length', sys.dimOverrides)}</span>
                           </div>
                         </div>
@@ -961,7 +988,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                               <input type="number" value={(run.job as any)['__spacing_' + cd.key] ?? ''} min={0.01} step="0.1" placeholder={String(cd.spacing ?? 1)}
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, ['__spacing_' + cd.key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)['__spacing_' + cd.key]) > 0 ? '#a78bfa' : 'var(--color-secondary-200)' }} />
+                                style={{ borderColor: parseFloat((run.job as any)['__spacing_' + cd.key]) > 0 ? 'var(--color-secondary)' : 'var(--color-secondary-200)' }} />
                               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{getDimUnit('length', sys.dimOverrides)}</span>
                             </div>
                           </div>
@@ -975,7 +1002,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                               <input type="number" value={(run.job as any)[cd.key] ?? ''} min={0} step={String(cd.inputStep ?? 1)} placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [cd.key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
+                                style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
                               {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
                             </div>
                           </div>
@@ -998,7 +1025,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                                   min={0} step="1"
                                   onChange={e => calc.updateRun(run.id, { job: { ...run.job, [overrideKey]: e.target.value } })}
                                   className="input text-xs py-1.5 pr-7"
-                                  style={{ borderColor: hasOverride ? '#f59e0b' : 'var(--color-secondary-200)', borderStyle: hasOverride ? 'solid' : 'dashed' }} />
+                                  style={{ borderColor: hasOverride ? 'var(--color-secondary)' : 'var(--color-secondary-200)', borderStyle: hasOverride ? 'solid' : 'dashed' }} />
                                 {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
                               </div>
                             </div>
@@ -1028,7 +1055,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                                   <input type="number" value={(run.job as any)[cd.key] ?? ''} min={0} step={String(cd.inputStep ?? 1)} placeholder="0"
                                     onChange={e => calc.updateRun(run.id, { job: { ...run.job, [cd.key]: e.target.value } })}
                                     className="input text-xs py-1.5 pr-7"
-                                    style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? '#22c55e' : 'var(--color-secondary-200)' }} />
+                                    style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
                                   {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
                                 </div>
                               </div>
@@ -1051,7 +1078,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                                       min={0} step="1"
                                       onChange={e => calc.updateRun(run.id, { job: { ...run.job, [overrideKey]: e.target.value } })}
                                       className="input text-xs py-1.5 pr-7"
-                                      style={{ borderColor: hasOverride ? '#f59e0b' : 'var(--color-secondary-200)', borderStyle: hasOverride ? 'solid' : 'dashed' }} />
+                                      style={{ borderColor: hasOverride ? 'var(--color-secondary)' : 'var(--color-secondary-200)', borderStyle: hasOverride ? 'solid' : 'dashed' }} />
                                     {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
                                   </div>
                                 </div>
@@ -1104,7 +1131,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
             <div className="flex gap-0 rounded-lg overflow-hidden border border-surface-200">
               {([['min_waste','Min waste'],['min_sections','Min sections']] as const).map(([v,l],i) => (
                 <button key={v} onClick={() => { setStockMode(v); calc.setStockOptimMode(v) }}
-                  className={'flex-1 py-2 text-xs font-semibold ' + (i > 0 ? 'border-l border-surface-200 ' : '') + (stockMode === v ? 'bg-primary text-white' : 'bg-white text-ink-muted')}>
+                  className={'flex-1 py-2 text-xs font-semibold ' + (i > 0 ? 'border-l border-surface-200 ' : '') + (stockMode === v ? 'bg-primary text-white' : 'bg-surface-50 text-ink-muted')}>
                   {l}
                 </button>
               ))}
@@ -1154,14 +1181,14 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
         <div className="flex items-center justify-end gap-2 mb-3">
           <button
             onClick={() => setShowFieldGuide(v => !v)}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 border transition-colors ${showFieldGuide ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-white border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 border transition-colors ${showFieldGuide ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-surface-50 border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
             style={{ borderRadius: 'var(--radius)' }}>
             <BookOpen className="w-3.5 h-3.5" />
             Field Guide
           </button>
           <button
             onClick={() => setShowOverview(v => !v)}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 border transition-colors ${showOverview ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-white border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 border transition-colors ${showOverview ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-surface-50 border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
             style={{ borderRadius: 'var(--radius)' }}>
             {showOverview ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
             System Overview
@@ -1188,9 +1215,8 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
             <div className="flex flex-col gap-2 text-left max-w-xs mx-auto">
               {CALC_STEPS.slice(0, 3).map(s => (
                 <div key={s.n} className="flex items-center gap-3 text-xs">
-                  <div className="w-5 h-5 rounded-full text-[10px] font-black text-white flex items-center justify-center flex-shrink-0"
-                    style={{ background: s.color }}>{s.n}</div>
-                  <span className="font-semibold" style={{ color: s.color }}>{s.label}</span>
+                  <div className="w-5 h-5 rounded-full text-[10px] font-black text-white flex items-center justify-center flex-shrink-0 bg-primary">{s.n}</div>
+                  <span className="font-semibold text-primary">{s.label}</span>
                   <span className="text-ink-faint">— {s.desc}</span>
                 </div>
               ))}
@@ -1206,6 +1232,16 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
               <span className="text-xs text-ink-faint">— Calculated material quantities and costs</span>
               <div className="flex-1 h-px bg-surface-200" />
             </div>
+            {deletedMats.length > 0 && (
+              <div className="bg-red-50 border border-red-200 p-4 flex gap-3" style={{ borderRadius: 'var(--radius-card)' }}>
+                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-red-800">Materials removed since last calculation</p>
+                  <ul className="mt-1 text-xs text-red-700 space-y-0.5">{deletedMats.map(m => <li key={m.id}>• {m.name}</li>)}</ul>
+                  <p className="text-xs text-red-600 mt-1 italic">Recalculate to update results.</p>
+                </div>
+              </div>
+            )}
             {driftedMats.length > 0 && (
               <div className="bg-amber-50 border border-amber-200 p-4 flex gap-3" style={{ borderRadius: 'var(--radius-card)' }}>
                 <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -1242,7 +1278,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                           ))}
                           <th className="px-3 py-2 text-center font-black text-white bg-primary w-16">TOTAL</th>
                           <th className="px-2 py-2 text-right font-semibold w-20">Unit $</th>
-                          <th className="px-2 py-2 text-right font-semibold text-emerald-700 w-20">Cost</th>
+                          <th className="px-2 py-2 text-right font-semibold text-primary w-20">Cost</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1250,7 +1286,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                           const unitPrice = priceMap[mat.id]
                           const lineTotal = unitPrice != null ? unitPrice * mat.grandTotal : null
                           return (
-                            <tr key={mat.id} className={mi % 2 === 0 ? 'bg-white' : 'bg-surface-50'}>
+                            <tr key={mat.id} className={mi % 2 === 0 ? 'bg-surface-50' : 'bg-surface-50'}>
                               <td className="px-2 py-2 text-center font-mono font-semibold text-ink-faint">{mi + 1}</td>
                               <td className="px-1 py-1.5 text-center">
                                 {mat.photo
@@ -1263,7 +1299,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                               <td className="px-3 py-2 text-ink font-medium leading-snug">
                                 {mat.name}
                                 {mat._isPlateAuto && mat._sheetResult && <div className="text-[9px] text-primary font-semibold">{mat._sheetResult.partsPerSheet}/sheet · {mat._sheetResult.utilisation}% util</div>}
-                                {mat._bracketSource && <div className="text-[9px] text-violet-600 font-semibold">🔩 {mat._bracketSource}{mat._bracketQty ? ` · ${mat._bracketQty}` : ''}</div>}
+                                {mat._bracketSource && <div className="text-[9px] text-secondary-700 font-semibold">🔩 {mat._bracketSource}{mat._bracketQty ? ` · ${mat._bracketQty}` : ''}</div>}
                               </td>
                               <td className="px-3 py-2 font-mono text-ink-muted">{mat.productCode || '—'}</td>
                               <td className="px-2 py-2 text-center text-ink-muted">{mat.unit}</td>
@@ -1276,7 +1312,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                               ))}
                               <td className="px-3 py-2 text-center font-black text-base text-primary bg-primary/5 border-l-2 border-primary/20">{mat.grandTotal || '—'}</td>
                               <td className="px-2 py-2 text-right font-mono text-ink-muted whitespace-nowrap">{unitPrice != null ? `$${unitPrice.toFixed(2)}` : <span className="text-surface-300">—</span>}</td>
-                              <td className="px-2 py-2 text-right font-semibold text-emerald-700 whitespace-nowrap">{lineTotal != null ? `$${lineTotal.toFixed(2)}` : <span className="text-surface-300">—</span>}</td>
+                              <td className="px-2 py-2 text-right font-semibold text-primary whitespace-nowrap">{lineTotal != null ? `$${lineTotal.toFixed(2)}` : <span className="text-surface-300">—</span>}</td>
                             </tr>
                           )
                         })}
@@ -1292,7 +1328,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                             {bomMats.reduce((a: number, m: any) => a + m.grandTotal, 0)}
                           </td>
                           <td />
-                          <td className="px-2 py-2.5 text-right font-black text-emerald-700">
+                          <td className="px-2 py-2.5 text-right font-black text-primary">
                             {grandCost > 0 ? `$${grandCost.toFixed(2)}` : <span className="text-surface-300 font-normal">—</span>}
                           </td>
                         </tr>
@@ -1307,21 +1343,20 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
               const bomMats      = combinedWithBrackets.filter((m: any) => !m.allBlocked)
               const priceMap2    = Object.fromEntries(sys.materials.map(m => [m.id, m.unitPrice ?? null]))
               const totalMatCost = bomMats.reduce((a: number, m: any) => { const p = priceMap2[m.id]; return a + (p != null ? p * m.grandTotal : 0) }, 0)
-              const pills: { label: string; value: string; color: string }[] = [
-                { label: 'Total length', value: `${totalRunLength.toFixed(1)} m`, color: '#7c3aed' },
+              const pills: { label: string; value: string; cls: string }[] = [
+                { label: 'Total length', value: `${totalRunLength.toFixed(1)} m`, cls: 'bg-secondary-50 border-secondary-200 text-secondary-700' },
               ]
               if (totalMatCost > 0) {
-                pills.push({ label: 'Material rate', value: `$${(totalMatCost / totalRunLength).toFixed(2)}/m`, color: '#059669' })
+                pills.push({ label: 'Material rate', value: `$${(totalMatCost / totalRunLength).toFixed(2)}/m`, cls: 'bg-primary/10 border-primary/30 text-primary' })
               }
               if (workSchedule && workSchedule.totalElapsedHours > 0) {
-                pills.push({ label: 'Labour rate', value: `${(workSchedule.totalElapsedHours / totalRunLength).toFixed(2)} hr/m`, color: '#0284c7' })
+                pills.push({ label: 'Labour rate', value: `${(workSchedule.totalElapsedHours / totalRunLength).toFixed(2)} hr/m`, cls: 'bg-surface-100 border-surface-200 text-ink-muted' })
               }
               if (pills.length <= 1) return null
               return (
                 <div className="flex flex-wrap gap-2 px-1">
                   {pills.map(p => (
-                    <div key={p.label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold"
-                      style={{ background: p.color + '10', borderColor: p.color + '30', color: p.color }}>
+                    <div key={p.label} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold ${p.cls}`}>
                       <span className="text-[10px] opacity-70">{p.label}</span>
                       <span>{p.value}</span>
                     </div>
@@ -1357,35 +1392,35 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
               const grandTotal  = matTotal + labourTotal + thirdTotal
               if (grandTotal === 0) return null
               return (
-                <div className="card overflow-hidden border-2 border-emerald-200">
-                  <div className="px-4 py-2.5 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2">
+                <div className="card overflow-hidden border-2 border-primary/30">
+                  <div className="px-4 py-2.5 bg-primary/5 border-b border-primary/20 flex items-center gap-2">
                     <span className="text-base">💰</span>
-                    <span className="font-semibold text-sm text-emerald-800">Overall Total</span>
+                    <span className="font-semibold text-sm text-ink">Overall Total</span>
                   </div>
                   <div className="px-4 py-3 flex flex-wrap gap-4 items-end">
                     {matTotal > 0 && (
                       <div>
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-ink-faint mb-0.5">Materials</div>
-                        <div className="font-mono font-semibold text-emerald-700 text-lg">${matTotal.toFixed(2)}</div>
+                        <div className="font-mono font-semibold text-primary text-lg">${matTotal.toFixed(2)}</div>
                       </div>
                     )}
                     {labourTotal > 0 && (
                       <div>
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-ink-faint mb-0.5">Labour</div>
-                        <div className="font-mono font-semibold text-emerald-700 text-lg">${labourTotal.toFixed(2)}</div>
+                        <div className="font-mono font-semibold text-primary text-lg">${labourTotal.toFixed(2)}</div>
                       </div>
                     )}
                     {thirdTotal > 0 && (
                       <div>
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-ink-faint mb-0.5">Third Party</div>
-                        <div className="font-mono font-semibold text-emerald-700 text-lg">${thirdTotal.toFixed(2)}</div>
+                        <div className="font-mono font-semibold text-primary text-lg">${thirdTotal.toFixed(2)}</div>
                       </div>
                     )}
                     <div className="flex-1" />
                     <div className="text-right">
-                      <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600 mb-0.5">Grand Total</div>
-                      <div className="font-mono font-black text-emerald-800 text-2xl">${grandTotal.toFixed(2)}</div>
-                      {totalRunLength > 0 && <div className="text-[10px] text-emerald-600 font-semibold">${(grandTotal / totalRunLength).toFixed(2)}/m</div>}
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-primary mb-0.5">Grand Total</div>
+                      <div className="font-mono font-black text-ink text-2xl">${grandTotal.toFixed(2)}</div>
+                      {totalRunLength > 0 && <div className="text-[10px] text-primary font-semibold">${(grandTotal / totalRunLength).toFixed(2)}/m</div>}
                     </div>
                   </div>
                 </div>
@@ -1394,7 +1429,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
             <button
               onClick={() => setShowBreakdown(v => !v)}
-              className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold text-ink-muted hover:text-ink border border-surface-200 bg-white hover:bg-surface-50 transition-all" style={{ borderRadius: 'var(--radius-card)' }}>
+              className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold text-ink-muted hover:text-ink border border-surface-200 bg-surface-50 hover:bg-surface-50 transition-all" style={{ borderRadius: 'var(--radius-card)' }}>
               <TableProperties className="w-3.5 h-3.5" />
               {showBreakdown ? 'Hide' : 'Show'} Calculation Breakdown
               {showBreakdown ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}

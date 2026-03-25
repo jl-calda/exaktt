@@ -16,6 +16,7 @@ import SettingsTab     from './SettingsTab'
 import SystemGraphTab  from './SystemGraphTab'
 import ReportBuilder from '@/components/report/ReportBuilder'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
+import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft'
 
 type Tab = 'setup' | 'materials' | 'calculator' | 'graph' | 'settings'
 
@@ -26,10 +27,11 @@ interface Props {
   userId:      string
   plan:        Plan
   profile?:    CompanyProfile | null
+  initialDraft?: { runs?: any[]; stockOptimMode?: string } | null
 }
 
 export default function SystemShellSaaS({
-  system: initialSystem, initialJobs, globalTags: initialTags, plan, profile,
+  system: initialSystem, initialJobs, globalTags: initialTags, plan, profile, initialDraft,
 }: Props) {
   const router   = useRouter()
   const limits   = getLimits(plan)
@@ -80,6 +82,20 @@ export default function SystemShellSaaS({
     return () => clearTimeout(t)
   }, [sys, dirty, persistSystem])
 
+  // Restore draft on mount
+  useEffect(() => {
+    if (initialDraft?.runs && Array.isArray(initialDraft.runs) && initialDraft.runs.length > 0) {
+      calc.setRuns(initialDraft.runs)
+      if (initialDraft.stockOptimMode) {
+        calc.setStockOptimMode(initialDraft.stockOptimMode as 'min_waste' | 'min_sections')
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Auto-save runs draft
+  useAutoSaveDraft(sys.id)
+
   // Duplicate sample system
   const handleDuplicate = async () => {
     setDuplicating(true)
@@ -95,8 +111,27 @@ export default function SystemShellSaaS({
     if (data?.id) router.push('/mto/system/' + data.id)
   }
 
+  // Lock / unlock system setup
+  const lockSystem = useCallback(async () => {
+    const snapshot: Record<string, number> = {}
+    sys.materials.forEach((m: any) => { snapshot[m.id] = m._updatedAt ?? 0 })
+    const patch: Partial<MtoSystem> = { isLocked: true, materialSnapshot: snapshot }
+    setSys(s => ({ ...s, ...patch }))
+    await persistSystem({ ...sys, ...patch })
+  }, [sys, persistSystem])
+
+  const unlockSystem = useCallback(async () => {
+    const patch: Partial<MtoSystem> = { isLocked: false }
+    setSys(s => ({ ...s, ...patch }))
+    await persistSystem({ ...sys, ...patch })
+  }, [sys, persistSystem])
+
   // Plan-gated update wrappers
   const updateSystemGated = useCallback((patch: Partial<MtoSystem>) => {
+    if (sys.isLocked) {
+      setLimitWarning('System is locked — unlock it first to make changes.')
+      return
+    }
     if (isSample) {
       setLimitWarning('This is a sample system — duplicate it to make your own editable copy.')
       return
@@ -114,7 +149,7 @@ export default function SystemShellSaaS({
       return
     }
     updateSystem(patch)
-  }, [limits, plan, updateSystem, isSample])
+  }, [limits, plan, updateSystem, isSample, sys.isLocked])
 
   // Save job
   const saveJob = async (name: string, lastResults?: any) => {
@@ -141,7 +176,11 @@ export default function SystemShellSaaS({
       }),
     })
     const { data, error } = await res.json()
-    if (data)  setJobs((j: any[]) => [data, ...j])
+    if (data) {
+      setJobs((j: any[]) => [data, ...j])
+      // Clear auto-saved draft after explicit job save
+      fetch(`/api/mto/drafts?systemId=${sys.id}`, { method: 'DELETE' }).catch(() => {})
+    }
     if (error) setLimitWarning(error)
   }
 
@@ -321,7 +360,8 @@ export default function SystemShellSaaS({
         {tab !== 'graph' && (
           <div className="px-3 pt-3 pb-4 md:px-6 md:pt-4 md:pb-6">
             {tab === 'setup' && (
-              <SetupTab sys={sys} onUpdate={updateSystemGated} globalTags={tags} onViewGraph={() => setTab('graph')} />
+              <SetupTab sys={sys} onUpdate={updateSystemGated} globalTags={tags} onViewGraph={() => setTab('graph')}
+                isLocked={!!sys.isLocked} onLock={lockSystem} onUnlock={unlockSystem} />
             )}
             {tab === 'materials' && (
               <MaterialsTab
