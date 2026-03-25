@@ -13,6 +13,10 @@ async function updateSubscription(sub: Stripe.Subscription) {
   const isActive = ['active', 'trialing'].includes(sub.status)
   const priceId  = sub.items.data[0]?.price.id ?? null
 
+  // Check if already up to date (idempotent)
+  const existing = await prisma.company.findUnique({ where: { id: companyId }, select: { stripeSubId: true, plan: true } })
+  if (existing?.stripeSubId === sub.id && existing?.plan === (isActive ? 'PRO' : 'FREE')) return
+
   await prisma.company.update({
     where: { id: companyId },
     data: {
@@ -28,7 +32,10 @@ async function updateSubscription(sub: Stripe.Subscription) {
 
 export async function POST(req: NextRequest) {
   const body      = await req.text()
-  const signature = req.headers.get('stripe-signature')!
+  const signature = req.headers.get('stripe-signature')
+  if (!signature) return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
+
+  if (!stripe) return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 })
 
   let event: Stripe.Event
   try {
@@ -61,7 +68,7 @@ export async function POST(req: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         if (session.mode === 'subscription' && session.subscription) {
-          const sub = await stripe.subscriptions.retrieve(session.subscription as string)
+          const sub = await stripe!.subscriptions.retrieve(session.subscription as string)
           await updateSubscription(sub)
         }
         break

@@ -1,12 +1,12 @@
 // src/lib/stripe/index.ts
 import Stripe from 'stripe'
 
-export const stripe = process.env.STRIPE_SECRET_KEY
+export const stripe: Stripe | null = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: '2025-02-24.acacia',
       typescript: true,
     })
-  : null as unknown as Stripe
+  : null
 
 export { PLANS } from '@/lib/plans'
 
@@ -16,6 +16,7 @@ export const PRICES = {
 }
 
 export async function getOrCreateStripeCustomer(companyId: string, email: string, name?: string | null) {
+  if (!stripe) throw new Error('Stripe is not configured')
   const { prisma } = await import('@/lib/db/prisma')
   const company = await prisma.company.findUnique({ where: { id: companyId }, select: { stripeCustomerId: true } })
 
@@ -34,6 +35,7 @@ export async function createCheckoutSession({
   companyId: string; email: string; name?: string | null
   priceId: string; successUrl: string; cancelUrl: string
 }) {
+  if (!stripe) throw new Error('Stripe is not configured')
   const customerId = await getOrCreateStripeCustomer(companyId, email, name)
 
   return stripe.checkout.sessions.create({
@@ -50,6 +52,7 @@ export async function createCheckoutSession({
 }
 
 export async function createPortalSession(customerId: string, returnUrl: string) {
+  if (!stripe) throw new Error('Stripe is not configured')
   return stripe.billingPortal.sessions.create({
     customer:   customerId,
     return_url: returnUrl,
