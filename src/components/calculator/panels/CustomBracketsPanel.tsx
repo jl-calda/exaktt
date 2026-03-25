@@ -35,6 +35,16 @@ const BLANK_BRACKET: Omit<WorkBracket, 'id'> = {
 }
 
 const QTY_UNITS = ['pcs', 'mm', 'm', 'kg', 'L', 'each']
+
+const PARAM_UNITS = [
+  { value: 'mm', label: 'mm' },
+  { value: 'cm', label: 'cm' },
+  { value: 'm', label: 'm' },
+  { value: 'pcs', label: 'pcs' },
+  { value: 'kg', label: 'kg' },
+  { value: 'L', label: 'L' },
+  { value: 'deg', label: 'deg' },
+]
 const TIME_UNITS: ('min' | 'hr')[] = ['min', 'hr']
 
 /* ── Formula input with parameter key autocomplete ── */
@@ -374,8 +384,8 @@ function BracketForm({
                     placeholder="length" className="w-36" />
                   <Input label="Label" value={p.label} onChange={e => updateParam(i, { ...p, label: e.target.value })}
                     placeholder="Length" className="w-36" />
-                  <Input label="Unit" value={p.unit} onChange={e => updateParam(i, { ...p, unit: e.target.value })}
-                    placeholder="mm" className="w-20" />
+                  <Select label="Unit" value={p.unit} onChange={e => updateParam(i, { ...p, unit: e.target.value })}
+                    options={PARAM_UNITS} className="w-20" />
                   <Button size="xs" variant="danger" onClick={() => removeParam(i)} icon={<Trash2 className="w-3 h-3" />} className="mb-1" />
                 </div>
               </div>

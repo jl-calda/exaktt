@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { ManufacturerModal } from './ManufacturersTab'
 import AddMaterialModal from '@/components/calculator/panels/AddMaterialModal'
+import { Select } from '@/components/ui/Select'
 import { createClient } from '@/lib/supabase/client'
 import { nanoid } from 'nanoid'
 import type { LibraryItemSpec } from '@/types'
@@ -32,6 +33,10 @@ const SEED_GRADES = [
   { name: 'Grade 8', materialType: 'Alloy Steel',     standard: 'SAE J429',  density: 7.85 },
   { name: 'HDPE',    materialType: 'Plastic',         standard: '',          density: 0.95 },
 ]
+
+const MATERIAL_UNITS = [
+  'each', 'pcs', 'm', 'mm', 'cm', 'kg', 'L', 'set', 'pack', 'roll', 'sheet', 'length',
+].map(u => ({ value: u, label: u }))
 
 const DEFAULT_CURRENCIES = ['SGD', 'USD', 'AUD', 'GBP', 'EUR', 'MYR', 'PHP', 'IDR']
 
@@ -1024,7 +1029,7 @@ export default function MaterialsTab({ library, suppliers, categories, grades, m
               </div>
               <div>
                 <label className="label">Unit</label>
-                <input className="input" value={form.unit ?? ''} onChange={setF('unit')} placeholder="each" />
+                <Select options={MATERIAL_UNITS} value={form.unit ?? 'each'} onChange={setF('unit')} className="text-xs" />
               </div>
               <div>
                 <label className="label">Category</label>
@@ -1079,9 +1084,12 @@ export default function MaterialsTab({ library, suppliers, categories, grades, m
                 <CurrencySelect value={specForm.currency ?? 'SGD'} onChange={v => setSF('currency', v)} />
               </div>
               <div>
-                <label className="label">Pack Size (units/pack)</label>
-                <input className="input" type="number" min={1} value={specForm.packSize ?? ''}
-                  onChange={e => setSF('packSize', e.target.value === '' ? undefined : parseInt(e.target.value))} placeholder="e.g. 100" />
+                <label className="label">Pack Size</label>
+                <div className="relative">
+                  <input className="input pr-12" type="number" min={1} value={specForm.packSize ?? ''}
+                    onChange={e => setSF('packSize', e.target.value === '' ? undefined : parseInt(e.target.value))} placeholder="e.g. 100" />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-faint pointer-events-none">units</span>
+                </div>
               </div>
               <div>
                 <label className="label">MOQ (min. order qty)</label>
@@ -1089,14 +1097,20 @@ export default function MaterialsTab({ library, suppliers, categories, grades, m
                   onChange={e => setSF('moq', e.target.value === '' ? undefined : parseInt(e.target.value))} placeholder="e.g. 50" />
               </div>
               <div>
-                <label className="label">Stock Length (mm)</label>
-                <input className="input" type="number" min={0} value={specForm.stockLengthMm ?? ''}
-                  onChange={e => setSF('stockLengthMm', e.target.value === '' ? undefined : parseFloat(e.target.value))} placeholder="e.g. 6000" />
+                <label className="label">Stock Length</label>
+                <div className="relative">
+                  <input className="input pr-10" type="number" min={0} value={specForm.stockLengthMm ?? ''}
+                    onChange={e => setSF('stockLengthMm', e.target.value === '' ? undefined : parseFloat(e.target.value))} placeholder="e.g. 6000" />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-faint pointer-events-none">mm</span>
+                </div>
               </div>
               <div>
-                <label className="label">Lead Time (days)</label>
-                <input className="input" type="number" min={0} value={specForm.leadTimeDays ?? ''}
-                  onChange={e => setSF('leadTimeDays', e.target.value === '' ? undefined : parseInt(e.target.value))} placeholder="e.g. 14" />
+                <label className="label">Lead Time</label>
+                <div className="relative">
+                  <input className="input pr-12" type="number" min={0} value={specForm.leadTimeDays ?? ''}
+                    onChange={e => setSF('leadTimeDays', e.target.value === '' ? undefined : parseInt(e.target.value))} placeholder="e.g. 14" />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-faint pointer-events-none">days</span>
+                </div>
               </div>
             </div>
           </div>

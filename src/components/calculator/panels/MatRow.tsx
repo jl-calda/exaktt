@@ -96,10 +96,9 @@ function RuleFields({ row, onChange, customDims, inputModel }: {
   if (rt === 'sheet_size') {
     return (
       <div className="flex gap-2 items-center text-xs">
-        <NumberInput value={row.ruleTileW ?? 600} min={1} onChange={e => onChange('ruleTileW', parseFloat(e.target.value))} className="w-20" />
+        <NumberInput value={row.ruleTileW ?? 600} min={1} unit="mm" onChange={e => onChange('ruleTileW', parseFloat(e.target.value))} className="w-20" />
         <span className="text-ink-faint">×</span>
-        <NumberInput value={row.ruleTileH ?? 600} min={1} onChange={e => onChange('ruleTileH', parseFloat(e.target.value))} className="w-20" />
-        <span className="text-ink-faint text-xs">mm</span>
+        <NumberInput value={row.ruleTileH ?? 600} min={1} unit="mm" onChange={e => onChange('ruleTileH', parseFloat(e.target.value))} className="w-20" />
       </div>
     )
   }
@@ -108,8 +107,7 @@ function RuleFields({ row, onChange, customDims, inputModel }: {
     return (
       <div className="flex gap-2 items-center text-xs">
         <span className="text-ink-faint">1 item covers</span>
-        <NumberInput value={row.ruleDivisor ?? 1} onChange={e => onChange('ruleDivisor', parseFloat(e.target.value))} className="w-20" />
-        <span className="text-ink-faint">m²</span>
+        <NumberInput value={row.ruleDivisor ?? 1} unit="m²" onChange={e => onChange('ruleDivisor', parseFloat(e.target.value))} className="w-20" />
       </div>
     )
   }
@@ -117,8 +115,8 @@ function RuleFields({ row, onChange, customDims, inputModel }: {
   if (rt === 'kg_per_item') {
     return (
       <div className="flex gap-2 items-center text-xs">
-        <NumberInput value={row.ruleQty ?? 1} onChange={e => onChange('ruleQty', parseFloat(e.target.value))} className="w-20" />
-        <span className="text-ink-faint">kg per</span>
+        <NumberInput value={row.ruleQty ?? 1} unit="kg" onChange={e => onChange('ruleQty', parseFloat(e.target.value))} className="w-20" />
+        <span className="text-ink-faint">per</span>
         <DimSel />
       </div>
     )
@@ -132,9 +130,9 @@ function RuleFields({ row, onChange, customDims, inputModel }: {
 
   return (
     <div className="flex gap-2 items-center text-xs flex-wrap">
-      {showQty  && <NumberInput value={row.ruleQty ?? 1} step={0.01} onChange={e => onChange('ruleQty', parseFloat(e.target.value))} className="w-20" />}
+      {showQty  && <NumberInput value={row.ruleQty ?? 1} step={0.01} unit={unitLabel || undefined} onChange={e => onChange('ruleQty', parseFloat(e.target.value))} className="w-20" />}
       {showDiv  && <><span className="text-ink-faint">per</span><NumberInput value={row.ruleDivisor ?? 1} step={0.01} onChange={e => onChange('ruleDivisor', parseFloat(e.target.value))} className="w-20" /></>}
-      {showDim  ? <DimSel /> : unitLabel ? <span className="text-ink-faint">{unitLabel}</span> : null}
+      {showDim  ? <DimSel /> : null}
     </div>
   )
 }

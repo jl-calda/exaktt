@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Plus, Edit3, Trash2, Check, X, Users } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
+import { NumberInput } from '@/components/ui/Input'
 import type { CompanyRole } from '@/types'
 
 interface Props {
@@ -550,8 +551,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
                 placeholder="0" />
             </div>
             <div>
-              <label className="label">Crew Size</label>
-              <input className="input" type="number" min={1} value={warForm.crewSize} onChange={setWar('crewSize')} />
+              <NumberInput label="Crew Size" min={1} value={warForm.crewSize} onChange={setWar('crewSize')} />
             </div>
           </div>
           <div>

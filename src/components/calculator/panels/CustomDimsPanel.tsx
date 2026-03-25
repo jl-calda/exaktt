@@ -20,6 +20,21 @@ interface Props {
   sys?:       MtoSystem
 }
 
+const COMMON_UNITS = [
+  { value: 'pcs', label: 'pcs' },
+  { value: 'each', label: 'each' },
+  { value: 'm', label: 'm' },
+  { value: 'mm', label: 'mm' },
+  { value: 'cm', label: 'cm' },
+  { value: 'ft', label: 'ft' },
+  { value: 'in', label: 'in' },
+  { value: 'm²', label: 'm²' },
+  { value: 'kg', label: 'kg' },
+  { value: 'L', label: 'L' },
+  { value: 'hr', label: 'hr' },
+  { value: 'min', label: 'min' },
+]
+
 const BLANK: Omit<CustomDim, 'id'> = {
   key: '', name: '', unit: 'pcs', icon: '🔗', color: '#7c3aed',
   derivType: 'spacing', spacing: 1, spacingMode: 'fixed',
@@ -254,9 +269,10 @@ function CriteriaOverridesSection({ d, set, criteria, sys }: {
                 className="w-36" />
             ) : selectedParam?.type === 'number' ? (
               <div className="flex items-end gap-1">
-                <Input label={`Value${selectedParam.unit ? ` (${selectedParam.unit})` : ''}`} type="number" value={addParamVal}
+                <NumberInput label="Value" value={addParamVal}
                   onChange={e => setAddParamVal(e.target.value)}
                   placeholder="e.g. 3.0" className="w-24" />
+                {selectedParam.unit && <span className="text-[10px] text-ink-faint pb-2 font-semibold">{selectedParam.unit}</span>}
               </div>
             ) : (
               <Input label={`Value${selectedParam?.unit ? ` (${selectedParam.unit})` : ''}`} value={addParamVal}
@@ -332,7 +348,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
           {/* Row 1: identity — always shown */}
           <div className="flex flex-wrap gap-4 items-start">
             <Input label="Name" value={d.name} onChange={e => set('name')(e.target.value)} placeholder="e.g. Wall Brackets" className="w-44" />
-            <Input label="Unit" value={d.unit} onChange={e => set('unit')(e.target.value)} className="w-16" />
+            <Select label="Unit" value={d.unit} onChange={e => set('unit')(e.target.value)} options={COMMON_UNITS} className="w-20" />
             <IconPicker label="Icon" value={d.icon} onChange={v => set('icon')(v)} />
             <ColorPicker label="Colour" value={d.color} onChange={v => set('color')(v)} />
             <Select label="Derivation type" value={d.derivType}

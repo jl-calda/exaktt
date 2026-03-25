@@ -312,7 +312,7 @@ function ActivityForm({
                   onChange={e => set('ratePerHr')(parseFloat(e.target.value) || undefined)} className="w-32" />
           })()}
           {!(d.crewRoles?.length) && (
-            <NumberInput label="Crew size" value={d.crewSize ?? 1} step={1} min={1}
+            <NumberInput label="Crew size" unit="crew" value={d.crewSize ?? 1} step={1} min={1}
               onChange={e => set('crewSize')(parseInt(e.target.value) || 1)} className="w-24" />
           )}
           {(d.crewRoles?.length ?? 0) > 0 && (
@@ -365,14 +365,14 @@ function ActivityForm({
                         <option key={lr.id} value={lr.id}>{lr.name}</option>
                       ))}
                     </select>
-                    <input type="number" min={1} step={1} value={role.count}
+                    <NumberInput min={1} step={1} value={role.count}
                       onChange={e => {
                         const updated = [...d.crewRoles!]
                         updated[i] = { ...role, count: parseInt(e.target.value) || 1 }
                         set('crewRoles')(updated)
                         set('crewSize')(updated.reduce((s, r) => s + r.count, 0))
                       }}
-                      className="input text-xs py-1 w-14 text-center" />
+                      className="w-14 text-center" />
                     <span className="text-[10px] text-ink-faint whitespace-nowrap">${role.ratePerHr}/hr</span>
                     <button type="button" onClick={() => {
                       const updated = d.crewRoles!.filter((_, j) => j !== i)
