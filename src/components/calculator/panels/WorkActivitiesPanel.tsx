@@ -1,8 +1,8 @@
 // src/components/calculator/panels/WorkActivitiesPanel.tsx
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { nanoid } from 'nanoid'
-import { Plus, Trash2, Edit3, Check, X, Clock, Users, BookOpen, Zap } from 'lucide-react'
+import { Plus, Trash2, Edit3, Check, X, Clock, Users, BookOpen, ChevronRight, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input, NumberInput } from '@/components/ui/Input'
@@ -25,12 +25,12 @@ interface Props {
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
-const PHASES: { value: ActivityPhase; label: string; icon: string }[] = [
-  { value: 'fabrication',   label: 'Fabrication',   icon: '🔧' },
-  { value: 'installation',  label: 'Installation',  icon: '🏗️' },
-  { value: 'commissioning', label: 'Commissioning', icon: '✅' },
-  { value: 'transport',     label: 'Transport',     icon: '🚛' },
-  { value: 'third_party',   label: 'Third Party',   icon: '🤝' },
+const PHASES: { value: ActivityPhase; label: string; icon: string; desc: string }[] = [
+  { value: 'fabrication',   label: 'Fabrication',   icon: '🔧', desc: 'Cutting, welding, assembly' },
+  { value: 'installation',  label: 'Installation',  icon: '🏗️', desc: 'On-site installation work' },
+  { value: 'commissioning', label: 'Commissioning', icon: '✅', desc: 'Testing and handover' },
+  { value: 'transport',     label: 'Transport',     icon: '🚛', desc: 'Logistics and handling' },
+  { value: 'third_party',   label: 'Third Party',   icon: '🤝', desc: 'Outsourced services' },
 ]
 
 const PHASE_COLORS: Record<ActivityPhase, string> = {
@@ -41,7 +41,14 @@ const PHASE_COLORS: Record<ActivityPhase, string> = {
   third_party:   '#9f1239',
 }
 
-// Rate types for rate-linked activities (no third-party options)
+const PHASE_BG: Record<ActivityPhase, string> = {
+  fabrication:   '#7c3aed08',
+  installation:  '#0284c708',
+  commissioning: '#16a34a08',
+  transport:     '#ca8a0408',
+  third_party:   '#9f123908',
+}
+
 const SOURCE_TYPES: { value: ActivityRateType; label: string }[] = [
   { value: 'per_material_qty', label: 'Per material qty' },
   { value: 'per_bracket_qty',  label: 'Per bracket qty' },
@@ -50,7 +57,6 @@ const SOURCE_TYPES: { value: ActivityRateType; label: string }[] = [
   { value: 'per_job',          label: 'Per job (once)' },
 ]
 
-// All rate types including third-party (for manual mode)
 const ALL_RATE_TYPES: { value: ActivityRateType; label: string }[] = [
   ...SOURCE_TYPES,
   { value: 'third_party_unit', label: '3rd party — per unit' },
@@ -59,8 +65,8 @@ const ALL_RATE_TYPES: { value: ActivityRateType; label: string }[] = [
 ]
 
 const FIELD_ITEMS = [
-  { label: 'Phase',        desc: 'Fabrication, Installation, Commissioning, Transport or Third Party — groups activities in the output.' },
-  { label: 'Rate type',    desc: 'How qty is derived: per material qty, per dimension value, once per run, once per job, or third-party pricing.' },
+  { label: 'Phase',        desc: 'Category that groups activities in the output schedule.' },
+  { label: 'Source type',  desc: 'How qty is derived: per material qty, per dimension value, once per run, once per job, or third-party pricing.' },
   { label: 'Speed mode',   desc: '"Time/unit" = minutes per unit (e.g. 12 min/bracket). "Rate" = units per hour (e.g. 15 m/hr). Both converted to hours.' },
   { label: 'Crew size',    desc: 'Number of workers. Duration = total hours ÷ crew size. Cost = total hours × rate (crew not multiplied).' },
   { label: 'Activity rate', desc: 'Links to a company-wide rate (Work Category + Labour Category). Defines cost per hour and default speed.' },
@@ -68,7 +74,7 @@ const FIELD_ITEMS = [
 ]
 
 const BLANK: Omit<WorkActivity, 'id'> = {
-  name: '', phase: 'installation', icon: '🏗️', color: '#0284c7',
+  name: '', phase: 'fabrication', icon: '🔧', color: '#7c3aed',
   rateType: 'per_material_qty', speedMode: 'time_per_unit',
   timePerUnit: undefined, ratePerHr: undefined, crewSize: 1, criteriaKeys: [],
 }
@@ -77,12 +83,12 @@ const PHASE_ORDER: ActivityPhase[] = ['fabrication', 'installation', 'commission
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
-function applyRate(rate: WorkActivityRate): Omit<WorkActivity, 'id'> {
+function applyRate(rate: WorkActivityRate, phase: ActivityPhase): Omit<WorkActivity, 'id'> {
   return {
     name:               rate.name,
-    phase:              'fabrication',
-    icon:               rate.categoryIcon,
-    color:              PHASE_COLORS['fabrication'],
+    phase,
+    icon:               PHASES.find(p => p.value === phase)?.icon ?? '🔧',
+    color:              PHASE_COLORS[phase],
     rateType:           'per_material_qty',
     speedMode:          (rate.speedMode as 'time_per_unit' | 'rate') ?? 'time_per_unit',
     timePerUnit:        rate.defaultTimePerUnit ?? undefined,
@@ -127,14 +133,26 @@ function FieldGuide() {
   )
 }
 
-/* ── RatePicker ────────────────────────────────────────────────────────────── */
+/* ── AddActivityDropdown ──────────────────────────────────────────────────── */
 
-function RatePicker({ rates, onSelect, onManual, onCancel }: {
+function AddActivityDropdown({ rates, phase, onSelectRate, onManual }: {
   rates: WorkActivityRate[]
-  onSelect: (rate: WorkActivityRate) => void
-  onManual: () => void
-  onCancel: () => void
+  phase: ActivityPhase
+  onSelectRate: (rate: WorkActivityRate, phase: ActivityPhase) => void
+  onManual: (phase: ActivityPhase) => void
 }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
   const grouped = rates.reduce<Record<string, WorkActivityRate[]>>((acc, w) => {
     const cat = w.categoryName || 'Uncategorised'
     ;(acc[cat] ??= []).push(w)
@@ -142,51 +160,50 @@ function RatePicker({ rates, onSelect, onManual, onCancel }: {
   }, {})
 
   return (
-    <div className="p-5 bg-surface-100 border-b border-surface-200 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Pick an Activity Rate</div>
-        <Button size="xs" variant="ghost" onClick={onCancel} icon={<X className="w-3 h-3" />}>Cancel</Button>
-      </div>
+    <div className="relative" ref={ref}>
+      <button type="button" onClick={e => { e.stopPropagation(); setOpen(v => !v) }}
+        className="p-1 rounded text-ink-faint hover:text-primary hover:bg-primary/10 transition-colors"
+        title="Add activity">
+        <Plus className="w-3.5 h-3.5" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-30 w-64 bg-surface border border-surface-200 shadow-lg overflow-hidden animate-fade-in"
+          style={{ borderRadius: 'var(--radius-card)' }}>
+          <div className="px-3 py-2 border-b border-surface-200 text-[10px] font-semibold text-ink-faint uppercase tracking-wide">
+            Add to {PHASES.find(p => p.value === phase)?.label}
+          </div>
 
-      {rates.length === 0 ? (
-        <div className="py-6 text-center text-sm text-ink-faint">
-          No activity rates configured yet. Set them up in the Fabrication tab first.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([category, wars]) => (
-            <div key={category}>
-              <div className="text-[10px] font-semibold text-ink-muted uppercase tracking-wide mb-2">
-                {wars[0]?.categoryIcon ?? '🔧'} {category}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {wars.map(w => (
-                  <button key={w.id} type="button" onClick={() => onSelect(w)}
-                    className="flex items-center gap-2.5 px-3 py-2.5 border border-surface-200 bg-surface-50 hover:border-primary hover:bg-primary/5 transition-all text-left group"
-                    style={{ borderRadius: 'var(--radius)' }}>
-                    <span className="text-lg">{w.categoryIcon}</span>
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold text-ink group-hover:text-primary transition-colors">{w.name}</div>
-                      <div className="text-[10px] text-ink-faint">
-                        {w.speedMode === 'rate'
-                          ? `${w.defaultRatePerHr ?? '—'}/hr`
-                          : `${w.defaultTimePerUnit ?? '—'} min/unit`}
-                        {(w.crewSize ?? 1) > 1 && <span className="ml-1.5">· {w.crewSize} crew</span>}
-                        <span className="ml-1.5">· {w.rateName}</span>
+          {rates.length > 0 && (
+            <div className="max-h-60 overflow-y-auto">
+              {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([cat, wars]) => (
+                <div key={cat}>
+                  <div className="px-3 pt-2 pb-1 text-[9px] font-bold text-ink-faint uppercase tracking-wider">
+                    {wars[0]?.categoryIcon ?? '🔧'} {cat}
+                  </div>
+                  {wars.map(w => (
+                    <button key={w.id} type="button"
+                      onClick={() => { onSelectRate(w, phase); setOpen(false) }}
+                      className="w-full px-3 py-2 text-left hover:bg-primary/5 transition-colors flex items-center gap-2">
+                      <span className="text-sm">{w.categoryIcon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-ink truncate">{w.name}</div>
+                        <div className="text-[10px] text-ink-faint">
+                          {w.speedMode === 'rate' ? `${w.defaultRatePerHr ?? '—'}/hr` : `${w.defaultTimePerUnit ?? '—'} min/unit`}
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                    </button>
+                  ))}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+
+          <button type="button" onClick={() => { onManual(phase); setOpen(false) }}
+            className="w-full px-3 py-2 text-left text-xs text-ink-muted hover:text-primary hover:bg-primary/5 transition-colors border-t border-surface-200 flex items-center gap-2">
+            <Plus className="w-3 h-3" /> Add manual activity
+          </button>
         </div>
       )}
-
-      <button type="button" onClick={onManual}
-        className="text-xs text-ink-muted hover:text-primary transition-colors underline underline-offset-2">
-        Or add a manual / third-party activity
-      </button>
     </div>
   )
 }
@@ -213,28 +230,22 @@ function ActivityForm({
   const allDims = PRIMITIVE_DIMS
   const isThirdParty = d.rateType?.startsWith('third_party') ?? false
   const [guideOpen, setGuideOpen] = useState(false)
-
-  // Determine which rate types to show
   const rateTypeOptions = isLinked ? SOURCE_TYPES : ALL_RATE_TYPES
 
   return (
     <div className="space-y-3">
     <div className="flex-1 min-w-0 space-y-4">
 
-      {/* Rate banner (when linked to a WorkActivityRate) */}
+      {/* Rate banner */}
       {isLinked && d._categoryName && (
         <div className="flex items-center gap-3 px-3 py-2 border border-primary/30 bg-primary/5"
           style={{ borderRadius: 'var(--radius)' }}>
           <span className="text-base">{d._categoryIcon}</span>
           <div className="flex-1 min-w-0">
             <span className="text-xs font-semibold text-ink">{d._categoryName}</span>
-            <span className="text-xs text-ink-muted ml-2">
-              {d._rateName} ({d._rateValue}/{d._rateUnitLabel})
-            </span>
+            <span className="text-xs text-ink-muted ml-2">{d._rateName} ({d._rateValue}/{d._rateUnitLabel})</span>
           </div>
-          {onChangeRate && (
-            <Button size="xs" variant="ghost" onClick={onChangeRate}>Change</Button>
-          )}
+          {onChangeRate && <Button size="xs" variant="ghost" onClick={onChangeRate}>Change</Button>}
         </div>
       )}
 
@@ -246,11 +257,11 @@ function ActivityForm({
           placeholder="e.g. Install bracket" className="flex-1 min-w-48" />
       </div>
 
-      {/* Phase + Rate type */}
+      {/* Phase + Source type */}
       <div className="flex flex-wrap gap-4 items-start">
-        <Select label="Phase" value={d.phase ?? 'installation'} onChange={e => {
+        <Select label="Phase" value={d.phase ?? 'fabrication'} onChange={e => {
           const phase = e.target.value as ActivityPhase
-          const icon = PHASES.find(p => p.value === phase)?.icon ?? '🏗️'
+          const icon = PHASES.find(p => p.value === phase)?.icon ?? '🔧'
           set('phase')(phase); set('icon')(icon); set('color')(PHASE_COLORS[phase])
         }} options={PHASES.map(p => ({ value: p.value, label: p.icon + ' ' + p.label }))} className="w-44" />
 
@@ -264,20 +275,18 @@ function ActivityForm({
           options={[{ value: '', label: '— pick material —' }, ...materials.map(m => ({ value: m.id, label: m.name + (m.unit ? ' (' + m.unit + ')' : '') }))]}
           className="w-64" />
       )}
-
       {d.rateType === 'per_bracket_qty' && (
         <Select label="Source bracket" value={d.sourceBracketId ?? ''} onChange={e => set('sourceBracketId')(e.target.value)}
           options={[{ value: '', label: '— pick bracket —' }, ...customBrackets.map(b => ({ value: b.id, label: b.icon + ' ' + b.name + (b.code ? ' (' + b.code + ')' : '') }))]}
           className="w-64" />
       )}
-
       {d.rateType === 'per_dim' && (
         <Select label="Source dimension" value={d.sourceDimKey ?? ''} onChange={e => set('sourceDimKey')(e.target.value)}
           options={[{ value: '', label: '— pick dim —' }, ...allDims.map(p => ({ value: p.key, label: (p.icon ?? '') + ' ' + p.label }))]}
           className="w-52" />
       )}
 
-      {/* Speed mode + crew (non-third-party) */}
+      {/* Speed mode + crew */}
       {!isThirdParty && (
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex overflow-hidden border border-surface-300 self-end mb-px" style={{ borderRadius: 'var(--radius)' }}>
@@ -302,7 +311,7 @@ function ActivityForm({
         </div>
       )}
 
-      {/* Third-party rate fields */}
+      {/* Third-party fields */}
       {isThirdParty && (
         <div className="flex flex-wrap gap-4 items-start">
           <NumberInput label="Rate (S$)" value={d.thirdPartyRate ?? ''} step="any" min={0}
@@ -312,29 +321,27 @@ function ActivityForm({
         </div>
       )}
 
-      {/* Activity rate dropdown (manual mode only — rate-linked activities have the banner) */}
+      {/* Activity rate dropdown (manual mode only) */}
       {!isLinked && !isThirdParty && workActivityRates.length > 0 && (
-        <div className="flex flex-wrap gap-4 items-start">
-          <Select label="Activity Rate (optional)" value={d.workActivityRateId ?? ''} onChange={e => {
-            const warId = e.target.value
-            set('workActivityRateId')(warId || undefined)
-            const war = workActivityRates.find(w => w.id === warId)
-            if (war) {
-              set('_categoryName')(war.categoryName); set('_categoryIcon')(war.categoryIcon)
-              set('_rateName')(war.rateName); set('_rateValue')(war.rateValue)
-              set('_rateUnitType')(war.rateUnitType); set('_rateUnitLabel')(war.rateUnitLabel)
-              set('_labourRateHr')(war.rateUnitType === 'per_hour' ? war.rateValue : undefined)
-              set('_unitCost')(war.rateUnitType !== 'per_hour' ? war.rateValue : undefined)
-            } else {
-              set('_categoryName')(undefined); set('_categoryIcon')(undefined)
-              set('_rateName')(undefined); set('_rateValue')(undefined)
-              set('_rateUnitType')(undefined); set('_rateUnitLabel')(undefined)
-              set('_labourRateHr')(undefined); set('_unitCost')(undefined)
-            }
-          }}
-            options={[{ value: '', label: '— none —' }, ...workActivityRates.map(w => ({ value: w.id, label: `${w.categoryIcon} ${w.name} (${w.rateValue}/${w.rateUnitLabel})` }))]}
-            className="w-64" />
-        </div>
+        <Select label="Activity Rate (optional)" value={d.workActivityRateId ?? ''} onChange={e => {
+          const warId = e.target.value
+          set('workActivityRateId')(warId || undefined)
+          const war = workActivityRates.find(w => w.id === warId)
+          if (war) {
+            set('_categoryName')(war.categoryName); set('_categoryIcon')(war.categoryIcon)
+            set('_rateName')(war.rateName); set('_rateValue')(war.rateValue)
+            set('_rateUnitType')(war.rateUnitType); set('_rateUnitLabel')(war.rateUnitLabel)
+            set('_labourRateHr')(war.rateUnitType === 'per_hour' ? war.rateValue : undefined)
+            set('_unitCost')(war.rateUnitType !== 'per_hour' ? war.rateValue : undefined)
+          } else {
+            set('_categoryName')(undefined); set('_categoryIcon')(undefined)
+            set('_rateName')(undefined); set('_rateValue')(undefined)
+            set('_rateUnitType')(undefined); set('_rateUnitLabel')(undefined)
+            set('_labourRateHr')(undefined); set('_unitCost')(undefined)
+          }
+        }}
+          options={[{ value: '', label: '— none —' }, ...workActivityRates.map(w => ({ value: w.id, label: `${w.categoryIcon} ${w.name} (${w.rateValue}/${w.rateUnitLabel})` }))]}
+          className="w-64" />
       )}
 
       {/* Criteria gates */}
@@ -369,10 +376,9 @@ function ActivityForm({
       </div>
     </div>
 
-    {/* Field Guide floating toggle */}
+    {/* Field Guide */}
     <Button size="xs" variant={guideOpen ? 'primary' : 'secondary'}
-      onClick={() => setGuideOpen(v => !v)}
-      icon={<BookOpen className="w-3 h-3" />}>
+      onClick={() => setGuideOpen(v => !v)} icon={<BookOpen className="w-3 h-3" />}>
       Field Guide
     </Button>
     <FloatingPanel open={guideOpen} onClose={() => setGuideOpen(false)} title="Field Guide"
@@ -385,16 +391,24 @@ function ActivityForm({
 
 /* ── Main Component ────────────────────────────────────────────────────────── */
 
-type Mode = 'idle' | 'picking_rate' | 'adding' | 'editing'
+type Mode = 'idle' | 'adding' | 'editing'
 
 export default function WorkActivitiesPanel({ workActivities, materials, customCriteria, customBrackets, workActivityRates, onChange, dimOverrides }: Props) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [mode,      setMode]      = useState<Mode>('idle')
   const [draft,     setDraft]     = useState<Partial<WorkActivity>>({ ...BLANK })
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteId,  setDeleteId]  = useState<string | null>(null)
 
+  const toggleSection = (phase: string) => {
+    setCollapsed(prev => {
+      const next = new Set(prev)
+      next.has(phase) ? next.delete(phase) : next.add(phase)
+      return next
+    })
+  }
+
   const sd = (k: keyof Omit<WorkActivity, 'id'>) => (v: any) => setDraft(d => ({ ...d, [k]: v }))
-  const se = (k: keyof Omit<WorkActivity, 'id'>) => (v: any) => setDraft(d => ({ ...d, [k]: v }))
 
   const resetMode = () => { setMode('idle'); setDraft({ ...BLANK }); setEditingId(null) }
 
@@ -418,21 +432,25 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
 
   const remove = (id: string) => onChange(workActivities.filter(a => a.id !== id))
 
-  const onSelectRate = (rate: WorkActivityRate) => {
-    setDraft(applyRate(rate)); setMode('adding')
+  const onSelectRate = (rate: WorkActivityRate, phase: ActivityPhase) => {
+    setDraft(applyRate(rate, phase)); setMode('adding')
+    // Ensure the target phase is expanded
+    setCollapsed(prev => { const next = new Set(prev); next.delete(phase); return next })
   }
 
-  const onManualAdd = () => {
-    setDraft({ ...BLANK }); setMode('adding')
+  const onManualAdd = (phase: ActivityPhase) => {
+    const phaseInfo = PHASES.find(p => p.value === phase)
+    setDraft({ ...BLANK, phase, icon: phaseInfo?.icon ?? '🔧', color: PHASE_COLORS[phase] })
+    setMode('adding')
+    setCollapsed(prev => { const next = new Set(prev); next.delete(phase); return next })
   }
 
-  // Group activities by phase for display
+  // Group activities by phase
   const grouped = PHASE_ORDER.reduce<Record<ActivityPhase, WorkActivity[]>>((acc, phase) => {
     acc[phase] = workActivities.filter(a => a.phase === phase)
     return acc
   }, {} as Record<ActivityPhase, WorkActivity[]>)
 
-  const hasRates = workActivityRates.length > 0
   const isLinked = !!draft.workActivityRateId
 
   return (
@@ -440,80 +458,67 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
       {/* Header */}
       <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
         <div>
-          <h3 className="font-semibold text-sm text-ink">⚙️ Work Activities</h3>
-          <p className="text-xs text-ink-muted mt-0.5">Fabrication, installation and third-party activities — time and cost per run.</p>
-        </div>
-        <div className="flex gap-2">
-          {hasRates && (
-            <Button size="sm" variant="primary" onClick={() => { setMode(mode === 'picking_rate' ? 'idle' : 'picking_rate'); setEditingId(null) }}
-              icon={<Zap className="w-3.5 h-3.5" />}>
-              Add from Rate
-            </Button>
-          )}
-          <Button size="sm" variant={hasRates ? 'secondary' : 'primary'} onClick={() => { onManualAdd(); setEditingId(null) }}
-            icon={<Plus className="w-3.5 h-3.5" />}>
-            {hasRates ? 'Add Manual' : 'Add Activity'}
-          </Button>
+          <h3 className="font-semibold text-sm text-ink">⚙️ Work Schedule</h3>
+          <p className="text-xs text-ink-muted mt-0.5">Activities grouped by phase — time and cost per run.</p>
         </div>
       </div>
 
-      {/* Rate hint when no rates exist */}
-      {!hasRates && workActivities.length === 0 && mode === 'idle' && (
-        <div className="px-5 py-2 text-[10px] text-ink-faint bg-amber-50 border-b border-amber-100">
-          Tip: Set up Activity Rates in the Fabrication tab for a faster workflow with pre-filled speed and cost defaults.
-        </div>
-      )}
-
-      {/* Rate picker */}
-      {mode === 'picking_rate' && (
-        <RatePicker rates={workActivityRates} onSelect={onSelectRate} onManual={onManualAdd}
-          onCancel={resetMode} />
-      )}
-
-      {/* Add form */}
+      {/* Add form (shown above phases when adding) */}
       {mode === 'adding' && (
         <div className="p-5 bg-surface-100 border-b border-surface-200">
           <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide mb-4">
-            {isLinked ? 'Configure Activity' : 'New Manual Activity'}
+            {isLinked ? 'Configure Activity' : 'New Activity'}
           </div>
           <ActivityForm d={draft} set={sd} materials={materials} customCriteria={customCriteria}
             customBrackets={customBrackets} workActivityRates={workActivityRates}
             onSave={addActivity} onCancel={resetMode} label="Add"
-            onChangeRate={() => setMode('picking_rate')}
             dimOverrides={dimOverrides} isLinked={isLinked} />
         </div>
       )}
 
-      {/* Empty state */}
-      {workActivities.length === 0 && mode === 'idle' && (
-        <div className="py-10 text-center text-sm text-ink-faint">
-          No work activities defined.{hasRates ? ' Click "Add from Rate" to get started.' : ' Example: "Install bracket — 12 min each" or "Cable tensioning — 15m/hr".'}
-        </div>
-      )}
+      {/* Phase sections */}
+      {PHASE_ORDER.map(phase => {
+        const acts = grouped[phase]
+        const phaseInfo = PHASES.find(p => p.value === phase)!
+        const isCollapsed = collapsed.has(phase)
+        const Chevron = isCollapsed ? ChevronRight : ChevronDown
+        const count = acts.length
 
-      {/* Activity list grouped by phase */}
-      <div className="divide-y divide-surface-200">
-        {PHASE_ORDER.map(phase => {
-          const acts = grouped[phase]
-          if (!acts || acts.length === 0) return null
-          const phaseInfo = PHASES.find(p => p.value === phase)!
-          return (
-            <div key={phase}>
-              {/* Phase header */}
-              <div className="px-5 py-2 flex items-center gap-2" style={{ background: PHASE_COLORS[phase] + '08' }}>
-                <span className="text-sm">{phaseInfo.icon}</span>
-                <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: PHASE_COLORS[phase] }}>
-                  {phaseInfo.label}
-                </span>
-                <span className="text-[10px] text-ink-faint ml-1">({acts.length})</span>
+        return (
+          <div key={phase}>
+            {/* Phase header — collapsible */}
+            <div
+              className="cursor-pointer select-none border-b border-t"
+              onClick={() => toggleSection(phase)}
+              style={{ background: PHASE_BG[phase], borderColor: 'var(--color-surface-200)' }}
+            >
+              <div className="px-4 py-2.5 flex items-center gap-2"
+                style={{ borderLeft: `3px solid ${PHASE_COLORS[phase]}` }}>
+                <Chevron className="w-3.5 h-3.5 flex-shrink-0" style={{ color: PHASE_COLORS[phase] }} />
+                <span className="text-sm flex-shrink-0">{phaseInfo.icon}</span>
+                <span className="font-semibold text-xs" style={{ color: PHASE_COLORS[phase] }}>{phaseInfo.label}</span>
+                <span className="text-[10px] text-ink-faint">({count})</span>
+                <span className="text-[10px] text-ink-faint ml-1">{phaseInfo.desc}</span>
+                <div className="flex-1" />
+                <div onClick={e => e.stopPropagation()}>
+                  <AddActivityDropdown rates={workActivityRates} phase={phase}
+                    onSelectRate={onSelectRate} onManual={onManualAdd} />
+                </div>
               </div>
+            </div>
 
-              {/* Activities in this phase */}
+            {/* Activities within phase */}
+            {!isCollapsed && (
               <div className="divide-y divide-surface-100">
+                {count === 0 && (
+                  <div className="px-5 py-4 text-center text-xs text-ink-faint">
+                    No {phaseInfo.label.toLowerCase()} activities. Click <Plus className="w-3 h-3 inline" /> to add.
+                  </div>
+                )}
                 {acts.map(act => {
                   const isEd = mode === 'editing' && editingId === act.id
                   return (
-                    <div key={act.id} className={isEd ? 'bg-primary/5' : ''}>
+                    <div key={act.id} className={isEd ? 'bg-primary/5' : 'hover:bg-surface-100/50 transition-colors'}>
                       <div className="px-5 py-3 flex items-start gap-3">
                         <span className="text-lg flex-shrink-0 mt-0.5">{act.icon || phaseInfo.icon}</span>
                         <div className="flex-1 min-w-0">
@@ -542,13 +547,12 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
                         </div>
                       </div>
 
-                      {/* Inline edit form */}
+                      {/* Inline edit */}
                       {isEd && (
                         <div className="px-5 pb-5 border-t border-primary/20 pt-4">
-                          <ActivityForm d={draft} set={se} materials={materials} customCriteria={customCriteria}
+                          <ActivityForm d={draft} set={sd} materials={materials} customCriteria={customCriteria}
                             customBrackets={customBrackets} workActivityRates={workActivityRates}
                             onSave={saveEdit} onCancel={resetMode} label="Save"
-                            onChangeRate={() => setMode('picking_rate')}
                             dimOverrides={dimOverrides} isLinked={!!draft.workActivityRateId} />
                         </div>
                       )}
@@ -556,10 +560,10 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
                   )
                 })}
               </div>
-            </div>
-          )
-        })}
-      </div>
+            )}
+          </div>
+        )
+      })}
 
       <ConfirmModal
         open={deleteId !== null}
