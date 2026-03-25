@@ -745,12 +745,25 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     ? sys.materials.filter(m => { const s = calc.lastCalcVersions[m.id]; return s !== undefined && (m._updatedAt ?? 0) > s })
     : []
 
-  const deletedMats = calc.lastCalcVersions && calc.lastCalcAt
-    ? Object.keys(calc.lastCalcVersions).filter(id => !sys.materials.some((m: any) => m.id === id)).map(id => {
-        const prev = (calc.multiResults?.combined ?? []).find((m: any) => m.id === id)
-        return { id, name: prev?.name ?? id }
-      })
-    : []
+  const deletedMats = (() => {
+    const currentIds = new Set(sys.materials.map((m: any) => m.id))
+    // Check lastCalcVersions first (has material IDs from when calc was run)
+    if (calc.lastCalcVersions && calc.lastCalcAt) {
+      return Object.keys(calc.lastCalcVersions)
+        .filter(id => !currentIds.has(id))
+        .map(id => {
+          const prev = (calc.multiResults?.combined ?? []).find((m: any) => m.id === id)
+          return { id, name: prev?.name ?? id }
+        })
+    }
+    // Fallback: check multiResults for materials no longer in the system
+    if (calc.multiResults?.combined) {
+      return (calc.multiResults.combined as any[])
+        .filter((m: any) => m.id && !currentIds.has(m.id))
+        .map((m: any) => ({ id: m.id, name: m.name ?? m.id }))
+    }
+    return []
+  })()
 
   return (
     <div className="flex flex-col xl:flex-row gap-6 items-start relative">
