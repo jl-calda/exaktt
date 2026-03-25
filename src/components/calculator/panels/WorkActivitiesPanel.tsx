@@ -7,19 +7,20 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input, NumberInput } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import type { WorkActivity, ActivityPhase, ActivityRateType, SpeedMode, Material, CustomCriterion, WorkBracket } from '@/types'
+import type { WorkActivity, WorkActivityRate, ActivityPhase, ActivityRateType, SpeedMode, Material, CustomCriterion, WorkBracket } from '@/types'
 import { PRIMITIVE_DIMS, getDimUnit, type DimOverride } from '@/lib/engine/constants'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { IconPicker }  from '@/components/ui/IconPicker'
 import FloatingPanel from '../FloatingPanel'
 
 interface Props {
-  workActivities: WorkActivity[]
-  materials:      Material[]
-  customCriteria: CustomCriterion[]
-  customBrackets: WorkBracket[]
-  onChange:       (activities: WorkActivity[]) => void
-  dimOverrides?:  Record<string, DimOverride>
+  workActivities:    WorkActivity[]
+  materials:         Material[]
+  customCriteria:    CustomCriterion[]
+  customBrackets:    WorkBracket[]
+  workActivityRates: WorkActivityRate[]
+  onChange:          (activities: WorkActivity[]) => void
+  dimOverrides?:     Record<string, DimOverride>
 }
 
 const PHASES: { value: ActivityPhase; label: string; icon: string }[] = [
@@ -87,13 +88,14 @@ const BLANK: Omit<WorkActivity, 'id'> = {
 }
 
 function ActivityForm({
-  d, set, materials, customCriteria, customBrackets, onSave, onCancel, label, dimOverrides,
+  d, set, materials, customCriteria, customBrackets, workActivityRates, onSave, onCancel, label, dimOverrides,
 }: {
   d: Partial<WorkActivity>
   set: (k: keyof Omit<WorkActivity, 'id'>) => (v: any) => void
   materials: Material[]
   customCriteria: CustomCriterion[]
   customBrackets: WorkBracket[]
+  workActivityRates: WorkActivityRate[]
   onSave: () => void
   onCancel: () => void
   label: string
@@ -178,10 +180,33 @@ function ActivityForm({
 
       {!isThirdParty && (
         <div className="flex flex-wrap gap-4 items-start">
-          <Input label="Labour category" value={d.labourCategory ?? ''} onChange={e => set('labourCategory')(e.target.value)}
-            placeholder="e.g. Site erection" className="w-48" />
-          <NumberInput label="Rate S$/hr (Pro)" value={d.labourRateHr ?? ''} step="any" min={0}
-            onChange={e => set('labourRateHr')(parseFloat(e.target.value) || undefined)} className="w-32" />
+          <Select label="Activity Rate" value={d.workActivityRateId ?? ''} onChange={e => {
+            const warId = e.target.value
+            set('workActivityRateId')(warId || undefined)
+            const war = workActivityRates.find(w => w.id === warId)
+            if (war) {
+              set('_categoryName')(war.categoryName)
+              set('_categoryIcon')(war.categoryIcon)
+              set('_rateName')(war.rateName)
+              set('_rateValue')(war.rateValue)
+              set('_rateUnitType')(war.rateUnitType)
+              set('_rateUnitLabel')(war.rateUnitLabel)
+              set('_labourRateHr')(war.rateUnitType === 'per_hour' ? war.rateValue : undefined)
+              set('_unitCost')(war.rateUnitType !== 'per_hour' ? war.rateValue : undefined)
+            } else {
+              set('_categoryName')(undefined); set('_categoryIcon')(undefined)
+              set('_rateName')(undefined); set('_rateValue')(undefined)
+              set('_rateUnitType')(undefined); set('_rateUnitLabel')(undefined)
+              set('_labourRateHr')(undefined); set('_unitCost')(undefined)
+            }
+          }}
+            options={[{ value: '', label: '— pick activity rate —' }, ...workActivityRates.map(w => ({ value: w.id, label: `${w.categoryIcon} ${w.name} (${w.rateValue}/${w.rateUnitLabel})` }))]}
+            className="w-64" />
+          {d.workActivityRateId && d._categoryName && (
+            <div className="text-xs text-ink-muted self-end pb-2">
+              {d._categoryIcon} {d._categoryName} — {d._rateValue}/{d._rateUnitLabel}
+            </div>
+          )}
         </div>
       )}
 
@@ -228,7 +253,7 @@ function ActivityForm({
   )
 }
 
-export default function WorkActivitiesPanel({ workActivities, materials, customCriteria, customBrackets, onChange, dimOverrides }: Props) {
+export default function WorkActivitiesPanel({ workActivities, materials, customCriteria, customBrackets, workActivityRates, onChange, dimOverrides }: Props) {
   const [adding,    setAdding]    = useState(false)
   const [draft,     setDraft]     = useState<Omit<WorkActivity, 'id'>>({ ...BLANK })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -277,7 +302,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
       {adding && (
         <div className="p-5 bg-surface-100 border-b border-surface-200">
           <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide mb-4">New Activity</div>
-          <ActivityForm d={draft} set={sd} materials={materials} customCriteria={customCriteria} customBrackets={customBrackets}
+          <ActivityForm d={draft} set={sd} materials={materials} customCriteria={customCriteria} customBrackets={customBrackets} workActivityRates={workActivityRates}
             onSave={add} onCancel={() => setAdding(false)} label="Add" dimOverrides={dimOverrides} />
         </div>
       )}
@@ -307,7 +332,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
                   <div className="flex items-center gap-3 mt-0.5 text-xs text-ink-muted">
                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{fmtRate(act)}</span>
                     {(act.crewSize ?? 1) > 1 && <span className="flex items-center gap-1"><Users className="w-3 h-3" />{act.crewSize} crew</span>}
-                    {act.labourCategory && <span className="text-ink-faint">{act.labourCategory}</span>}
+                    {act._categoryName && <span className="text-ink-faint">{act._categoryIcon} {act._categoryName}</span>}
                     {(act.criteriaKeys ?? []).length > 0 && (
                       <span className="text-amber-600 font-medium">⚡ gated</span>
                     )}
@@ -322,7 +347,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
               </div>
               {isEd && editDraft && (
                 <div className="px-5 pb-5 border-t border-primary/20 pt-4">
-                  <ActivityForm d={editDraft} set={se} materials={materials} customCriteria={customCriteria} customBrackets={customBrackets}
+                  <ActivityForm d={editDraft} set={se} materials={materials} customCriteria={customCriteria} customBrackets={customBrackets} workActivityRates={workActivityRates}
                     onSave={saveEdit} onCancel={cancelEdit} label="Save" dimOverrides={dimOverrides} />
                 </div>
               )}

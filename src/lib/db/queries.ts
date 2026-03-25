@@ -489,8 +489,7 @@ export async function createActivityLibraryItem(companyId: string, createdById: 
       defaultTimeMin: data.defaultTimeMin ?? null,
       speedMode:      data.speedMode      ?? null,
       defaultRate:    data.defaultRate    ?? null,
-      labourCategory: data.labourCategory ?? null,
-      labourRateHr:   data.labourRateHr   ?? null,
+      workActivityRateId: data.workActivityRateId ?? null,
       supplier:       data.supplier       ?? null,
       supplierContact: data.supplierContact ?? null,
     },
@@ -838,6 +837,85 @@ export async function updateLabourRate(id: string, companyId: string, data: any)
 export async function deleteLabourRate(id: string, companyId: string) {
   await verifyOwnership(prisma.labourRate, id, companyId, 'LabourRate')
   return prisma.labourRate.update({ where: { id }, data: { isArchived: true } })
+}
+
+// ─── Work Categories ─────────────────────────────────────────────────────────
+
+export async function getWorkCategories(companyId: string) {
+  return prisma.workCategory.findMany({ where: { companyId, isArchived: false }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] })
+}
+
+export async function createWorkCategory(companyId: string, createdById: string, data: Partial<{ name: string; icon: string; color: string; description: string; sortOrder: number }>) {
+  return prisma.workCategory.create({
+    data: {
+      companyId,
+      createdById,
+      name:        data.name        ?? '',
+      icon:        data.icon        ?? '🔧',
+      color:       data.color       ?? '#7c3aed',
+      description: data.description ?? null,
+      sortOrder:   data.sortOrder   ?? 0,
+    },
+  })
+}
+
+export async function updateWorkCategory(id: string, companyId: string, data: any) {
+  await verifyOwnership(prisma.workCategory, id, companyId, 'WorkCategory')
+  return prisma.workCategory.update({ where: { id }, data })
+}
+
+export async function deleteWorkCategory(id: string, companyId: string) {
+  await verifyOwnership(prisma.workCategory, id, companyId, 'WorkCategory')
+  return prisma.workCategory.update({ where: { id }, data: { isArchived: true } })
+}
+
+// ─── Work Activity Rates ─────────────────────────────────────────────────────
+
+export async function getWorkActivityRates(companyId: string) {
+  return prisma.workActivityRate.findMany({ where: { companyId, isArchived: false }, orderBy: [{ categoryName: 'asc' }, { name: 'asc' }] })
+}
+
+export async function createWorkActivityRate(
+  companyId: string,
+  createdById: string,
+  data: Partial<{
+    name: string; workCategoryId: string; labourRateId: string
+    categoryName: string; categoryIcon: string
+    rateName: string; rateValue: number; rateUnitType: string; rateUnitLabel: string
+    speedMode: string; defaultTimePerUnit: number; defaultRatePerHr: number; crewSize: number
+    notes: string
+  }>
+) {
+  return prisma.workActivityRate.create({
+    data: {
+      companyId,
+      createdById,
+      name:               data.name               ?? '',
+      workCategoryId:     data.workCategoryId      ?? '',
+      labourRateId:       data.labourRateId        ?? '',
+      categoryName:       data.categoryName        ?? '',
+      categoryIcon:       data.categoryIcon        ?? '🔧',
+      rateName:           data.rateName            ?? '',
+      rateValue:          data.rateValue           ?? 0,
+      rateUnitType:       data.rateUnitType        ?? 'per_hour',
+      rateUnitLabel:      data.rateUnitLabel       ?? 'hr',
+      speedMode:          data.speedMode           ?? null,
+      defaultTimePerUnit: data.defaultTimePerUnit  ?? null,
+      defaultRatePerHr:   data.defaultRatePerHr    ?? null,
+      crewSize:           data.crewSize            ?? 1,
+      notes:              data.notes               ?? null,
+    },
+  })
+}
+
+export async function updateWorkActivityRate(id: string, companyId: string, data: any) {
+  await verifyOwnership(prisma.workActivityRate, id, companyId, 'WorkActivityRate')
+  return prisma.workActivityRate.update({ where: { id }, data })
+}
+
+export async function deleteWorkActivityRate(id: string, companyId: string) {
+  await verifyOwnership(prisma.workActivityRate, id, companyId, 'WorkActivityRate')
+  return prisma.workActivityRate.update({ where: { id }, data: { isArchived: true } })
 }
 
 // ─── LimitError ───────────────────────────────────────────────────────────────

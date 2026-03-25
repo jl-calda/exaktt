@@ -92,6 +92,8 @@ model Company {
   globalTags             GlobalTag[]
   activityLibrary        ActivityLibraryItem[]
   labourRates            LabourRate[]
+  workCategories         WorkCategory[]
+  workActivityRates      WorkActivityRate[]
 
   @@map("companies")
 }
@@ -161,6 +163,8 @@ model User {
   createdGlobalTags          GlobalTag[]             @relation("createdByUser")
   createdActivityLibrary     ActivityLibraryItem[]   @relation("createdByUser")
   createdLabourRates         LabourRate[]            @relation("createdByUser")
+  createdWorkCategories      WorkCategory[]          @relation("createdByUser")
+  createdWorkActivityRates   WorkActivityRate[]      @relation("createdByUser")
 
   @@map("users")
 }
@@ -715,8 +719,7 @@ model ActivityLibraryItem {
   speedMode      String?   // 'time_per_unit' | 'rate'
   defaultRate    Float?    // units per hour (rate mode)
 
-  labourCategory  String?
-  labourRateHr    Float?    // S$/hr — Pro+ only
+  workActivityRateId String?
 
   supplier        String?
   supplierContact String?
@@ -750,7 +753,77 @@ model LabourRate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  workActivityRates WorkActivityRate[]
+
   @@unique([companyId, name])
   @@index([companyId])
   @@map("labour_rates")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Work Categories & Activity Rates
+// ─────────────────────────────────────────────────────────────────────────────
+
+model WorkCategory {
+  id          String  @id @default(cuid())
+  companyId   String
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User    @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
+
+  name        String
+  icon        String   @default("🔧")
+  color       String   @default("#7c3aed")
+  description String?
+  sortOrder   Int      @default(0)
+  isArchived  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workActivityRates WorkActivityRate[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("work_categories")
+}
+
+model WorkActivityRate {
+  id             String  @id @default(cuid())
+  companyId      String
+  company        Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById    String
+  createdBy      User    @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
+
+  name           String
+  workCategoryId String
+  workCategory   WorkCategory @relation(fields: [workCategoryId], references: [id])
+  labourRateId   String
+  labourRate     LabourRate   @relation(fields: [labourRateId], references: [id])
+
+  // Snapshots
+  categoryName   String   @default("")
+  categoryIcon   String   @default("🔧")
+  rateName       String   @default("")
+  rateValue      Float    @default(0)
+  rateUnitType   String   @default("per_hour")
+  rateUnitLabel  String   @default("hr")
+
+  // Default speed
+  speedMode          String?    // 'time_per_unit' | 'rate'
+  defaultTimePerUnit Float?
+  defaultRatePerHr   Float?
+  crewSize           Int      @default(1)
+
+  notes       String?
+  isArchived  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@index([workCategoryId])
+  @@index([labourRateId])
+  @@map("work_activity_rates")
 }

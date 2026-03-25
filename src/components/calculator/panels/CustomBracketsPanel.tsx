@@ -9,17 +9,18 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import type { WorkBracket, BracketParameter, BracketBOMItem, BracketFabActivity, Material } from '@/types'
+import type { WorkBracket, BracketParameter, BracketBOMItem, BracketWorkActivityRef, WorkActivityRate, Material } from '@/types'
 import { evaluateFormula } from '@/lib/engine/work'
 
 interface Props {
-  customBrackets:   WorkBracket[]
-  materials:        Material[]
-  libraryItems?:    any[]
-  labourRates?:     any[]
-  setupBracketIds?: Set<string>   // IDs of brackets currently in setup (for deletion warning)
-  onChange:         (brackets: WorkBracket[]) => void
-  onAddFromLib?:    (libItem: any) => void
+  customBrackets:    WorkBracket[]
+  materials:         Material[]
+  libraryItems?:     any[]
+  labourRates?:      any[]
+  workActivityRates?: WorkActivityRate[]
+  setupBracketIds?:  Set<string>   // IDs of brackets currently in setup (for deletion warning)
+  onChange:          (brackets: WorkBracket[]) => void
+  onAddFromLib?:     (libItem: any) => void
 }
 
 const BLANK_BRACKET: Omit<WorkBracket, 'id'> = {
@@ -30,7 +31,7 @@ const BLANK_BRACKET: Omit<WorkBracket, 'id'> = {
   color:         '#7c3aed',
   parameters:    [],
   bom:           [],
-  fabActivities: [],
+  workActivityRefs: [],
 }
 
 const QTY_UNITS = ['pcs', 'mm', 'm', 'kg', 'L', 'each']
@@ -241,33 +242,36 @@ function BOMItemRow({
   )
 }
 
-function FabActivityRow({
-  item, params, onChange, onRemove, labourRates = [],
+function WorkActivityRefRow({
+  item, params, onChange, onRemove, workActivityRates = [],
 }: {
-  item: BracketFabActivity
+  item: BracketWorkActivityRef
   params: BracketParameter[]
-  onChange: (item: BracketFabActivity) => void
+  onChange: (item: BracketWorkActivityRef) => void
   onRemove: () => void
-  labourRates?: any[]
+  workActivityRates?: WorkActivityRate[]
 }) {
   const resolvedTime = evaluateFormula(item.timeFormula, Object.fromEntries(params.map(p => [p.key, p.default])))
 
-  const onRateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const rateId = e.target.value
-    if (rateId === '') {
-      onChange({ ...item, labourRateId: undefined, labourCategory: '', labourRateHr: undefined, unitCost: undefined, unitType: undefined })
-    } else if (rateId === '__manual__') {
-      onChange({ ...item, labourRateId: undefined })
+  const onWarChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const warId = e.target.value
+    if (!warId) {
+      onChange({ ...item, workActivityRateId: '', _categoryName: '', _categoryIcon: '', _rateName: '', _rateValue: 0, _rateUnitType: 'per_hour', _rateUnitLabel: 'hr', _labourRateHr: undefined, _unitCost: undefined })
     } else {
-      const rate = labourRates.find((r: any) => r.id === rateId)
-      if (rate) {
+      const war = workActivityRates.find(w => w.id === warId)
+      if (war) {
         onChange({
           ...item,
-          labourRateId:   rate.id,
-          labourCategory: rate.name,
-          labourRateHr:   rate.unitType === 'per_hour' ? rate.rate : undefined,
-          unitCost:       rate.unitType !== 'per_hour' ? rate.rate : undefined,
-          unitType:       rate.unitType,
+          workActivityRateId: war.id,
+          _categoryName:  war.categoryName,
+          _categoryIcon:  war.categoryIcon,
+          _rateName:      war.rateName,
+          _rateValue:     war.rateValue,
+          _rateUnitType:  war.rateUnitType,
+          _rateUnitLabel: war.rateUnitLabel,
+          _labourRateHr:  war.rateUnitType === 'per_hour' ? war.rateValue : undefined,
+          _unitCost:      war.rateUnitType !== 'per_hour' ? war.rateValue : undefined,
+          crewSize:       war.crewSize,
         })
       }
     }
@@ -275,8 +279,15 @@ function FabActivityRow({
 
   return (
     <div className="flex flex-wrap gap-2 items-end bg-surface-50 border border-surface-200 p-3" style={{ borderRadius: 'var(--radius-card)' }}>
-      <Input label="Activity name" value={item.name} onChange={e => onChange({ ...item, name: e.target.value })}
-        placeholder="e.g. Cut angle iron" className="flex-1 min-w-40" />
+      <div className="w-52">
+        <label className="label">Activity Rate</label>
+        <select className="input text-xs" value={item.workActivityRateId ?? ''} onChange={onWarChange}>
+          <option value="">— pick activity rate —</option>
+          {workActivityRates.map(w => (
+            <option key={w.id} value={w.id}>{w.categoryIcon} {w.name} ({w.rateValue}/{w.rateUnitLabel})</option>
+          ))}
+        </select>
+      </div>
       <div className="flex-1 min-w-32">
         <FormulaInput label="Time formula" value={item.timeFormula} onChange={val => onChange({ ...item, timeFormula: val })}
           placeholder="e.g. 5 or 3 + projection_mm / 100" params={params} />
@@ -284,25 +295,10 @@ function FabActivityRow({
       </div>
       <Select label="Unit" value={item.timeUnit} onChange={e => onChange({ ...item, timeUnit: e.target.value as 'min' | 'hr' })}
         options={TIME_UNITS.map(u => ({ value: u, label: u }))} className="w-20" />
-      {labourRates.length > 0 ? (
-        <div className="w-44">
-          <label className="label">Rate</label>
-          <select className="input text-xs" value={item.labourRateId ?? (item.labourCategory ? '__manual__' : '')} onChange={onRateChange}>
-            <option value="">None</option>
-            {labourRates.map((r: any) => (
-              <option key={r.id} value={r.id}>{r.name} ({r.rate}/{r.unitLabel})</option>
-            ))}
-            <option value="__manual__">Manual...</option>
-          </select>
+      {item._categoryName && (
+        <div className="text-xs text-ink-muted self-end pb-2">
+          {item._categoryIcon} {item._categoryName} — {item._rateValue}/{item._rateUnitLabel}
         </div>
-      ) : (
-        <Input label="Labour cat." value={item.labourCategory ?? ''} onChange={e => onChange({ ...item, labourCategory: e.target.value })}
-          placeholder="Optional" className="w-36" />
-      )}
-      {(!item.labourRateId && item.labourCategory) && (
-        <Input label="Rate $/hr" value={String(item.labourRateHr ?? '')}
-          onChange={e => onChange({ ...item, labourRateHr: parseFloat(e.target.value) || undefined })}
-          placeholder="0" className="w-24" />
       )}
       <Button size="xs" variant="danger" onClick={onRemove} icon={<Trash2 className="w-3 h-3" />} className="mb-1 flex-shrink-0" />
     </div>
@@ -310,21 +306,21 @@ function FabActivityRow({
 }
 
 function BracketForm({
-  draft, onChange, materials, libraryItems = [], labourRates = [], onSave, onCancel, label, onAddFromLib,
+  draft, onChange, materials, libraryItems = [], workActivityRates = [], onSave, onCancel, label, onAddFromLib,
 }: {
   draft: Partial<WorkBracket>
   onChange: (patch: Partial<WorkBracket>) => void
   materials: Material[]
   libraryItems?: any[]
-  labourRates?: any[]
+  workActivityRates?: WorkActivityRate[]
   onSave: () => void
   onCancel: () => void
   label: string
   onAddFromLib?: (libItem: any) => void
 }) {
-  const params       = draft.parameters    ?? []
-  const bom          = draft.bom           ?? []
-  const fabActivities = draft.fabActivities ?? []
+  const params           = draft.parameters       ?? []
+  const bom              = draft.bom              ?? []
+  const workActivityRefs = draft.workActivityRefs ?? []
 
   const addParam = () => onChange({ parameters: [...params, { key: 'param_' + nanoid(4), label: 'Parameter', unit: 'mm', default: 0 }] })
   const updateParam = (i: number, p: BracketParameter) => onChange({ parameters: params.map((x, j) => j === i ? p : x) })
@@ -334,13 +330,13 @@ function BracketForm({
   const updateBOM = (i: number, item: BracketBOMItem) => onChange({ bom: bom.map((x, j) => j === i ? item : x) })
   const removeBOM = (i: number) => onChange({ bom: bom.filter((_, j) => j !== i) })
 
-  const addFab = () => onChange({ fabActivities: [...fabActivities, { id: nanoid(), name: '', timeFormula: '0', timeUnit: 'min' }] })
-  const updateFab = (i: number, item: BracketFabActivity) => onChange({ fabActivities: fabActivities.map((x, j) => j === i ? item : x) })
-  const removeFab = (i: number) => onChange({ fabActivities: fabActivities.filter((_, j) => j !== i) })
+  const addRef = () => onChange({ workActivityRefs: [...workActivityRefs, { id: nanoid(), workActivityRateId: '', timeFormula: '0', timeUnit: 'min', _categoryName: '', _categoryIcon: '', _rateName: '', _rateValue: 0, _rateUnitType: 'per_hour', _rateUnitLabel: 'hr' }] })
+  const updateRef = (i: number, item: BracketWorkActivityRef) => onChange({ workActivityRefs: workActivityRefs.map((x, j) => j === i ? item : x) })
+  const removeRef = (i: number) => onChange({ workActivityRefs: workActivityRefs.filter((_, j) => j !== i) })
 
-  const totalFabTime = fabActivities.reduce((sum, fa) => {
-    const t = evaluateFormula(fa.timeFormula, Object.fromEntries(params.map(p => [p.key, p.default])))
-    return sum + (fa.timeUnit === 'hr' ? t * 60 : t)
+  const totalFabTime = workActivityRefs.reduce((sum, ref) => {
+    const t = evaluateFormula(ref.timeFormula, Object.fromEntries(params.map(p => [p.key, p.default])))
+    return sum + (ref.timeUnit === 'hr' ? t * 60 : t)
   }, 0)
 
   return (
@@ -403,20 +399,20 @@ function BracketForm({
         </div>
       </div>
 
-      {/* Fabrication Activities */}
+      {/* Work Activity Rates */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <div>
-            <label className="label mb-0">Fabrication Activities</label>
-            {fabActivities.length > 0 && <span className="text-xs text-ink-faint ml-2">Total: {totalFabTime.toFixed(1)} min/bracket</span>}
+            <label className="label mb-0">Work Activities</label>
+            {workActivityRefs.length > 0 && <span className="text-xs text-ink-faint ml-2">Total: {totalFabTime.toFixed(1)} min/bracket</span>}
           </div>
-          <Button size="xs" variant="secondary" onClick={addFab} icon={<Plus className="w-3 h-3" />}>Add activity</Button>
+          <Button size="xs" variant="secondary" onClick={addRef} icon={<Plus className="w-3 h-3" />}>Add activity</Button>
         </div>
-        {fabActivities.length === 0 && <p className="text-xs text-ink-faint">No fab activities. Add workshop steps like cutting, drilling, welding.</p>}
+        {workActivityRefs.length === 0 && <p className="text-xs text-ink-faint">No work activities. Add workshop steps like cutting, drilling, welding.</p>}
         <div className="space-y-2">
-          {fabActivities.map((item, i) => (
-            <FabActivityRow key={item.id} item={item} params={params} labourRates={labourRates}
-              onChange={updated => updateFab(i, updated)} onRemove={() => removeFab(i)} />
+          {workActivityRefs.map((item, i) => (
+            <WorkActivityRefRow key={item.id} item={item} params={params} workActivityRates={workActivityRates}
+              onChange={updated => updateRef(i, updated)} onRemove={() => removeRef(i)} />
           ))}
         </div>
       </div>
@@ -429,7 +425,7 @@ function BracketForm({
   )
 }
 
-export default function CustomBracketsPanel({ customBrackets, materials, libraryItems = [], labourRates = [], setupBracketIds, onChange, onAddFromLib }: Props) {
+export default function CustomBracketsPanel({ customBrackets, materials, libraryItems = [], labourRates = [], workActivityRates = [], setupBracketIds, onChange, onAddFromLib }: Props) {
   const [adding,    setAdding]    = useState(false)
   const [draft,     setDraft]     = useState<Omit<WorkBracket, 'id'>>({ ...BLANK_BRACKET })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -466,7 +462,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
         <div className="p-5 bg-surface-100 border-b border-surface-200">
           <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide mb-4">New Bracket</div>
           <BracketForm draft={draft} onChange={patch => setDraft(d => ({ ...d, ...patch }))}
-            materials={materials} libraryItems={libraryItems} labourRates={labourRates}
+            materials={materials} libraryItems={libraryItems} workActivityRates={workActivityRates}
             onSave={add} onCancel={() => setAdding(false)} label="Add" onAddFromLib={onAddFromLib} />
         </div>
       )}
@@ -481,9 +477,9 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
         {customBrackets.map(bracket => {
           const isEd  = editingId === bracket.id
           const isExp = expandedId === bracket.id && !isEd
-          const totalFabMin = (bracket.fabActivities ?? []).reduce((sum, fa) => {
-            const t = evaluateFormula(fa.timeFormula, {})
-            return sum + (fa.timeUnit === 'hr' ? t * 60 : t)
+          const totalFabMin = (bracket.workActivityRefs ?? []).reduce((sum, ref) => {
+            const t = evaluateFormula(ref.timeFormula, {})
+            return sum + (ref.timeUnit === 'hr' ? t * 60 : t)
           }, 0)
           return (
             <div key={bracket.id} className={isEd ? 'bg-primary/5' : ''}>
@@ -580,18 +576,18 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
                       </div>
                     </div>
                   )}
-                  {(bracket.fabActivities ?? []).length > 0 && (
+                  {(bracket.workActivityRefs ?? []).length > 0 && (
                     <div>
-                      <div className="text-[10px] font-bold uppercase text-ink-faint tracking-wide mb-1">Fabrication</div>
+                      <div className="text-[10px] font-bold uppercase text-ink-faint tracking-wide mb-1">Work Activities</div>
                       <div className="space-y-0.5">
-                        {bracket.fabActivities.map(fa => {
-                          const t = evaluateFormula(fa.timeFormula, Object.fromEntries((bracket.parameters ?? []).map(p => [p.key, p.default])))
+                        {bracket.workActivityRefs.map(ref => {
+                          const t = evaluateFormula(ref.timeFormula, Object.fromEntries((bracket.parameters ?? []).map(p => [p.key, p.default])))
                           return (
-                            <div key={fa.id} className="flex items-center gap-2 text-xs text-ink">
+                            <div key={ref.id} className="flex items-center gap-2 text-xs text-ink">
                               <span className="text-ink-faint w-3">└</span>
-                              <span className="font-medium">{fa.name}</span>
-                              <span className="text-ink-muted font-mono">{t.toFixed(1)} {fa.timeUnit}</span>
-                              {fa.labourCategory && <span className="text-ink-faint">{fa.labourCategory}</span>}
+                              <span className="font-medium">{ref._categoryIcon} {ref._categoryName || 'Activity'}</span>
+                              <span className="text-ink-muted font-mono">{t.toFixed(1)} {ref.timeUnit}</span>
+                              {ref._rateName && <span className="text-ink-faint">{ref._rateName} ({ref._rateValue}/{ref._rateUnitLabel})</span>}
                             </div>
                           )
                         })}
@@ -604,7 +600,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
               {isEd && editDraft && (
                 <div className="px-5 pb-5 border-t border-primary/20 pt-4">
                   <BracketForm draft={editDraft} onChange={patch => setEditDraft(d => d ? { ...d, ...patch } : d)}
-                    materials={materials} libraryItems={libraryItems} labourRates={labourRates}
+                    materials={materials} libraryItems={libraryItems} workActivityRates={workActivityRates}
                     onSave={saveEdit} onCancel={cancelEdit} label="Save" onAddFromLib={onAddFromLib} />
                 </div>
               )}
