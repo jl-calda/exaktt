@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus, ChevronDown, ChevronRight, Edit3, Trash2, Check, X, Package } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { format } from 'date-fns'
@@ -44,6 +45,7 @@ export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }
   const [showModal,  setShowModal]  = useState(false)
   const [editing,    setEditing]    = useState<any | null>(null)
   const [loading,    setLoading]    = useState(false)
+  const [deleteId,   setDeleteId]   = useState<string | null>(null)
 
   // Form state
   const [supplierId,   setSupplierId]   = useState('')
@@ -112,9 +114,9 @@ export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }
     onRefresh()
   }
 
-  const remove = async (po: any) => {
-    if (!confirm(`Delete PO "${po.ref || po.id.slice(0, 6)}"?`)) return
-    await fetch('/api/logistics/po', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: po.id }) })
+  const remove = async (id: string) => {
+    await fetch('/api/logistics/po', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    setDeleteId(null)
     onRefresh()
   }
 
@@ -172,7 +174,7 @@ export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }
                     </div>
                     <div className="flex gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                       <Button size="xs" variant="ghost" onClick={() => openEdit(po)} icon={<Edit3 className="w-3 h-3" />} />
-                      <Button size="xs" variant="danger" onClick={() => remove(po)} icon={<Trash2 className="w-3 h-3" />} />
+                      <Button size="xs" variant="danger" onClick={() => setDeleteId(po.id)} icon={<Trash2 className="w-3 h-3" />} />
                     </div>
                   </div>
                   {isExp && (po.lines ?? []).length > 0 && (
@@ -294,6 +296,13 @@ export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }
           </div>
         </div>
       </Modal>
+      <ConfirmModal
+        open={deleteId !== null}
+        title="Delete purchase order?"
+        message={`PO "${pos.find(p => p.id === deleteId)?.ref || deleteId?.slice(0, 6) || ''}" will be permanently deleted.`}
+        onConfirm={() => { if (deleteId) remove(deleteId) }}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }

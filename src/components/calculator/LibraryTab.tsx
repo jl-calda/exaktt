@@ -6,6 +6,7 @@ import { Search, Plus, Trash2, Edit3, Check, X, Package } from 'lucide-react'
 import type { LibraryItem, LibraryItemSpec, GlobalTag } from '@/types'
 import type { Plan } from '@prisma/client'
 import { getLimits } from '@/lib/limits'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
 
 interface Props {
@@ -44,6 +45,7 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
   const [addDraft,  setAddDraft]  = useState<Partial<LibraryItem>>(BLANK_ITEM())
   const [saving,    setSaving]    = useState(false)
   const [error,     setError]     = useState<string | null>(null)
+  const [deleteId,  setDeleteId]  = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/mto/library')
@@ -87,9 +89,9 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Remove from library?')) return
     await fetch('/api/mto/library', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
     setItems(prev => prev.filter(i => i.id !== id))
+    setDeleteId(null)
   }
 
   const startEdit = (item: LibraryItem) => {
@@ -216,7 +218,7 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
                     <button onClick={() => startEdit(item)} className="btn-ghost px-2 py-1.5 text-xs">
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => handleDelete(item.id)} className="btn-ghost px-2 py-1.5 text-xs text-red-500">
+                    <button onClick={() => setDeleteId(item.id)} className="btn-ghost px-2 py-1.5 text-xs text-red-500">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -245,6 +247,13 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
           )
         })}
       </div>
+      <ConfirmModal
+        open={deleteId !== null}
+        title="Remove from library?"
+        message="This item will be permanently removed from your library."
+        onConfirm={() => { if (deleteId) handleDelete(deleteId) }}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }

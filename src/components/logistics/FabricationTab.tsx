@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus, Edit3, Trash2, Check, X, Users } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Modal } from '@/components/ui/Modal'
 import { NumberInput } from '@/components/ui/Input'
 import type { CompanyRole } from '@/types'
@@ -61,6 +62,7 @@ const BLANK_WAR      = { name: '', workCategoryId: '', labourRateId: '', speedMo
 
 export default function FabricationTab({ labourRates, workCategories, workActivityRates, systems, userRole, onRefreshRates, onRefreshCategories, onRefreshActivityRates }: Props) {
   const [section, setSection] = useState<Section>('labour')
+  const [confirmItem, setConfirmItem] = useState<{ type: 'rate' | 'cat' | 'war'; item: any } | null>(null)
   const isOwner = userRole === 'OWNER'
 
   // ─── Labour Category state ─────────────────────────────────────────────────
@@ -89,7 +91,6 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
   }
 
   const removeRate = async (r: any) => {
-    if (!confirm(`Archive "${r.name}"?`)) return
     await fetch('/api/mto/labour-rates', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: r.id }) })
     onRefreshRates()
   }
@@ -133,7 +134,6 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
   }
 
   const removeCat = async (c: any) => {
-    if (!confirm(`Archive "${c.name}"?`)) return
     await fetch('/api/mto/work-categories', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id }) })
     onRefreshCategories()
   }
@@ -190,7 +190,6 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
   }
 
   const removeWar = async (w: any) => {
-    if (!confirm(`Archive "${w.name}"?`)) return
     await fetch('/api/mto/work-activity-rates', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: w.id }) })
     onRefreshActivityRates()
   }
@@ -261,7 +260,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
                     {r.notes && <div className="text-[10px] text-ink-faint italic max-w-[100px] truncate">{r.notes}</div>}
                     <div className="flex gap-0.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => openEditRate(r)} className="p-1 rounded hover:bg-surface-200 text-ink-muted"><Edit3 className="w-3 h-3" /></button>
-                      <button onClick={() => removeRate(r)} className="p-1 rounded hover:bg-red-50 text-ink-muted hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                      <button onClick={() => setConfirmItem({ type: 'rate', item: r })} className="p-1 rounded hover:bg-red-50 text-ink-muted hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
                     </div>
                   </div>
                 ))}
@@ -332,7 +331,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
                     </div>
                     <div className="flex gap-0.5 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => openEditCat(c)} className="p-1 rounded hover:bg-surface-200 text-ink-muted"><Edit3 className="w-3 h-3" /></button>
-                      <button onClick={() => removeCat(c)} className="p-1 rounded hover:bg-red-50 text-ink-muted hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                      <button onClick={() => setConfirmItem({ type: 'cat', item: c })} className="p-1 rounded hover:bg-red-50 text-ink-muted hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
                     </div>
                   </div>
                 ))}

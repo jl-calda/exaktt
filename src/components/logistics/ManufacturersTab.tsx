@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus, Edit3, Trash2, Check, X, Globe, MapPin, Mail, Phone, User } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Modal } from '@/components/ui/Modal'
 
 interface Props {
@@ -94,6 +95,7 @@ export function ManufacturerModal({ open, onClose, editing, onSaved, zIndex }: {
 export default function ManufacturersTab({ manufacturers, library, onRefresh }: Props) {
   const [showModal, setShowModal] = useState(false)
   const [editing,   setEditing]   = useState<any | null>(null)
+  const [deleteId,  setDeleteId]  = useState<string | null>(null)
 
   const materialCount = (mfrId: string) => library.filter(i => i.manufacturerId === mfrId).length
 

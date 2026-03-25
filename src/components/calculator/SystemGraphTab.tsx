@@ -35,7 +35,7 @@ const LEVEL_META = [
   { label: 'Custom Dimensions',    color: '#7c3aed' },
   { label: 'Criteria & Variants',  color: '#d97706' },
   { label: 'Materials',            color: '#64748b' },
-  { label: 'Custom Brackets',      color: '#16a34a' },
+  { label: 'Sub-assemblies',       color: '#16a34a' },
   { label: 'Work Activities',      color: '#0369a1' },
 ]
 
