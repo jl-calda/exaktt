@@ -354,18 +354,28 @@ export function computeWorkSchedule(
     } else {
       crewSize      = Math.max(1, act.crewSize ?? 1)
       totalManHours = elapsedHours * crewSize
-      const rate    = act._labourRateHr
-      labourCost    = (showCost && rate && !isThirdParty)
-        ? totalManHours * rate
-        : undefined
-      // Default to "Worker" role for legacy activities (no crewRoles)
-      if (showCost && rate && !isThirdParty) {
+
+      // Support all four rate unit types (matching bracket activity logic)
+      if (showCost && !isThirdParty) {
+        if (act._rateUnitType === 'per_piece' && act._unitCost != null)
+          labourCost = sourceQty * act._unitCost
+        else if (act._rateUnitType === 'lump_sum' && act._unitCost != null)
+          labourCost = act._unitCost
+        else if (act._rateUnitType === 'per_dim' && act._unitCost != null)
+          labourCost = sourceQty * act._unitCost
+        else if (act._labourRateHr)
+          labourCost = totalManHours * act._labourRateHr
+      }
+
+      // Default to role entry for consistent output
+      if (showCost && labourCost != null && !isThirdParty) {
+        const rate = act._labourRateHr ?? act._unitCost ?? 0
         roleCosts = [{
           roleName:  act._rateName ?? 'Worker',
           count:     crewSize,
           ratePerHr: rate,
           manHours:  totalManHours,
-          cost:      labourCost!,
+          cost:      labourCost,
         }]
       }
     }
