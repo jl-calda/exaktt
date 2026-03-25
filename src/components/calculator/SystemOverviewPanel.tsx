@@ -283,7 +283,7 @@ export default function SystemOverviewPanel({ sys, onViewGraph }: Props) {
 
         {/* ── Custom Brackets ───────────────────────────────────────── */}
         {brackets.length > 0 && (
-          <Section title="Custom Brackets" icon="🔩" count={brackets.length} defaultOpen={false}>
+          <Section title="Sub-assemblies" icon="🔩" count={brackets.length} defaultOpen={false}>
             {brackets.map(b => (
               <Row key={b.id} icon={b.icon} label={b.name}
                 sub={`${b.parameters.length} params · ${b.bom.length} BOM items`}

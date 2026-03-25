@@ -23,7 +23,6 @@ export function useMaterialMutations({ sys, library, onUpdate, syncLibrary = fal
     onUpdate({ materials: sys.materials.map(m => m.id === updated.id ? { ...updated, _updatedAt: Date.now() } : m) })
 
   const deleteMat = (id: string) => {
-    if (!confirm('Delete this material?')) return
     const mat = sys.materials.find(m => m.id === id)
     onUpdate({ materials: sys.materials.filter(m => m.id !== id) })
     if (syncLibrary && mat?.libraryRef) {

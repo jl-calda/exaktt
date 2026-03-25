@@ -249,7 +249,7 @@ const HLL: SampleSystem = {
 
       mat('mat_ll_crimp', 'Crimping Ring LDV008', 'each', 'LDV008',
         'fixed_qty', { ruleQty: 0 },
-        { notes: 'Used via HLL Cable End Assembly bracket — see Custom Brackets panel', unitPrice: 4.50 }),
+        { notes: 'Used via HLL Cable End Assembly bracket — see Sub-assemblies panel', unitPrice: 4.50 }),
     ],
   },
 }
@@ -419,7 +419,7 @@ const VECTALADDER: SampleSystem = {
       // Bracket reference material
       mat('mat_vl_bolt', 'Cage Fixing Bolt M10×75mm (coach)', 'each', 'VL-BOLT10',
         'fixed_qty', { ruleQty: 0 },
-        { notes: 'Issued via Cage Hoop Fixing Kit bracket — see Custom Brackets panel', unitPrice: 1.20 }),
+        { notes: 'Issued via Cage Hoop Fixing Kit bracket — see Sub-assemblies panel', unitPrice: 1.20 }),
     ],
   },
 }

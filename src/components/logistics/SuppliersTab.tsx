@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus, Edit3, Trash2, Check, X, Mail, Phone, MapPin, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Modal } from '@/components/ui/Modal'
 
 interface Props {
@@ -17,6 +18,7 @@ export default function SuppliersTab({ suppliers, onRefresh }: Props) {
   const [editing,   setEditing]   = useState<any | null>(null)
   const [form,      setForm]      = useState({ ...BLANK })
   const [loading,   setLoading]   = useState(false)
+  const [deleteId,  setDeleteId]  = useState<string | null>(null)
 
   const openCreate = () => { setEditing(null); setForm({ ...BLANK }); setShowModal(true) }
   const openEdit   = (s: any) => {
@@ -38,9 +40,9 @@ export default function SuppliersTab({ suppliers, onRefresh }: Props) {
     onRefresh()
   }
 
-  const remove = async (s: any) => {
-    if (!confirm(`Archive "${s.name}"?`)) return
-    await fetch('/api/logistics/suppliers', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: s.id }) })
+  const remove = async (id: string) => {
+    await fetch('/api/logistics/suppliers', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    setDeleteId(null)
     onRefresh()
   }
 
@@ -91,7 +93,7 @@ export default function SuppliersTab({ suppliers, onRefresh }: Props) {
               </div>
               <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button size="xs" variant="ghost" onClick={() => openEdit(s)} icon={<Edit3 className="w-3 h-3" />} />
-                <Button size="xs" variant="danger" onClick={() => remove(s)} icon={<Trash2 className="w-3 h-3" />} />
+                <Button size="xs" variant="danger" onClick={() => setDeleteId(s.id)} icon={<Trash2 className="w-3 h-3" />} />
               </div>
             </div>
           ))}
@@ -139,6 +141,14 @@ export default function SuppliersTab({ suppliers, onRefresh }: Props) {
           </div>
         </div>
       </Modal>
+      <ConfirmModal
+        open={deleteId !== null}
+        title="Archive supplier?"
+        message={`"${suppliers.find(s => s.id === deleteId)?.name ?? ''}" will be archived.`}
+        confirmLabel="Archive"
+        onConfirm={() => { if (deleteId) remove(deleteId) }}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }
