@@ -29,23 +29,20 @@ interface Props {
 }
 
 const STEPS = [
-  { n: 1, label: 'Inputs',        desc: 'What the calculator asks the user for' },
-  { n: 2, label: 'Derived',       desc: 'Quantities computed from inputs' },
-  { n: 3, label: 'Gates',         desc: 'Criteria and warnings that filter materials' },
-  { n: 4, label: 'Variants',      desc: 'User choices that swap product codes' },
-  { n: 5, label: 'Sub-assemblies',desc: 'Quantity rules for declared sub-assemblies' },
-  { n: 6, label: 'Materials',     desc: 'BOM items output by the calculator' },
-  { n: 7, label: 'Schedule',      desc: 'Work activities driven by the BOM' },
+  { n: 1, label: 'Inputs',        desc: 'What the calculator asks the user for', icon: '📏' },
+  { n: 2, label: 'Derived',       desc: 'Quantities computed from inputs',       icon: '🔗' },
+  { n: 3, label: 'Gates',         desc: 'Criteria and warnings that filter materials', icon: '🚦' },
+  { n: 4, label: 'Variants',      desc: 'User choices that swap product codes',  icon: '🔀' },
+  { n: 5, label: 'Sub-assemblies',desc: 'Quantity rules for declared sub-assemblies', icon: '🔩' },
+  { n: 6, label: 'Materials',     desc: 'BOM items output by the calculator',    icon: '📦' },
+  { n: 7, label: 'Schedule',      desc: 'Work activities driven by the BOM',     icon: '⚙️' },
 ]
 
 function StepHeader({ step, children }: { step: typeof STEPS[number]; children: React.ReactNode }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-2 px-1">
-        <div className="w-5 h-5 flex items-center justify-center text-[10px] font-bold text-ink-muted bg-surface-100 border border-surface-200 flex-shrink-0"
-          style={{ borderRadius: 'var(--radius)' }}>
-          {step.n}
-        </div>
+        <span className="text-sm flex-shrink-0">{step.icon}</span>
         <span className="text-xs font-semibold text-ink">{step.label}</span>
         <span className="text-xs text-ink-faint">— {step.desc}</span>
         <div className="flex-1 h-px bg-surface-200" />
