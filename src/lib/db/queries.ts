@@ -942,7 +942,7 @@ export async function createWorkActivityRate(
     categoryName: string; categoryIcon: string
     rateName: string; rateValue: number; rateUnitType: string; rateUnitLabel: string
     speedMode: string; defaultTimePerUnit: number; defaultRatePerHr: number; crewSize: number
-    notes: string
+    notes: string; systemTags: unknown[]
   }>
 ) {
   return prisma.workActivityRate.create({
