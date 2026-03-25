@@ -906,15 +906,29 @@ export interface TenderReportCustomLine {
   marginPct: number
 }
 
+export type TenderBlockCategory = 'header' | 'scope' | 'exclusions' | 'payment_terms' | 'assumptions' | 'notes' | 'custom'
+
 export interface TenderReportTextBlock {
   type: 'text_block'
   id: string
+  category: TenderBlockCategory
   title?: string
-  content: string
+  content: string            // supports basic markup: **bold**, *italic*, - bullet lists
   templateId?: string
 }
 
-export type TenderReportSection = TenderReportJobLine | TenderReportCustomLine | TenderReportTextBlock
+export interface TenderReportImageBlock {
+  type: 'image_block'
+  id: string
+  images: {
+    url: string        // Supabase storage public URL
+    caption?: string
+    width?: number     // percentage (default 100/columns for equal split)
+  }[]
+  columns: number      // 1-4 images per row
+}
+
+export type TenderReportSection = TenderReportJobLine | TenderReportCustomLine | TenderReportTextBlock | TenderReportImageBlock
 
 export interface TenderReport {
   id: string
@@ -927,6 +941,7 @@ export interface TenderReport {
   validUntil?: Date | null
   preparedBy?: string | null
   revisionNo: string
+  status: 'draft' | 'submitted'
   companyName?: string | null
   companyLogo?: string | null
   companyAddr?: string | null
@@ -943,6 +958,7 @@ export interface TenderReport {
   validityPeriod?: string | null
   disclaimer?: string | null
   notes?: string | null
+  internalNotes?: string | null
   currency: string
   showAppendix: boolean
   isArchived: boolean

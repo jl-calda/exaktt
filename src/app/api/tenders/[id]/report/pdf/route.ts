@@ -1,7 +1,7 @@
 // src/app/api/tenders/[id]/report/pdf/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getTenderReport } from '@/lib/db/queries'
+import { getTenderReportById } from '@/lib/db/queries'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { TenderReportPDF } from '@/components/tender/TenderReportPDF'
 import React from 'react'
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     const reportId = req.nextUrl.searchParams.get('reportId')
     if (!reportId) return NextResponse.json({ error: 'reportId required' }, { status: 400 })
 
-    const report = await getTenderReport(id, ctx.companyId) // TODO: get by reportId
+    const report = await getTenderReportById(reportId, ctx.companyId)
     if (!report) return NextResponse.json({ error: 'Report not found' }, { status: 404 })
 
     const element = React.createElement(TenderReportPDF, { report: report as any }) as any

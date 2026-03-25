@@ -875,6 +875,7 @@ model TenderReport {
   validUntil        DateTime?
   preparedBy        String?
   revisionNo        String   @default("0")
+  status            String   @default("draft")
 
   // Branding snapshots
   companyName       String?
@@ -901,6 +902,7 @@ model TenderReport {
   validityPeriod    String?
   disclaimer        String?
   notes             String?
+  internalNotes     String?
 
   // Config
   currency          String   @default("SGD")

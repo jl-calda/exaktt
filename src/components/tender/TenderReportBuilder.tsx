@@ -180,6 +180,7 @@ export default function TenderReportBuilder({
     const section: TenderReportTextBlock = {
       type: 'text_block',
       id: nanoid(),
+      category: 'custom',
       title: template?.blockTitle ?? '',
       content: template?.blockContent ?? '',
       templateId: template?.id,

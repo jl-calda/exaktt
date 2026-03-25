@@ -986,20 +986,57 @@ export async function getTenderReport(tenderId: string, companyId: string) {
   })
 }
 
+export async function getTenderReportById(id: string, companyId: string) {
+  return prisma.tenderReport.findFirst({
+    where: { id, companyId, isArchived: false },
+  })
+}
+
+export async function generateTenderReportReference(companyId: string, companyName: string, clientName: string): Promise<string> {
+  // Extract 3-letter codes
+  const extract3 = (name: string) => {
+    const clean = name.replace(/[^a-zA-Z]/g, '').toUpperCase()
+    return clean.slice(0, 3).padEnd(3, 'X')
+  }
+  const companyCode = extract3(companyName)
+  const clientCode = extract3(clientName || 'GEN')
+  const today = new Date()
+  const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '')
+
+  // Count existing reports today for sequence
+  const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const endOfDay = new Date(startOfDay.getTime() + 86400000)
+  const count = await prisma.tenderReport.count({
+    where: { companyId, createdAt: { gte: startOfDay, lt: endOfDay } },
+  })
+  const seq = String(count + 1).padStart(3, '0')
+
+  return `${companyCode}-${clientCode}-${dateStr}-${seq}`
+}
+
 export async function createTenderReport(companyId: string, createdById: string, tenderId: string, data: any) {
   // Verify tender belongs to company
   await verifyOwnership(prisma.tender, tenderId, companyId, 'Tender')
+
+  // Auto-generate reference if not provided
+  const reference = data.reference ?? await generateTenderReportReference(
+    companyId,
+    data.companyName ?? '',
+    data.clientName ?? '',
+  )
+
   return prisma.tenderReport.create({
     data: {
       companyId,
       createdById,
       tenderId,
       title: data.title ?? 'Quotation',
-      reference: data.reference,
+      reference,
       date: data.date ? new Date(data.date) : new Date(),
       validUntil: data.validUntil ? new Date(data.validUntil) : null,
       preparedBy: data.preparedBy,
       revisionNo: data.revisionNo ?? '0',
+      status: data.status ?? 'draft',
       companyName: data.companyName,
       companyLogo: data.companyLogo,
       companyAddr: data.companyAddr,
@@ -1016,6 +1053,7 @@ export async function createTenderReport(companyId: string, createdById: string,
       validityPeriod: data.validityPeriod,
       disclaimer: data.disclaimer,
       notes: data.notes,
+      internalNotes: data.internalNotes,
       currency: data.currency ?? 'SGD',
       showAppendix: data.showAppendix ?? false,
     },
