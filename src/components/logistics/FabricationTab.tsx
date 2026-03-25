@@ -28,6 +28,17 @@ const SPEED_OPTIONS = [
   { value: 'rate',          label: 'Units / hr'  },
 ]
 
+const PRESET_CATEGORIES = [
+  { name: 'Cutting',    icon: '✂️', color: '#dc2626' },
+  { name: 'Welding',    icon: '🔥', color: '#ea580c' },
+  { name: 'Drilling',   icon: '🔩', color: '#7c3aed' },
+  { name: 'Grinding',   icon: '⚙️', color: '#6b7280' },
+  { name: 'Painting',   icon: '🎨', color: '#2563eb' },
+  { name: 'Assembly',   icon: '🔧', color: '#16a34a' },
+  { name: 'Handling',   icon: '📦', color: '#ca8a04' },
+  { name: 'Inspection', icon: '🔍', color: '#0891b2' },
+]
+
 const BLANK_RATE     = { name: '', category: '', unitType: 'per_hour', unitLabel: 'hr', rate: '', notes: '' }
 const BLANK_CATEGORY = { name: '', icon: '🔧', color: '#7c3aed', description: '' }
 const BLANK_WAR      = { name: '', workCategoryId: '', labourRateId: '', speedMode: 'time_per_unit', defaultTimePerUnit: '', defaultRatePerHr: '', crewSize: '1', notes: '' }
@@ -114,6 +125,11 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
 
   const setCat = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setCatForm(f => ({ ...f, [k]: e.target.value }))
+
+  const quickAddCat = async (preset: { name: string; icon: string; color: string }) => {
+    await fetch('/api/mto/work-categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(preset) })
+    onRefreshCategories()
+  }
 
   // ─── Work Activity Rate state ────────────────────────────────────────────────
   const [warModal,   setWarModal]   = useState(false)
@@ -252,39 +268,58 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
           </div>
 
           {workCategories.length === 0 ? (
-            <div className="card py-16 text-center text-sm text-ink-faint">
-              No work categories yet — add categories like Cutting, Welding, Handling.
+            <div className="card py-12 text-center space-y-4">
+              <div className="text-sm text-ink-faint">No work categories yet. Add some to get started:</div>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {PRESET_CATEGORIES.map(p => (
+                  <button key={p.name} onClick={() => quickAddCat(p)}
+                    className="flex items-center gap-2 px-3 py-2 border border-dashed border-surface-300 text-xs font-medium text-ink-muted hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
+                    style={{ borderRadius: 'var(--radius)' }}>
+                    <span className="text-base">{p.icon}</span> {p.name}
+                  </button>
+                ))}
+              </div>
+              <div className="text-[10px] text-ink-faint">Click to add, or use "Add Category" for custom ones</div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-surface-200 text-ink-faint text-left">
-                    <th className="py-2 pr-4 font-medium">Icon</th>
-                    <th className="py-2 pr-4 font-medium">Name</th>
-                    <th className="py-2 pr-4 font-medium">Description</th>
-                    <th className="py-2 w-16" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {workCategories.map((c: any) => (
-                    <tr key={c.id} className="border-b border-surface-100 group hover:bg-surface-50 transition-colors">
-                      <td className="py-2 pr-4 text-base">{c.icon}</td>
-                      <td className="py-2 pr-4 font-medium text-ink">
-                        <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: c.color }} />
-                        {c.name}
-                      </td>
-                      <td className="py-2 pr-4 text-ink-faint italic truncate max-w-[250px]">{c.description ?? ''}</td>
-                      <td className="py-2">
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
-                          <Button size="xs" variant="ghost" onClick={() => openEditCat(c)} icon={<Edit3 className="w-3 h-3" />} />
-                          <Button size="xs" variant="danger" onClick={() => removeCat(c)} icon={<Trash2 className="w-3 h-3" />} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {workCategories.map((c: any) => (
+                  <div key={c.id} className="group relative flex items-center gap-2 px-3 py-2 border border-surface-200 bg-surface-50 hover:border-surface-300 transition-colors"
+                    style={{ borderRadius: 'var(--radius)', borderLeft: `3px solid ${c.color}` }}>
+                    <span className="text-lg">{c.icon}</span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-ink">{c.name}</div>
+                      {c.description && <div className="text-[10px] text-ink-faint truncate max-w-[150px]">{c.description}</div>}
+                    </div>
+                    <div className="flex gap-0.5 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openEditCat(c)} className="p-1 rounded hover:bg-surface-200 text-ink-muted"><Edit3 className="w-3 h-3" /></button>
+                      <button onClick={() => removeCat(c)} className="p-1 rounded hover:bg-red-50 text-ink-muted hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                    </div>
+                  </div>
+                ))}
+                {/* Inline add button */}
+                <button onClick={openCreateCat}
+                  className="flex items-center gap-1.5 px-3 py-2 border border-dashed border-surface-300 text-xs text-ink-faint hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
+                  style={{ borderRadius: 'var(--radius)' }}>
+                  <Plus className="w-3 h-3" /> Add
+                </button>
+              </div>
+              {/* Quick-add presets if some are missing */}
+              {PRESET_CATEGORIES.filter(p => !workCategories.some((c: any) => c.name === p.name)).length > 0 && (
+                <div>
+                  <div className="text-[10px] text-ink-faint mb-1.5">Quick add:</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PRESET_CATEGORIES.filter(p => !workCategories.some((c: any) => c.name === p.name)).map(p => (
+                      <button key={p.name} onClick={() => quickAddCat(p)}
+                        className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-ink-faint border border-dashed border-surface-200 hover:border-primary hover:text-primary transition-all"
+                        style={{ borderRadius: 'var(--radius)' }}>
+                        {p.icon} {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </>
@@ -392,19 +427,34 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
 
       {/* ─── Work Category Modal ───────────────────────────────────────────────── */}
       <Modal open={catModal} onClose={() => setCatModal(false)} title={catEditing ? 'Edit Category' : 'Add Category'} maxWidth="max-w-sm">
-        <div className="space-y-3">
+        <div className="space-y-4">
+          {/* Live preview */}
+          <div className="flex items-center justify-center py-3">
+            <div className="flex items-center gap-2 px-4 py-2.5 border border-surface-200 bg-surface-50"
+              style={{ borderRadius: 'var(--radius)', borderLeft: `3px solid ${catForm.color}` }}>
+              <span className="text-xl">{catForm.icon || '🔧'}</span>
+              <span className="text-sm font-semibold text-ink">{catForm.name || 'Category Name'}</span>
+            </div>
+          </div>
           <div>
             <label className="label">Name *</label>
             <input className="input" value={catForm.name} onChange={setCat('name')} placeholder="e.g. Cutting, Welding" autoFocus />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Icon</label>
-              <input className="input" value={catForm.icon} onChange={setCat('icon')} placeholder="🔧" />
+              <label className="label">Icon (emoji)</label>
+              <div className="relative">
+                <input className="input pl-9 text-center" value={catForm.icon} onChange={setCat('icon')} placeholder="🔧" />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg pointer-events-none">{catForm.icon || '🔧'}</span>
+              </div>
             </div>
             <div>
               <label className="label">Color</label>
-              <input className="input" type="color" value={catForm.color} onChange={setCat('color')} />
+              <div className="flex items-center gap-2">
+                <input type="color" value={catForm.color} onChange={setCat('color')}
+                  className="w-9 h-9 rounded cursor-pointer border border-surface-200 p-0.5" />
+                <input className="input flex-1 font-mono text-xs" value={catForm.color} onChange={setCat('color')} placeholder="#7c3aed" />
+              </div>
             </div>
           </div>
           <div>
