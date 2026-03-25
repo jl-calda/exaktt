@@ -715,6 +715,7 @@ export interface WorkActivityRate {
   crewSize:       number
   notes?:         string | null
   isArchived:     boolean
+  systemTags?:    string[]
 }
 
 // Instance of a WorkActivityRate applied to a bracket

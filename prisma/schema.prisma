@@ -840,6 +840,7 @@ model WorkActivityRate {
 
   notes       String?
   isArchived  Boolean  @default(false)
+  systemTags  Json     @default("[]")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
