@@ -746,8 +746,8 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     : []
 
   return (
-    <div className="flex flex-col gap-6 items-start relative">
-      <div className="w-full flex-shrink-0 space-y-5">
+    <div className="flex flex-col xl:flex-row gap-6 items-start relative">
+      <div className="w-full xl:w-96 flex-shrink-0 space-y-5">
 
         <CalcStep n={1}>
         <div className="card p-4">

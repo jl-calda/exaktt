@@ -68,10 +68,10 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
     useMaterialMutations({ sys, library, onUpdate })
 
   return (
-    <div className="flex flex-col gap-6 items-start relative">
+    <div className="flex gap-6 items-start relative">
 
-    {/* Floating toggle buttons — bottom-right stack */}
-    <div className="fixed bottom-4 right-4 z-40 flex flex-col gap-2">
+    {/* Floating toggle — visible on < xl only */}
+    <div className="xl:hidden fixed bottom-4 right-4 z-40 flex flex-col gap-2">
       <Button size="sm"
         variant={showOverview ? 'primary' : 'secondary'}
         onClick={() => setShowOverview(v => !v)}
@@ -81,7 +81,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
       </Button>
     </div>
 
-    {/* Floating Overview sidebar */}
+    {/* Floating Overview sidebar — visible on < xl only */}
     <FloatingPanel open={showOverview} onClose={() => setShowOverview(false)} title="System Overview"
       icon={<BookOpen className="w-3.5 h-3.5 text-primary" />}>
       <SystemOverviewPanel sys={sys} onViewGraph={onViewGraph} />
@@ -299,6 +299,11 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
         />
       </StepHeader>
     </div>
+
+    {/* Persistent sidebar — xl+ only */}
+    <aside className="hidden xl:block w-72 flex-shrink-0 sticky top-4 self-start max-h-[calc(100vh-4rem)] overflow-y-auto">
+      <SystemOverviewPanel sys={sys} onViewGraph={onViewGraph} />
+    </aside>
 
   </div>
   )
