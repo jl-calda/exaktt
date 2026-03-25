@@ -157,18 +157,23 @@ export default function CriteriaPanel({ customCriteria, customDims, inputModel, 
           <Button size="sm" variant="secondary" onClick={onCancel} icon={<X className="w-3.5 h-3.5" />}>Cancel</Button>
         </div>
       </div>
-      {/* Field Guide floating toggle */}
+      {/* Field Guide: inline on xl+, floating on small screens */}
       {guideItems.length > 0 && (
         <>
-          <Button size="xs" variant={guideOpen ? 'primary' : 'secondary'}
-            onClick={() => setGuideOpen(v => !v)}
-            icon={<BookOpen className="w-3 h-3" />}>
-            Field Guide
-          </Button>
-          <FloatingPanel open={guideOpen} onClose={() => setGuideOpen(false)} title="Field Guide"
-            icon={<BookOpen className="w-3.5 h-3.5 text-primary" />} width="w-80">
+          <div className="hidden xl:block">
             <FieldGuide type={d.type} items={guideItems} />
-          </FloatingPanel>
+          </div>
+          <div className="xl:hidden">
+            <Button size="xs" variant={guideOpen ? 'primary' : 'secondary'}
+              onClick={() => setGuideOpen(v => !v)}
+              icon={<BookOpen className="w-3 h-3" />}>
+              Field Guide
+            </Button>
+            <FloatingPanel open={guideOpen} onClose={() => setGuideOpen(false)} title="Field Guide"
+              icon={<BookOpen className="w-3.5 h-3.5 text-primary" />} width="w-80">
+              <FieldGuide type={d.type} items={guideItems} />
+            </FloatingPanel>
+          </div>
         </>
       )}
     </div>
