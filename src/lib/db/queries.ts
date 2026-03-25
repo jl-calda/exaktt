@@ -136,7 +136,7 @@ export async function getMtoSystems(companyId: string) {
     where:   { companyId, isArchived: false },
     orderBy: { updatedAt: 'desc' },
     select: {
-      id: true, name: true, description: true,
+      id: true, name: true, shortName: true, description: true,
       icon: true, color: true, inputModel: true,
       createdAt: true, updatedAt: true,
       _count: { select: { mtoJobs: true } },

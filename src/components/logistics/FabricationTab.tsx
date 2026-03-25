@@ -411,7 +411,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
                                     const sys = systems.find((s: any) => s.id === sId)
                                     return sys ? (
                                       <span key={sId} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-surface-100 text-ink-muted rounded-full">
-                                        <span className="text-xs">{sys.icon}</span> {sys.name}
+                                        <span className="text-xs">{sys.icon}</span> {sys.shortName || sys.name}
                                       </span>
                                     ) : null
                                   })}
@@ -597,7 +597,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-surface-200 text-ink-muted hover:border-surface-300'
                       }`}>
-                      <span className="text-sm">{s.icon}</span> {s.name}
+                      <span className="text-sm">{s.icon}</span> {s.shortName || s.name}
                     </button>
                   )
                 })}
