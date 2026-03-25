@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/db/prisma'
-import { getLibraryItems, getSuppliers, getPurchaseOrders, getDeliveryOrders, getCompanyPlan, getMaterialCategories, getMaterialGrades, getManufacturers, getLabourRates, getWorkCategories, getWorkActivityRates, getUserCompany } from '@/lib/db/queries'
+import { getLibraryItems, getSuppliers, getPurchaseOrders, getDeliveryOrders, getCompanyPlan, getMaterialCategories, getMaterialGrades, getManufacturers, getLabourRates, getWorkCategories, getWorkActivityRates, getMtoSystems, getUserCompany } from '@/lib/db/queries'
 import LogisticsClient from '@/components/logistics/LogisticsClient'
 
 export default async function LogisticsPage() {
@@ -19,7 +19,7 @@ export default async function LogisticsPage() {
   const member = await prisma.companyMember.findFirst({ where: { userId: user.id, companyId }, select: { role: true } })
   const userRole = (member?.role ?? 'MEMBER') as string
 
-  const [library, suppliers, pos, dos, plan, categories, grades, manufacturers, labourRates, workCategories, workActivityRates] = await Promise.all([
+  const [library, suppliers, pos, dos, plan, categories, grades, manufacturers, labourRates, workCategories, workActivityRates, systems] = await Promise.all([
     getLibraryItems(companyId),
     getSuppliers(companyId),
     getPurchaseOrders(companyId),
@@ -31,6 +31,7 @@ export default async function LogisticsPage() {
     getLabourRates(companyId),
     getWorkCategories(companyId),
     getWorkActivityRates(companyId),
+    getMtoSystems(companyId),
   ])
 
   return (
@@ -46,6 +47,7 @@ export default async function LogisticsPage() {
       labourRates={labourRates as any[]}
       workCategories={workCategories as any[]}
       workActivityRates={workActivityRates as any[]}
+      systems={systems as any[]}
       userRole={userRole as any}
     />
   )

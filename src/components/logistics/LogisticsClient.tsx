@@ -36,10 +36,11 @@ interface Props {
   labourRates:       any[]
   workCategories:    any[]
   workActivityRates: any[]
+  systems:           any[]
   userRole:          CompanyRole
 }
 
-export default function LogisticsClient({ library: initialLibrary, suppliers: initialSuppliers, pos: initialPos, dos: initialDos, plan, categories: initialCategories, grades: initialGrades, manufacturers: initialManufacturers, labourRates: initialLabourRates, workCategories: initialWorkCategories, workActivityRates: initialWorkActivityRates, userRole }: Props) {
+export default function LogisticsClient({ library: initialLibrary, suppliers: initialSuppliers, pos: initialPos, dos: initialDos, plan, categories: initialCategories, grades: initialGrades, manufacturers: initialManufacturers, labourRates: initialLabourRates, workCategories: initialWorkCategories, workActivityRates: initialWorkActivityRates, systems, userRole }: Props) {
   const [tab,           setTab]           = useState<Tab>('overview')
   const [library,       setLibrary]       = useState(initialLibrary)
   const [suppliers,     setSuppliers]     = useState(initialSuppliers)
@@ -133,7 +134,7 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
           {tab === 'materials'  && <MaterialsTab library={library} suppliers={suppliers} categories={categories} grades={grades} manufacturers={manufacturers} onRefresh={refreshLibrary} onRefreshCategories={refreshCategories} onRefreshGrades={refreshGrades} onRefreshManufacturers={refreshManufacturers} />}
           {tab === 'suppliers'      && <SuppliersTab suppliers={suppliers} onRefresh={refreshSuppliers} />}
           {tab === 'manufacturers'  && <ManufacturersTab manufacturers={manufacturers} library={library} onRefresh={refreshManufacturers} />}
-          {tab === 'fabrication'    && <FabricationTab labourRates={labourRates} workCategories={workCategories} workActivityRates={workActivityRates} userRole={userRole} onRefreshRates={refreshLabourRates} onRefreshCategories={refreshWorkCategories} onRefreshActivityRates={refreshWorkActivityRates} />}
+          {tab === 'fabrication'    && <FabricationTab labourRates={labourRates} workCategories={workCategories} workActivityRates={workActivityRates} systems={systems} userRole={userRole} onRefreshRates={refreshLabourRates} onRefreshCategories={refreshWorkCategories} onRefreshActivityRates={refreshWorkActivityRates} />}
           {tab === 'orders'     && <PurchaseOrdersTab pos={pos} suppliers={suppliers} library={library} onRefresh={refreshPos} />}
           {tab === 'deliveries' && <DeliveriesTab dos={dos} pos={pos} library={library} onRefresh={refreshDos} onRefreshPos={refreshPos} />}
         </div>
