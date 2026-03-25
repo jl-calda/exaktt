@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus, Mail, Phone, MapPin, Pencil, Trash2, FileText } from 'lucide-react'
 import ClientModal from '@/components/ui/ClientModal'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import type { ClientData } from '@/components/ui/ClientModal'
 
 interface Client {
@@ -23,6 +24,7 @@ export default function ClientsClient({ initialClients }: Props) {
   const [clients,   setClients]   = useState<Client[]>(initialClients)
   const [modal,     setModal]     = useState<{ open: boolean; editing: Client | null }>({ open: false, editing: null })
   const [removing,  setRemoving]  = useState<string | null>(null)
+  const [deleteId,  setDeleteId]  = useState<string | null>(null)
 
   const openCreate = () => setModal({ open: true, editing: null })
   const openEdit   = (c: Client) => setModal({ open: true, editing: c })
@@ -41,11 +43,11 @@ export default function ClientsClient({ initialClients }: Props) {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Archive this client? They will no longer appear in suggestions.')) return
     setRemoving(id)
     await fetch(`/api/clients/${id}`, { method: 'DELETE' })
     setClients(prev => prev.filter(c => c.id !== id))
     setRemoving(null)
+    setDeleteId(null)
   }
 
   return (
@@ -87,7 +89,7 @@ export default function ClientsClient({ initialClients }: Props) {
                       title="Edit">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => handleDelete(client.id)} disabled={removing === client.id}
+                    <button onClick={() => setDeleteId(client.id)} disabled={removing === client.id}
                       className="p-1.5 rounded-lg text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
                       title="Archive">
                       <Trash2 className="w-3.5 h-3.5" />
@@ -148,6 +150,14 @@ export default function ClientsClient({ initialClients }: Props) {
           onClose={closeModal}
         />
       )}
+      <ConfirmModal
+        open={deleteId !== null}
+        title="Archive client?"
+        message="This client will no longer appear in suggestions."
+        confirmLabel="Archive"
+        onConfirm={() => { if (deleteId) handleDelete(deleteId) }}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }

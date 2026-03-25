@@ -484,6 +484,17 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
       )}
 
       <div className="divide-y divide-surface-200" key="list">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-surface-100 border-b border-surface-200 text-left">
+              <th className="px-3 py-2.5 w-14"></th>
+              <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide text-ink-faint min-w-52">Sub-assembly</th>
+              <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide text-ink-faint w-24 text-center">BOM</th>
+              <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide text-ink-faint">Info</th>
+              <th className="px-3 py-2.5 w-28"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-surface-100">
         {customBrackets.map(bracket => {
           const isEd  = editingId === bracket.id
           const isExp = expandedId === bracket.id && !isEd
@@ -492,22 +503,30 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
             return sum + (ref.timeUnit === 'hr' ? t * 60 : t)
           }, 0)
           return (
-            <div key={bracket.id} className={isEd ? 'bg-primary/5' : ''}>
+            <tr key={bracket.id} className={isEd ? 'bg-primary/5' : 'hover:bg-surface-100/50 transition-colors'}>
+              <td colSpan={5} className="p-0">
+              <div className={isEd ? 'bg-primary/5' : ''}>
               <div className="px-5 py-3 flex items-start gap-3">
                 <span className="text-lg flex-shrink-0 mt-0.5">{bracket.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-sm text-ink">{bracket.name}</span>
-                    {bracket.code && <span className="font-mono text-xs text-ink-faint">{bracket.code}</span>}
+                    {bracket.code && <code className="text-[10px] bg-surface-100 text-ink-muted px-1.5 py-0.5 rounded font-mono">{bracket.code}</code>}
                     {(bracket.parameters ?? []).length > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold text-ink" style={{ background: 'var(--color-surface-100)' }}>parametric</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold text-purple-700 bg-purple-50">parametric</span>
+                    )}
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-surface-100 text-ink-muted">
+                      {(bracket.bom ?? []).length} BOM
+                    </span>
+                    {totalFabMin > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-amber-50 text-amber-700">
+                        {totalFabMin.toFixed(0)} min fab
+                      </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 mt-0.5 text-xs text-ink-muted flex-wrap">
-                    <span>{(bracket.bom ?? []).length} BOM items</span>
-                    {totalFabMin > 0 && <span>{totalFabMin.toFixed(0)} min fab</span>}
-                    {bracket.description && <span className="text-ink-faint">{bracket.description}</span>}
-                  </div>
+                  {bracket.description && (
+                    <p className="text-xs text-ink-faint mt-0.5 italic truncate max-w-md">{bracket.description}</p>
+                  )}
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
                   <Button size="xs" variant="ghost" onClick={() => setExpandedId(isExp ? null : bracket.id)}
@@ -615,8 +634,12 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
                 </div>
               )}
             </div>
+            </td>
+            </tr>
           )
         })}
+          </tbody>
+        </table>
       </div>
       <ConfirmModal
         open={deleteId !== null}

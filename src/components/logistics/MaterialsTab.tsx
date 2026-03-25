@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Search, Edit3, Trash2, Check, X, ImagePlus, Loader2, Plus, ChevronDown, Settings2, FileText, Download, Paperclip } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Modal } from '@/components/ui/Modal'
 import { ManufacturerModal } from './ManufacturersTab'
 import AddMaterialModal from '@/components/calculator/panels/AddMaterialModal'
@@ -722,6 +723,7 @@ export default function MaterialsTab({ library, suppliers, categories, grades, m
   const [imgLoading,      setImgLoading]       = useState(false)
   const [searchFocused,   setSearchFocused]    = useState(false)
   const [addModalOpen,    setAddModalOpen]     = useState(false)
+  const [deleteId,        setDeleteId]         = useState<string | null>(null)
   const [createInitName,  setCreateInitName]   = useState('')
   const tempIdRef   = useRef(nanoid())
   const fileRef     = useRef<HTMLInputElement>(null)
@@ -799,9 +801,9 @@ export default function MaterialsTab({ library, suppliers, categories, grades, m
     setLoading(false); closeModal(); onRefresh()
   }
 
-  const remove = async (item: any) => {
-    if (!confirm(`Delete "${item.name}" from the library?`)) return
-    await fetch('/api/mto/library', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: item.id }) })
+  const remove = async (id: string) => {
+    await fetch('/api/mto/library', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    setDeleteId(null)
     onRefresh()
   }
 
@@ -980,7 +982,7 @@ export default function MaterialsTab({ library, suppliers, categories, grades, m
                     <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
                       <div className="flex gap-1">
                         <Button size="xs" variant="ghost" onClick={() => openEdit(item)} icon={<Edit3 className="w-3 h-3" />}>Edit</Button>
-                        <Button size="xs" variant="danger" onClick={() => remove(item)} icon={<Trash2 className="w-3 h-3" />} />
+                        <Button size="xs" variant="danger" onClick={() => setDeleteId(item.id)} icon={<Trash2 className="w-3 h-3" />} />
                       </div>
                     </td>
                   </tr>
@@ -1139,6 +1141,13 @@ export default function MaterialsTab({ library, suppliers, categories, grades, m
         initialName={createInitName}
         onClose={() => setAddModalOpen(false)}
         onAddFromLib={() => onRefresh()}
+      />
+      <ConfirmModal
+        open={deleteId !== null}
+        title="Delete from library?"
+        message={`"${library.find(i => i.id === deleteId)?.name ?? ''}" will be permanently removed from the library.`}
+        onConfirm={() => { if (deleteId) remove(deleteId) }}
+        onCancel={() => setDeleteId(null)}
       />
     </div>
   )

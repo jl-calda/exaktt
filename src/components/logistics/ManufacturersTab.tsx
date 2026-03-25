@@ -102,9 +102,9 @@ export default function ManufacturersTab({ manufacturers, library, onRefresh }: 
   const openCreate = () => { setEditing(null); setShowModal(true) }
   const openEdit   = (m: any) => { setEditing(m); setShowModal(true) }
 
-  const remove = async (m: any) => {
-    if (!confirm(`Archive "${m.name}"? Materials linked to this manufacturer will be unlinked.`)) return
-    await fetch('/api/mto/manufacturers', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: m.id }) })
+  const remove = async (id: string) => {
+    await fetch('/api/mto/manufacturers', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    setDeleteId(null)
     onRefresh()
   }
 
@@ -169,7 +169,7 @@ export default function ManufacturersTab({ manufacturers, library, onRefresh }: 
                 </div>
                 <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button size="xs" variant="ghost" onClick={() => openEdit(m)} icon={<Edit3 className="w-3 h-3" />} />
-                  <Button size="xs" variant="danger" onClick={() => remove(m)} icon={<Trash2 className="w-3 h-3" />} />
+                  <Button size="xs" variant="danger" onClick={() => setDeleteId(m.id)} icon={<Trash2 className="w-3 h-3" />} />
                 </div>
               </div>
             )
@@ -182,6 +182,14 @@ export default function ManufacturersTab({ manufacturers, library, onRefresh }: 
         onClose={() => setShowModal(false)}
         editing={editing}
         onSaved={onRefresh}
+      />
+      <ConfirmModal
+        open={deleteId !== null}
+        title="Archive manufacturer?"
+        message={`"${manufacturers.find(m => m.id === deleteId)?.name ?? ''}" will be archived. Materials linked to this manufacturer will be unlinked.`}
+        confirmLabel="Archive"
+        onConfirm={() => { if (deleteId) remove(deleteId) }}
+        onCancel={() => setDeleteId(null)}
       />
     </div>
   )
