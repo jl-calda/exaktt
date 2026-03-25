@@ -671,7 +671,9 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
 
   // Compute work schedule when results are available
   const workSchedule: WorkScheduleSummary | null = (() => {
-    if (!calc.multiResults || !(sys.workActivities?.length)) return null
+    if (!calc.multiResults) return null
+    const hasBracketActivities = (sys.customBrackets ?? []).some(b => (b.workActivityRefs ?? []).length > 0)
+    if (!(sys.workActivities?.length) && !hasBracketActivities) return null
     const dimValues: Record<string, number> = {}
     for (const run of calc.runs) {
       const job = { ...(run.job ?? {}), ...(run.simpleJob ?? {}) } as Record<string, any>
