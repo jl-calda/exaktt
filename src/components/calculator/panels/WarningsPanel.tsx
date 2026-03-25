@@ -97,16 +97,21 @@ function WarnForm({ dimOptions, d, onField, onSubmit, onCancel, submitLabel, dim
           <Button size="sm" variant="secondary" onClick={onCancel} icon={<X className="w-3.5 h-3.5" />}>Cancel</Button>
         </div>
       </div>
-      {/* Field Guide floating toggle */}
-      <Button size="xs" variant={guideOpen ? 'primary' : 'secondary'}
-        onClick={() => setGuideOpen(v => !v)}
-        icon={<BookOpen className="w-3 h-3" />}>
-        Field Guide
-      </Button>
-      <FloatingPanel open={guideOpen} onClose={() => setGuideOpen(false)} title="Field Guide"
-        icon={<BookOpen className="w-3.5 h-3.5 text-primary" />} width="w-80">
+      {/* Field Guide: inline on xl+, floating on small screens */}
+      <div className="hidden xl:block">
         <FieldGuide />
-      </FloatingPanel>
+      </div>
+      <div className="xl:hidden">
+        <Button size="xs" variant={guideOpen ? 'primary' : 'secondary'}
+          onClick={() => setGuideOpen(v => !v)}
+          icon={<BookOpen className="w-3 h-3" />}>
+          Field Guide
+        </Button>
+        <FloatingPanel open={guideOpen} onClose={() => setGuideOpen(false)} title="Field Guide"
+          icon={<BookOpen className="w-3.5 h-3.5 text-primary" />} width="w-80">
+          <FieldGuide />
+        </FloatingPanel>
+      </div>
     </div>
   )
 }
