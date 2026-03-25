@@ -2,6 +2,7 @@
 'use client'
 import { useState } from 'react'
 import type { Plan } from '@prisma/client'
+import type { CompanyRole } from '@/types'
 import { LayoutDashboard, Package, Building2, ShoppingCart, Truck, Factory, Hammer } from 'lucide-react'
 import OverviewTab        from './OverviewTab'
 import MaterialsTab       from './MaterialsTab'
@@ -35,9 +36,10 @@ interface Props {
   labourRates:       any[]
   workCategories:    any[]
   workActivityRates: any[]
+  userRole:          CompanyRole
 }
 
-export default function LogisticsClient({ library: initialLibrary, suppliers: initialSuppliers, pos: initialPos, dos: initialDos, plan, categories: initialCategories, grades: initialGrades, manufacturers: initialManufacturers, labourRates: initialLabourRates, workCategories: initialWorkCategories, workActivityRates: initialWorkActivityRates }: Props) {
+export default function LogisticsClient({ library: initialLibrary, suppliers: initialSuppliers, pos: initialPos, dos: initialDos, plan, categories: initialCategories, grades: initialGrades, manufacturers: initialManufacturers, labourRates: initialLabourRates, workCategories: initialWorkCategories, workActivityRates: initialWorkActivityRates, userRole }: Props) {
   const [tab,           setTab]           = useState<Tab>('overview')
   const [library,       setLibrary]       = useState(initialLibrary)
   const [suppliers,     setSuppliers]     = useState(initialSuppliers)
@@ -113,7 +115,7 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
             <span>Manufacturers</span><span className="font-semibold text-ink">{manufacturers.length}</span>
           </div>
           <div className="flex justify-between text-[10px] text-ink-faint">
-            <span>Rates</span><span className="font-semibold text-ink">{labourRates.length}</span>
+            <span>Labour</span><span className="font-semibold text-ink">{labourRates.length}</span>
           </div>
           <div className="flex justify-between text-[10px] text-ink-faint">
             <span>Open POs</span><span className="font-semibold text-ink">{pos.filter(p => ['DRAFT','SENT'].includes(p.status)).length}</span>
@@ -131,7 +133,7 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
           {tab === 'materials'  && <MaterialsTab library={library} suppliers={suppliers} categories={categories} grades={grades} manufacturers={manufacturers} onRefresh={refreshLibrary} onRefreshCategories={refreshCategories} onRefreshGrades={refreshGrades} onRefreshManufacturers={refreshManufacturers} />}
           {tab === 'suppliers'      && <SuppliersTab suppliers={suppliers} onRefresh={refreshSuppliers} />}
           {tab === 'manufacturers'  && <ManufacturersTab manufacturers={manufacturers} library={library} onRefresh={refreshManufacturers} />}
-          {tab === 'fabrication'    && <FabricationTab labourRates={labourRates} workCategories={workCategories} workActivityRates={workActivityRates} onRefreshRates={refreshLabourRates} onRefreshCategories={refreshWorkCategories} onRefreshActivityRates={refreshWorkActivityRates} />}
+          {tab === 'fabrication'    && <FabricationTab labourRates={labourRates} workCategories={workCategories} workActivityRates={workActivityRates} userRole={userRole} onRefreshRates={refreshLabourRates} onRefreshCategories={refreshWorkCategories} onRefreshActivityRates={refreshWorkActivityRates} />}
           {tab === 'orders'     && <PurchaseOrdersTab pos={pos} suppliers={suppliers} library={library} onRefresh={refreshPos} />}
           {tab === 'deliveries' && <DeliveriesTab dos={dos} pos={pos} library={library} onRefresh={refreshDos} onRefreshPos={refreshPos} />}
         </div>

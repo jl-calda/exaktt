@@ -1,20 +1,22 @@
 // src/components/logistics/FabricationTab.tsx
 'use client'
 import { useState } from 'react'
-import { Plus, Edit3, Trash2, Check, X } from 'lucide-react'
+import { Plus, Edit3, Trash2, Check, X, Users } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
+import type { CompanyRole } from '@/types'
 
 interface Props {
   labourRates:       any[]
   workCategories:    any[]
   workActivityRates: any[]
+  userRole:          CompanyRole
   onRefreshRates:          () => void
   onRefreshCategories:     () => void
   onRefreshActivityRates:  () => void
 }
 
-type Section = 'rates' | 'categories' | 'activity-rates'
+type Section = 'labour' | 'categories' | 'activity-rates'
 
 const UNIT_OPTIONS = [
   { value: 'per_piece', label: 'Per piece',     defaultUnit: 'pc'  },
@@ -28,7 +30,7 @@ const SPEED_OPTIONS = [
   { value: 'rate',          label: 'Units / hr'  },
 ]
 
-const PRESET_CATEGORIES = [
+const PRESET_WORK_CATEGORIES = [
   { name: 'Cutting',    icon: '✂️', color: '#dc2626' },
   { name: 'Welding',    icon: '🔥', color: '#ea580c' },
   { name: 'Drilling',   icon: '🔩', color: '#7c3aed' },
@@ -39,14 +41,27 @@ const PRESET_CATEGORIES = [
   { name: 'Inspection', icon: '🔍', color: '#0891b2' },
 ]
 
-const BLANK_RATE     = { name: '', category: '', unitType: 'per_hour', unitLabel: 'hr', rate: '', notes: '' }
+const PRESET_LABOUR_CATEGORIES = [
+  { name: 'Worker',        category: 'Labour', unitType: 'per_hour', unitLabel: 'hr' },
+  { name: 'Supervisor',    category: 'Labour', unitType: 'per_hour', unitLabel: 'hr' },
+  { name: 'Foreman',       category: 'Labour', unitType: 'per_hour', unitLabel: 'hr' },
+  { name: 'Skilled Trade',  category: 'Labour', unitType: 'per_hour', unitLabel: 'hr' },
+  { name: 'Apprentice',    category: 'Labour', unitType: 'per_hour', unitLabel: 'hr' },
+]
+
+const LABOUR_ICONS: Record<string, string> = {
+  'Worker': '👷', 'Supervisor': '👔', 'Foreman': '🏗️', 'Skilled Trade': '🔧', 'Apprentice': '🎓',
+}
+
+const BLANK_RATE     = { name: '', category: 'Labour', unitType: 'per_hour', unitLabel: 'hr', rate: '', notes: '' }
 const BLANK_CATEGORY = { name: '', icon: '🔧', color: '#7c3aed', description: '' }
 const BLANK_WAR      = { name: '', workCategoryId: '', labourRateId: '', speedMode: 'time_per_unit', defaultTimePerUnit: '', defaultRatePerHr: '', crewSize: '1', notes: '' }
 
-export default function FabricationTab({ labourRates, workCategories, workActivityRates, onRefreshRates, onRefreshCategories, onRefreshActivityRates }: Props) {
-  const [section, setSection] = useState<Section>('rates')
+export default function FabricationTab({ labourRates, workCategories, workActivityRates, userRole, onRefreshRates, onRefreshCategories, onRefreshActivityRates }: Props) {
+  const [section, setSection] = useState<Section>('labour')
+  const isOwner = userRole === 'OWNER'
 
-  // ─── Labour Rate state ───────────────────────────────────────────────────────
+  // ─── Labour Category state ─────────────────────────────────────────────────
   const [rateModal,   setRateModal]   = useState(false)
   const [rateEditing, setRateEditing] = useState<any | null>(null)
   const [rateForm,    setRateForm]    = useState({ ...BLANK_RATE })
@@ -55,7 +70,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
   const openCreateRate = () => { setRateEditing(null); setRateForm({ ...BLANK_RATE }); setRateModal(true) }
   const openEditRate   = (r: any) => {
     setRateEditing(r)
-    setRateForm({ name: r.name, category: r.category ?? '', unitType: r.unitType, unitLabel: r.unitLabel ?? '', rate: String(r.rate ?? ''), notes: r.notes ?? '' })
+    setRateForm({ name: r.name, category: r.category ?? 'Labour', unitType: r.unitType, unitLabel: r.unitLabel ?? '', rate: String(r.rate ?? ''), notes: r.notes ?? '' })
     setRateModal(true)
   }
 
@@ -77,6 +92,11 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
     onRefreshRates()
   }
 
+  const quickAddLabour = async (preset: typeof PRESET_LABOUR_CATEGORIES[number]) => {
+    await fetch('/api/mto/labour-rates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...preset, rate: 0 }) })
+    onRefreshRates()
+  }
+
   const setRate = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setRateForm(f => ({ ...f, [k]: e.target.value }))
 
@@ -85,13 +105,6 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
     const opt = UNIT_OPTIONS.find(o => o.value === unitType)
     setRateForm(f => ({ ...f, unitType, unitLabel: opt?.defaultUnit ?? '' }))
   }
-
-  // Group rates by category
-  const groupedRates = labourRates.reduce<Record<string, any[]>>((acc, r) => {
-    const cat = r.category || 'Uncategorised'
-    ;(acc[cat] ??= []).push(r)
-    return acc
-  }, {})
 
   // ─── Work Category state ─────────────────────────────────────────────────────
   const [catModal,   setCatModal]   = useState(false)
@@ -193,7 +206,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
       {/* Section tabs */}
       <div className="flex gap-1 border-b border-surface-200 pb-px">
         {([
-          { id: 'rates' as Section, label: 'Labour Rates', count: labourRates.length },
+          { id: 'labour' as Section, label: 'Labour Categories', count: labourRates.length },
           { id: 'categories' as Section, label: 'Work Categories', count: workCategories.length },
           { id: 'activity-rates' as Section, label: 'Activity Rates', count: workActivityRates.length },
         ]).map(t => (
@@ -204,56 +217,77 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
         ))}
       </div>
 
-      {/* ─── Labour Rates ──────────────────────────────────────────────────────── */}
-      {section === 'rates' && (
+      {/* ─── Labour Categories ─────────────────────────────────────────────────── */}
+      {section === 'labour' && (
         <>
           <div className="flex justify-between items-center">
-            <div className="text-sm text-ink-faint">{labourRates.length} rate{labourRates.length !== 1 ? 's' : ''}</div>
-            <Button size="sm" onClick={openCreateRate} icon={<Plus className="w-3.5 h-3.5" />}>Add Rate</Button>
+            <div className="text-sm text-ink-faint">{labourRates.length} categor{labourRates.length !== 1 ? 'ies' : 'y'}</div>
+            <Button size="sm" onClick={openCreateRate} icon={<Plus className="w-3.5 h-3.5" />}>Add Category</Button>
           </div>
 
           {labourRates.length === 0 ? (
-            <div className="card py-16 text-center text-sm text-ink-faint">
-              No fabrication rates yet — add your first rate to start costing activities.
+            <div className="card py-12 text-center space-y-4">
+              <div className="flex justify-center"><Users className="w-8 h-8 text-ink-faint/40" /></div>
+              <div className="text-sm text-ink-faint">No labour categories yet. Add roles like Worker, Supervisor, etc.</div>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {PRESET_LABOUR_CATEGORIES.map(p => (
+                  <button key={p.name} onClick={() => quickAddLabour(p)}
+                    className="flex items-center gap-2 px-3 py-2 border border-dashed border-surface-300 text-xs font-medium text-ink-muted hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
+                    style={{ borderRadius: 'var(--radius)' }}>
+                    <span className="text-base">{LABOUR_ICONS[p.name] ?? '👷'}</span> {p.name}
+                  </button>
+                ))}
+              </div>
+              <div className="text-[10px] text-ink-faint">Click to add, or use "Add Category" for custom ones.{isOwner ? '' : ' Rates are configured by the owner in Settings.'}</div>
             </div>
           ) : (
-            <div className="space-y-6">
-              {Object.entries(groupedRates).sort(([a], [b]) => a.localeCompare(b)).map(([category, rates]) => (
-                <div key={category}>
-                  <div className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2">{category}</div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-surface-200 text-ink-faint text-left">
-                          <th className="py-2 pr-4 font-medium">Name</th>
-                          <th className="py-2 pr-4 font-medium">Type</th>
-                          <th className="py-2 pr-4 font-medium text-right">Rate</th>
-                          <th className="py-2 pr-4 font-medium">Unit</th>
-                          <th className="py-2 pr-4 font-medium">Notes</th>
-                          <th className="py-2 w-16" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rates.map((r: any) => (
-                          <tr key={r.id} className="border-b border-surface-100 group hover:bg-surface-50 transition-colors">
-                            <td className="py-2 pr-4 font-medium text-ink">{r.name}</td>
-                            <td className="py-2 pr-4 text-ink-muted">{UNIT_OPTIONS.find(o => o.value === r.unitType)?.label ?? r.unitType}</td>
-                            <td className="py-2 pr-4 text-right font-mono text-ink">{r.rate.toFixed(2)}</td>
-                            <td className="py-2 pr-4 text-ink-muted">/{r.unitLabel}</td>
-                            <td className="py-2 pr-4 text-ink-faint italic truncate max-w-[200px]">{r.notes ?? ''}</td>
-                            <td className="py-2">
-                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
-                                <Button size="xs" variant="ghost" onClick={() => openEditRate(r)} icon={<Edit3 className="w-3 h-3" />} />
-                                <Button size="xs" variant="danger" onClick={() => removeRate(r)} icon={<Trash2 className="w-3 h-3" />} />
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {labourRates.map((r: any) => (
+                  <div key={r.id} className="group relative flex items-center gap-2.5 px-3 py-2.5 border border-surface-200 bg-surface-50 hover:border-surface-300 transition-colors"
+                    style={{ borderRadius: 'var(--radius)' }}>
+                    <span className="text-lg">{LABOUR_ICONS[r.name] ?? '👷'}</span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-ink">{r.name}</div>
+                      <div className="text-[10px] text-ink-faint">
+                        {UNIT_OPTIONS.find(o => o.value === r.unitType)?.label ?? r.unitType}
+                        {isOwner && r.rate > 0 && <span className="ml-1 font-mono">${r.rate.toFixed(2)}/{r.unitLabel}</span>}
+                      </div>
+                    </div>
+                    {r.notes && <div className="text-[10px] text-ink-faint italic max-w-[100px] truncate">{r.notes}</div>}
+                    <div className="flex gap-0.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openEditRate(r)} className="p-1 rounded hover:bg-surface-200 text-ink-muted"><Edit3 className="w-3 h-3" /></button>
+                      <button onClick={() => removeRate(r)} className="p-1 rounded hover:bg-red-50 text-ink-muted hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                    </div>
+                  </div>
+                ))}
+                {/* Inline add */}
+                <button onClick={openCreateRate}
+                  className="flex items-center gap-1.5 px-3 py-2.5 border border-dashed border-surface-300 text-xs text-ink-faint hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
+                  style={{ borderRadius: 'var(--radius)' }}>
+                  <Plus className="w-3 h-3" /> Add
+                </button>
+              </div>
+              {/* Quick-add presets for missing ones */}
+              {PRESET_LABOUR_CATEGORIES.filter(p => !labourRates.some((r: any) => r.name === p.name)).length > 0 && (
+                <div>
+                  <div className="text-[10px] text-ink-faint mb-1.5">Quick add:</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PRESET_LABOUR_CATEGORIES.filter(p => !labourRates.some((r: any) => r.name === p.name)).map(p => (
+                      <button key={p.name} onClick={() => quickAddLabour(p)}
+                        className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-ink-faint border border-dashed border-surface-200 hover:border-primary hover:text-primary transition-all"
+                        style={{ borderRadius: 'var(--radius)' }}>
+                        {LABOUR_ICONS[p.name] ?? '👷'} {p.name}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              ))}
+              )}
+              {!isOwner && (
+                <div className="text-[10px] text-ink-faint bg-surface-100 px-3 py-2 rounded-md">
+                  Rates for each category are configured by the owner in Settings.
+                </div>
+              )}
             </div>
           )}
         </>
@@ -271,7 +305,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
             <div className="card py-12 text-center space-y-4">
               <div className="text-sm text-ink-faint">No work categories yet. Add some to get started:</div>
               <div className="flex flex-wrap gap-2 justify-center">
-                {PRESET_CATEGORIES.map(p => (
+                {PRESET_WORK_CATEGORIES.map(p => (
                   <button key={p.name} onClick={() => quickAddCat(p)}
                     className="flex items-center gap-2 px-3 py-2 border border-dashed border-surface-300 text-xs font-medium text-ink-muted hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
                     style={{ borderRadius: 'var(--radius)' }}>
@@ -306,11 +340,11 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
                 </button>
               </div>
               {/* Quick-add presets if some are missing */}
-              {PRESET_CATEGORIES.filter(p => !workCategories.some((c: any) => c.name === p.name)).length > 0 && (
+              {PRESET_WORK_CATEGORIES.filter(p => !workCategories.some((c: any) => c.name === p.name)).length > 0 && (
                 <div>
                   <div className="text-[10px] text-ink-faint mb-1.5">Quick add:</div>
                   <div className="flex flex-wrap gap-1.5">
-                    {PRESET_CATEGORIES.filter(p => !workCategories.some((c: any) => c.name === p.name)).map(p => (
+                    {PRESET_WORK_CATEGORIES.filter(p => !workCategories.some((c: any) => c.name === p.name)).map(p => (
                       <button key={p.name} onClick={() => quickAddCat(p)}
                         className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-ink-faint border border-dashed border-surface-200 hover:border-primary hover:text-primary transition-all"
                         style={{ borderRadius: 'var(--radius)' }}>
@@ -348,7 +382,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
                         <tr className="border-b border-surface-200 text-ink-faint text-left">
                           <th className="py-2 pr-4 font-medium">Name</th>
                           <th className="py-2 pr-4 font-medium">Category</th>
-                          <th className="py-2 pr-4 font-medium">Rate</th>
+                          <th className="py-2 pr-4 font-medium">Labour</th>
                           <th className="py-2 pr-4 font-medium">Speed</th>
                           <th className="py-2 pr-4 font-medium">Crew</th>
                           <th className="py-2 w-16" />
@@ -359,7 +393,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
                           <tr key={w.id} className="border-b border-surface-100 group hover:bg-surface-50 transition-colors">
                             <td className="py-2 pr-4 font-medium text-ink">{w.name}</td>
                             <td className="py-2 pr-4 text-ink-muted">{w.categoryIcon} {w.categoryName}</td>
-                            <td className="py-2 pr-4 text-ink-muted font-mono">{w.rateValue?.toFixed(2) ?? '—'}/{w.rateUnitLabel}</td>
+                            <td className="py-2 pr-4 text-ink-muted">{w.rateName}{isOwner && w.rateValue ? <span className="ml-1 font-mono text-ink-faint">(${w.rateValue?.toFixed(2)}/{w.rateUnitLabel})</span> : null}</td>
                             <td className="py-2 pr-4 text-ink-muted">
                               {w.speedMode === 'rate'
                                 ? `${w.defaultRatePerHr ?? '—'}/hr`
@@ -384,18 +418,22 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
         </>
       )}
 
-      {/* ─── Labour Rate Modal ─────────────────────────────────────────────────── */}
-      <Modal open={rateModal} onClose={() => setRateModal(false)} title={rateEditing ? 'Edit Rate' : 'Add Rate'} maxWidth="max-w-md">
-        <div className="space-y-3">
+      {/* ─── Labour Category Modal ─────────────────────────────────────────────── */}
+      <Modal open={rateModal} onClose={() => setRateModal(false)} title={rateEditing ? 'Edit Labour Category' : 'Add Labour Category'} maxWidth="max-w-sm">
+        <div className="space-y-4">
+          {/* Live preview */}
+          <div className="flex items-center justify-center py-3">
+            <div className="flex items-center gap-2.5 px-4 py-2.5 border border-surface-200 bg-surface-50"
+              style={{ borderRadius: 'var(--radius)' }}>
+              <span className="text-xl">{LABOUR_ICONS[rateForm.name] ?? '👷'}</span>
+              <span className="text-sm font-semibold text-ink">{rateForm.name || 'Category Name'}</span>
+            </div>
+          </div>
           <div>
             <label className="label">Name *</label>
-            <input className="input" value={rateForm.name} onChange={setRate('name')} placeholder="e.g. Cable swaging" autoFocus />
+            <input className="input" value={rateForm.name} onChange={setRate('name')} placeholder="e.g. Worker, Supervisor, Foreman" autoFocus />
           </div>
-          <div>
-            <label className="label">Category</label>
-            <input className="input" value={rateForm.category} onChange={setRate('category')} placeholder="e.g. Fabrication, Installation" />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Unit Type</label>
               <select className="input" value={rateForm.unitType} onChange={onUnitTypeChange}>
@@ -404,13 +442,16 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
             </div>
             <div>
               <label className="label">Unit Label</label>
-              <input className="input" value={rateForm.unitLabel} onChange={setRate('unitLabel')} placeholder="e.g. pc, m, hr" />
+              <input className="input" value={rateForm.unitLabel} onChange={setRate('unitLabel')} placeholder="e.g. hr" />
             </div>
+          </div>
+          {isOwner && (
             <div>
               <label className="label">Rate ($/unit)</label>
               <input className="input" type="number" step="any" min={0} value={rateForm.rate} onChange={setRate('rate')} placeholder="0.00" />
+              <div className="text-[10px] text-ink-faint mt-1">Only visible to owners. Can also be set in Settings.</div>
             </div>
-          </div>
+          )}
           <div>
             <label className="label">Notes</label>
             <input className="input" value={rateForm.notes} onChange={setRate('notes')} placeholder="Optional" />
@@ -419,7 +460,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
             <Button size="sm" variant="secondary" onClick={() => setRateModal(false)} icon={<X className="w-3.5 h-3.5" />}>Cancel</Button>
             <Button size="sm" variant="success" onClick={saveRate} disabled={!rateForm.name.trim() || rateLoading}
               icon={<Check className="w-3.5 h-3.5" />}>
-              {rateLoading ? 'Saving...' : rateEditing ? 'Save' : 'Add Rate'}
+              {rateLoading ? 'Saving...' : rateEditing ? 'Save' : 'Add Category'}
             </Button>
           </div>
         </div>
@@ -487,10 +528,10 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
               </select>
             </div>
             <div>
-              <label className="label">Labour Rate *</label>
+              <label className="label">Labour Category *</label>
               <select className="input" value={warForm.labourRateId} onChange={setWar('labourRateId')}>
-                <option value="">Select rate...</option>
-                {labourRates.map((r: any) => <option key={r.id} value={r.id}>{r.name} ({r.rate}/{r.unitLabel})</option>)}
+                <option value="">Select category...</option>
+                {labourRates.map((r: any) => <option key={r.id} value={r.id}>{LABOUR_ICONS[r.name] ?? '👷'} {r.name}</option>)}
               </select>
             </div>
           </div>
