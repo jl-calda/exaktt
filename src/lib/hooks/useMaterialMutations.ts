@@ -8,12 +8,14 @@ interface UseMaterialMutationsOpts {
   syncLibrary?: boolean
 }
 
+// Best-effort library sync — intentionally fire-and-forget.
+// The .catch() prevents unhandled rejection warnings.
 function librarySync(action: string, id: string, sysId: string) {
   fetch('/api/mto/library', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, id, sysId }),
-  })
+  }).catch(() => {})
 }
 
 export function useMaterialMutations({ sys, library, onUpdate, syncLibrary = false }: UseMaterialMutationsOpts) {

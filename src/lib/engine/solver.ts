@@ -110,7 +110,11 @@ export function solveSheetCut({
   const rows         = useBetter ? rowsB : rowsA
   const effectivePartW = useBetter ? partH : partW
   const effectivePartH = useBetter ? partW : partH
-  const pps          = Math.max(1, useBetter ? ppsB : ppsA)
+  const rawPps       = useBetter ? ppsB : ppsA
+  if (rawPps === 0) {
+    return { sheetsNeeded: 0, partsPerSheet: 0, cols: 0, rows: 0, effectivePartW: 0, effectivePartH: 0, waste_pct: 100, utilisation: 0, rotated: false, sheetW, sheetH, kerf: kf }
+  }
+  const pps          = Math.max(1, rawPps)
 
   const sheetsNeeded = Math.ceil(partsNeeded / pps)
   const sheetArea    = sheetW * sheetH

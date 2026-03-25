@@ -305,7 +305,9 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
       case 'coverage_per_item': raw = (prim.length * prim.width) / div; break
       case 'sheet_size': {
         const tileFactor = getUnitFactor(sys.dimOverrides?.['length']?.unit ?? 'm')
-        raw = (prim.length * prim.width) / ((activeRow.ruleTileW * tileFactor) * (activeRow.ruleTileH * tileFactor))
+        const tileW = activeRow.ruleTileW ? activeRow.ruleTileW * tileFactor : 0
+        const tileH = activeRow.ruleTileH ? activeRow.ruleTileH * tileFactor : 0
+        raw = (tileW && tileH) ? (prim.length * prim.width) / (tileW * tileH) : 0
         break
       }
       case 'kg_per_sqm':        raw = qty_ * prim.length * prim.width; break
@@ -322,8 +324,10 @@ export function computeResults(opts: ComputeOptions): ComputeResult {
 
     // Solver-driven rules already account for waste — skip manual waste multiplier
     const skipWaste = activeRow.ruleType === 'stock_length_qty'
-    const withWaste = skipWaste ? raw : raw * (1 + (activeRow.waste || 0) / 100)
-    const qty = Math.ceil(withWaste)
+    raw = Number.isFinite(raw) ? raw : 0
+    const rawWithWaste = skipWaste ? raw : raw * (1 + (activeRow.waste || 0) / 100)
+    const withWaste = Number.isFinite(rawWithWaste) ? rawWithWaste : 0
+    const qty = Number.isFinite(withWaste) ? Math.ceil(withWaste) : 0
 
     return { ...mat, raw: parseFloat(raw.toFixed(4)), withWaste: parseFloat(withWaste.toFixed(4)), qty, blocked: false, blockedBy: [], activeRow } as MaterialResult
   })

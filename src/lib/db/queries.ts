@@ -151,27 +151,29 @@ export async function getMtoSystem(id: string, companyId: string) {
 export async function createMtoSystem(companyId: string, createdById: string, data: Partial<MtoSystem>) {
   const plan   = await getCompanyPlanById(companyId)
   const limits = getLimits(plan)
-  const count  = await prisma.mtoSystem.count({ where: { companyId, isArchived: false } })
-  if (!withinLimit(count, limits.maxSystems)) {
-    throw new LimitError('maxSystems')
-  }
-  return prisma.mtoSystem.create({
-    data: {
-      companyId,
-      createdById,
-      name:           data.name        ?? 'New System',
-      description:    data.description ?? '',
-      icon:           data.icon        ?? '📦',
-      color:          data.color       ?? '#7917de',
-      inputModel:     data.inputModel  ?? 'linear',
-      materials:      asJson(data.materials      ?? []),
-      customDims:     asJson(data.customDims     ?? []),
-      customCriteria: asJson(data.customCriteria ?? []),
-      variants:       asJson(data.variants       ?? []),
-      warnings:       asJson(data.warnings       ?? []),
-      customBrackets: asJson(data.customBrackets ?? []),
-      workActivities: asJson(data.workActivities ?? []),
-    },
+  return prisma.$transaction(async (tx) => {
+    const count = await tx.mtoSystem.count({ where: { companyId, isArchived: false } })
+    if (!withinLimit(count, limits.maxSystems)) {
+      throw new LimitError('maxSystems')
+    }
+    return tx.mtoSystem.create({
+      data: {
+        companyId,
+        createdById,
+        name:           data.name        ?? 'New System',
+        description:    data.description ?? '',
+        icon:           data.icon        ?? '📦',
+        color:          data.color       ?? '#7917de',
+        inputModel:     data.inputModel  ?? 'linear',
+        materials:      asJson(data.materials      ?? []),
+        customDims:     asJson(data.customDims     ?? []),
+        customCriteria: asJson(data.customCriteria ?? []),
+        variants:       asJson(data.variants       ?? []),
+        warnings:       asJson(data.warnings       ?? []),
+        customBrackets: asJson(data.customBrackets ?? []),
+        workActivities: asJson(data.workActivities ?? []),
+      },
+    })
   })
 }
 
@@ -232,29 +234,38 @@ export async function getMtoJob(id: string, companyId: string) {
 export async function createMtoJob(companyId: string, createdById: string, mtoSystemId: string, data: Partial<SavedJob>) {
   const plan   = await getCompanyPlanById(companyId)
   const limits = getLimits(plan)
-  const count  = await prisma.mtoJob.count({ where: { companyId, isArchived: false } })
-  if (!withinLimit(count, limits.maxJobs)) throw new LimitError('maxJobs')
 
   const runs = data.runs ?? []
   if (!withinLimit(runs.length - 1, limits.maxRuns)) throw new LimitError('maxRuns')
 
-  return prisma.mtoJob.create({
-    data: {
-      companyId, createdById, mtoSystemId,
-      name:           data.name           ?? 'Untitled Job',
-      runs:           asJson(data.runs           ?? []),
-      criteriaState:  asJson(data.criteriaState  ?? {}),
-      variantState:   asJson(data.variantState   ?? {}),
-      stockOptimMode: data.stockOptimMode  ?? 'min_waste',
-      calculatedAt:   data.calculatedAt    ? new Date(data.calculatedAt) : null,
-      matVersions:    asJson(data.matVersions    ?? {}),
-      lastResults:    asJson(data.lastResults    ?? null),
-    },
+  return prisma.$transaction(async (tx) => {
+    const count = await tx.mtoJob.count({ where: { companyId, isArchived: false } })
+    if (!withinLimit(count, limits.maxJobs)) throw new LimitError('maxJobs')
+
+    return tx.mtoJob.create({
+      data: {
+        companyId, createdById, mtoSystemId,
+        name:           data.name           ?? 'Untitled Job',
+        runs:           asJson(data.runs           ?? []),
+        criteriaState:  asJson(data.criteriaState  ?? {}),
+        variantState:   asJson(data.variantState   ?? {}),
+        stockOptimMode: data.stockOptimMode  ?? 'min_waste',
+        calculatedAt:   data.calculatedAt    ? new Date(data.calculatedAt) : null,
+        matVersions:    asJson(data.matVersions    ?? {}),
+        lastResults:    asJson(data.lastResults    ?? null),
+      },
+    })
   })
 }
 
 export async function updateMtoJob(id: string, companyId: string, data: Partial<SavedJob>) {
   await verifyOwnership(prisma.mtoJob, id, companyId, 'Job')
+  if (data.runs !== undefined) {
+    const limits = getLimits(await getCompanyPlanById(companyId))
+    if (!(data.runs.length <= limits.maxRuns || limits.maxRuns === -1)) {
+      throw new LimitError('maxRuns')
+    }
+  }
   return prisma.mtoJob.update({
     where: { id },
     data: {
@@ -445,24 +456,27 @@ export async function getLibraryItems(companyId: string) {
 export async function createLibraryItem(companyId: string, createdById: string, data: Partial<LibraryItem>) {
   const plan   = await getCompanyPlanById(companyId)
   const limits = getLimits(plan)
-  const count  = await prisma.libraryItem.count({ where: { companyId } })
-  if (!withinLimit(count, limits.maxLibraryItems)) throw new LimitError('maxLibraryItems')
 
-  return prisma.libraryItem.create({
-    data: {
-      companyId,
-      createdById,
-      name:           data.name ?? '',
-      unit:           data.unit ?? 'each',
-      notes:          data.notes,
-      productCode:    data.productCode,
-      category:       data.category ?? 'other',
-      photo:          data.photo,
-      properties:     asJson(data.properties ?? {}),
-      ...(data.spec           !== undefined && { spec: asJson(data.spec) }),
-      ...(data.gradeId        !== undefined && { gradeId: data.gradeId }),
-      ...(data.manufacturerId !== undefined && { manufacturerId: data.manufacturerId }),
-    },
+  return prisma.$transaction(async (tx) => {
+    const count = await tx.libraryItem.count({ where: { companyId } })
+    if (!withinLimit(count, limits.maxLibraryItems)) throw new LimitError('maxLibraryItems')
+
+    return tx.libraryItem.create({
+      data: {
+        companyId,
+        createdById,
+        name:           data.name ?? '',
+        unit:           data.unit ?? 'each',
+        notes:          data.notes,
+        productCode:    data.productCode,
+        category:       data.category ?? 'other',
+        photo:          data.photo,
+        properties:     asJson(data.properties ?? {}),
+        ...(data.spec           !== undefined && { spec: asJson(data.spec) }),
+        ...(data.gradeId        !== undefined && { gradeId: data.gradeId }),
+        ...(data.manufacturerId !== undefined && { manufacturerId: data.manufacturerId }),
+      },
+    })
   })
 }
 
@@ -480,6 +494,7 @@ export async function deleteLibraryItem(id: string, companyId: string) {
 
 export async function addSystemToLibraryItem(id: string, sysId: string, companyId: string) {
   await verifyOwnership(prisma.libraryItem, id, companyId, 'LibraryItem')
+  await verifyOwnership(prisma.mtoSystem, sysId, companyId, 'MtoSystem')
   const item = await prisma.libraryItem.findUnique({ where: { id }, select: { usedInSystems: true } })
   if (!item || item.usedInSystems.includes(sysId)) return
   return prisma.libraryItem.update({ where: { id }, data: { usedInSystems: { push: sysId } } })
@@ -487,6 +502,7 @@ export async function addSystemToLibraryItem(id: string, sysId: string, companyI
 
 export async function removeSystemFromLibraryItem(id: string, sysId: string, companyId: string) {
   await verifyOwnership(prisma.libraryItem, id, companyId, 'LibraryItem')
+  await verifyOwnership(prisma.mtoSystem, sysId, companyId, 'MtoSystem')
   const item = await prisma.libraryItem.findUnique({ where: { id }, select: { usedInSystems: true } })
   if (!item) return
   return prisma.libraryItem.update({ where: { id }, data: { usedInSystems: item.usedInSystems.filter(s => s !== sysId) } })
@@ -597,13 +613,15 @@ export async function createPurchaseOrder(companyId: string, createdById: string
 export async function updatePurchaseOrder(id: string, companyId: string, data: any) {
   await verifyOwnership(prisma.purchaseOrder, id, companyId, 'PurchaseOrder')
   const { lines, ...header } = data
-  if (lines !== undefined) {
-    await prisma.$transaction([
-      prisma.purchaseOrderLine.deleteMany({ where: { poId: id } }),
-      ...lines.map((l: any) => prisma.purchaseOrderLine.create({ data: { poId: id, ...l } })),
-    ])
-  }
-  return prisma.purchaseOrder.update({ where: { id }, data: header, include: { lines: true } })
+  return prisma.$transaction(async (tx) => {
+    if (lines !== undefined) {
+      await tx.purchaseOrderLine.deleteMany({ where: { poId: id } })
+      for (const l of lines) {
+        await tx.purchaseOrderLine.create({ data: { poId: id, ...l } })
+      }
+    }
+    return tx.purchaseOrder.update({ where: { id }, data: header, include: { lines: true } })
+  })
 }
 
 export async function deletePurchaseOrder(id: string, companyId: string) {
@@ -632,15 +650,17 @@ export async function createDeliveryOrder(companyId: string, createdById: string
 export async function updateDeliveryOrder(id: string, companyId: string, data: any) {
   await verifyOwnership(prisma.deliveryOrder, id, companyId, 'DeliveryOrder')
   const { lines, ...header } = data
-  if (lines !== undefined) {
-    await prisma.$transaction([
-      prisma.deliveryOrderLine.deleteMany({ where: { doId: id } }),
-      ...lines.map((l: any) => prisma.deliveryOrderLine.create({ data: { doId: id, ...l } })),
-    ])
-  }
-  return prisma.deliveryOrder.update({
-    where: { id }, data: header,
-    include: { lines: true, po: { select: { id: true, ref: true, supplierName: true } } },
+  return prisma.$transaction(async (tx) => {
+    if (lines !== undefined) {
+      await tx.deliveryOrderLine.deleteMany({ where: { doId: id } })
+      for (const l of lines) {
+        await tx.deliveryOrderLine.create({ data: { doId: id, ...l } })
+      }
+    }
+    return tx.deliveryOrder.update({
+      where: { id }, data: header,
+      include: { lines: true, po: { select: { id: true, ref: true, supplierName: true } } },
+    })
   })
 }
 
@@ -731,6 +751,7 @@ export async function createCertification(companyId: string, createdById: string
   libraryItemId: string; type: string; certNumber?: string; issuedBy?: string
   issuedDate?: Date; expiryDate?: Date; fileUrl?: string; fileName?: string; notes?: string
 }) {
+  await verifyOwnership(prisma.libraryItem, data.libraryItemId, companyId, 'LibraryItem')
   return prisma.materialCertification.create({ data: { companyId, createdById, ...data } })
 }
 
