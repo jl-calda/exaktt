@@ -166,86 +166,107 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
 
       {loading && <div className="text-sm text-ink-faint text-center py-8">Loading library…</div>}
 
-      {!loading && filtered.length === 0 && !adding && (
-        <div className="card p-12 text-center">
-          <Package className="w-10 h-10 text-ink-faint mx-auto mb-3" />
-          <p className="text-sm font-medium text-ink mb-1">
-            {items.length === 0 ? 'Your library is empty' : 'No items match your filters'}
-          </p>
-          <p className="text-xs text-ink-faint">
-            {items.length === 0
-              ? 'Add reusable material definitions here — plates, fasteners, ladder sections, etc.'
-              : 'Try a different category or clear your search.'}
-          </p>
-        </div>
-      )}
-
-      {/* Items */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map(item => {
-          const isEd = editingId === item.id
-          return (
-            <div key={item.id} className={`card overflow-hidden transition-all ${isEd ? 'ring-2 ring-primary col-span-full' : ''}`}>
-              {!isEd ? (
-                <div className="p-4 flex gap-3 items-start">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-lg flex-shrink-0">
-                    {CATEGORIES.find(c => c.id === item.category)?.icon ?? '📦'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm text-ink">{item.name}</div>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      <span className="badge bg-surface-100 text-ink-muted">{item.unit}</span>
-                      {item.productCode && <code className="text-[10px] bg-surface-100 text-ink-muted px-1.5 py-0.5 rounded">{item.productCode}</code>}
+      {/* Items — table format matching Materials tab */}
+      <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-surface-100 border-b border-surface-200 text-left">
+              <th className="px-3 py-2.5 w-14"></th>
+              <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide text-ink-faint min-w-52">Item</th>
+              <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide text-ink-faint w-20 text-center">Unit</th>
+              <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide text-ink-faint">Category</th>
+              <th className="px-3 py-2.5 w-28"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-surface-100">
+            {filtered.map(item => {
+              const isEd = editingId === item.id
+              const catInfo = CATEGORIES.find(c => c.id === item.category)
+              return isEd ? (
+                <tr key={item.id}>
+                  <td colSpan={5} className="p-5 bg-primary/5">
+                    <div className="text-xs font-bold text-primary uppercase tracking-wide mb-4">Edit Library Item</div>
+                    {editDraft && (
+                      <ItemForm
+                        draft={editDraft} plan={plan} globalTags={globalTags}
+                        onSet={(k, v) => setEditDraft(d => ({ ...d!, [k]: v }))}
+                        onSetSpec={(k, v) => setEditDraft(d => ({ ...d!, spec: { ...(d?.spec ?? {}), [k]: v } }))}
+                      />
+                    )}
+                    <div className="flex gap-2 mt-4">
+                      <button onClick={handleUpdate} disabled={saving} className="btn-primary text-sm">
+                        <Check className="w-4 h-4" /> {saving ? 'Saving…' : 'Save'}
+                      </button>
+                      <button onClick={() => { setEditingId(null); setEditDraft(null) }} className="btn-secondary text-sm">
+                        <X className="w-4 h-4" /> Cancel
+                      </button>
                     </div>
-                    {item.notes && <p className="text-xs text-ink-faint mt-0.5 italic truncate">{item.notes}</p>}
-                    {limits.stockInfo && item.spec?.stockLengthMm && (
-                      <div className="text-[10px] text-ink-faint mt-1">
-                        Stock: {item.spec.stockLengthMm}mm
-                        {item.spec.storageLengthMm ? ` · Storage: ${item.spec.storageLengthMm}mm` : ''}
-                      </div>
-                    )}
-                    {limits.pricing && item.spec?.unitPrice && (
-                      <div className="text-[10px] text-primary font-semibold mt-0.5">
-                        {item.spec.currency ?? 'SGD'} {item.spec.unitPrice.toFixed(2)}
-                        {item.spec.supplier ? ` · ${item.spec.supplier}` : ''}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1.5 flex-shrink-0">
-                    <button onClick={() => onAddToSystem(item)} title="Add to system" className="btn-ghost px-2 py-1.5 text-xs text-emerald-600">
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => startEdit(item)} className="btn-ghost px-2 py-1.5 text-xs">
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => setDeleteId(item.id)} className="btn-ghost px-2 py-1.5 text-xs text-red-500">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
+                  </td>
+                </tr>
               ) : (
-                <div className="p-5">
-                  <div className="text-xs font-bold text-primary uppercase tracking-wide mb-4">Edit Library Item</div>
-                  {editDraft && (
-                    <ItemForm
-                      draft={editDraft} plan={plan} globalTags={globalTags}
-                      onSet={(k, v) => setEditDraft(d => ({ ...d!, [k]: v }))}
-                      onSetSpec={(k, v) => setEditDraft(d => ({ ...d!, spec: { ...(d?.spec ?? {}), [k]: v } }))}
-                    />
-                  )}
-                  <div className="flex gap-2 mt-4">
-                    <button onClick={handleUpdate} disabled={saving} className="btn-primary text-sm">
-                      <Check className="w-4 h-4" /> {saving ? 'Saving…' : 'Save'}
-                    </button>
-                    <button onClick={() => { setEditingId(null); setEditDraft(null) }} className="btn-secondary text-sm">
-                      <X className="w-4 h-4" /> Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
+                <tr key={item.id} className="hover:bg-surface-100/50 transition-colors">
+                  <td className="px-3 py-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-base flex-shrink-0">
+                      {catInfo?.icon ?? '📦'}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="font-semibold text-sm text-ink">{item.name}</div>
+                    <div className="flex flex-wrap gap-1.5 mt-0.5">
+                      {item.productCode && <code className="text-[10px] bg-surface-100 text-ink-muted px-1.5 py-0.5 rounded font-mono">{item.productCode}</code>}
+                      {limits.stockInfo && item.spec?.stockLengthMm && (
+                        <span className="text-[10px] bg-surface-100 text-ink-faint px-1.5 py-0.5 rounded">{item.spec.stockLengthMm}mm stock</span>
+                      )}
+                      {limits.pricing && item.spec?.unitPrice && (
+                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-semibold">
+                          {item.spec.currency ?? 'SGD'} {item.spec.unitPrice.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                    {item.notes && <p className="text-xs text-ink-faint mt-0.5 italic truncate max-w-md">{item.notes}</p>}
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    <span className="text-xs text-ink-muted">{item.unit}</span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-surface-100 text-ink-muted">
+                      {catInfo?.icon} {catInfo?.label ?? item.category}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="flex gap-1 justify-end">
+                      <button onClick={() => onAddToSystem(item)} title="Add to system"
+                        className="p-1.5 rounded text-emerald-600 hover:bg-emerald-50 transition-colors">
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => startEdit(item)} title="Edit"
+                        className="p-1.5 rounded text-ink-muted hover:bg-surface-200 transition-colors">
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => setDeleteId(item.id)} title="Delete"
+                        className="p-1.5 rounded text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+        {!loading && filtered.length === 0 && !adding && (
+          <div className="py-12 text-center">
+            <Package className="w-10 h-10 text-ink-faint mx-auto mb-3" />
+            <p className="text-sm font-medium text-ink mb-1">
+              {items.length === 0 ? 'Your library is empty' : 'No items match your filters'}
+            </p>
+            <p className="text-xs text-ink-faint">
+              {items.length === 0
+                ? 'Add reusable material definitions here — plates, fasteners, ladder sections, etc.'
+                : 'Try a different category or clear your search.'}
+            </p>
+          </div>
+        )}
       </div>
       <ConfirmModal
         open={deleteId !== null}
