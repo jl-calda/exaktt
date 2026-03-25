@@ -171,20 +171,22 @@ export function computeWorkSchedule(
       const timeUnit       = ref.timeUnit ?? 'min'
       const totalMins      = timeUnit === 'hr' ? totalMinutes * 60 : totalMinutes
       const crewSize       = ref.crewSize ?? 1
-      const elapsedHours   = (totalMins / 60) / crewSize
+      // Input time is wall-clock (elapsed); multiply by crew for total man-hours
+      const elapsedHours   = totalMins / 60
+      const totalManHours  = elapsedHours * crewSize
 
       let labourCost: number | undefined
       if (showCost) {
         if (ref._rateUnitType === 'per_piece' && ref._unitCost != null)
           labourCost = bQty * ref._unitCost
         else if (ref._rateUnitType === 'per_hour' && ref._labourRateHr != null)
-          labourCost = (totalMins / 60) * ref._labourRateHr
+          labourCost = totalManHours * ref._labourRateHr
         else if (ref._rateUnitType === 'lump_sum' && ref._unitCost != null)
           labourCost = ref._unitCost
         else if (ref._rateUnitType === 'per_dim' && ref._unitCost != null)
           labourCost = bQty * ref._unitCost
         else if (ref._labourRateHr)
-          labourCost = (totalMins / 60) * ref._labourRateHr
+          labourCost = totalManHours * ref._labourRateHr
       }
 
       bracketFabResults.push({
@@ -195,7 +197,7 @@ export function computeWorkSchedule(
         sourceUnit:    'bracket',
         timePerUnit:   timePerBracket,
         totalMinutes:  totalMins,
-        totalHours:    totalMins / 60,
+        totalHours:    totalManHours,
         crewSize,
         elapsedHours,
         categoryName:  ref._categoryName,
@@ -293,12 +295,13 @@ export function computeWorkSchedule(
       totalMinutes = timePerUnit * sourceQty
     }
 
-    const totalHours  = totalMinutes / 60
-    const crewSize    = Math.max(1, act.crewSize ?? 1)
-    const elapsedHours = totalHours / crewSize
+    // Input time is wall-clock (elapsed); multiply by crew for total man-hours
+    const crewSize     = Math.max(1, act.crewSize ?? 1)
+    const elapsedHours = totalMinutes / 60
+    const totalManHours = elapsedHours * crewSize
 
     const labourCost = (showCost && act._labourRateHr && !isThirdParty)
-      ? totalHours * act._labourRateHr
+      ? totalManHours * act._labourRateHr
       : undefined
 
     results.push({
@@ -309,7 +312,7 @@ export function computeWorkSchedule(
       sourceUnit,
       timePerUnit,
       totalMinutes,
-      totalHours,
+      totalHours:    totalManHours,
       crewSize,
       elapsedHours,
       categoryName:  act._categoryName,
