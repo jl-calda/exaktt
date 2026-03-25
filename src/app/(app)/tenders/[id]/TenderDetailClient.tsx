@@ -2,7 +2,9 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, Trash2, CalendarDays, X } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, CalendarDays, X, FileText } from 'lucide-react'
+import { Modal } from '@/components/ui/Modal'
+import TenderReportBuilder from '@/components/tender/TenderReportBuilder'
 import { format } from 'date-fns'
 
 type TenderStatus = 'DRAFT' | 'SUBMITTED' | 'WON' | 'LOST' | 'CANCELLED'
@@ -26,9 +28,10 @@ const STATUS_TRANSITIONS: Record<TenderStatus, TenderStatus[]> = {
 interface Props {
   tender:  any
   allJobs: any[]  // all MtoJobs for the user
+  profile?: any
 }
 
-export default function TenderDetailClient({ tender: initialTender, allJobs }: Props) {
+export default function TenderDetailClient({ tender: initialTender, allJobs, profile }: Props) {
   const router = useRouter()
 
   const [tender,      setTender]      = useState(initialTender)
@@ -38,6 +41,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs }: P
   const [addNotes,    setAddNotes]    = useState('')
   const [adding,      setAdding]      = useState(false)
   const [removing,    setRemoving]    = useState<string | null>(null)
+  const [showReport,  setShowReport]  = useState(false)
 
   const meta = STATUS_META[tender.status as TenderStatus] ?? STATUS_META.DRAFT
 
@@ -137,20 +141,21 @@ export default function TenderDetailClient({ tender: initialTender, allJobs }: P
         </div>
 
         {/* Status actions */}
-        {transitions.length > 0 && (
-          <div className="flex gap-2 mb-6">
-            {transitions.map(s => {
-              const m = STATUS_META[s]
-              return (
-                <button key={s} onClick={() => handleStatusChange(s)}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
-                  style={{ borderColor: m.color + '50', color: m.color, background: m.bg }}>
-                  Mark as {m.label}
-                </button>
-              )
-            })}
-          </div>
-        )}
+        <div className="flex gap-2 mb-6 flex-wrap">
+          {transitions.map(s => {
+            const m = STATUS_META[s]
+            return (
+              <button key={s} onClick={() => handleStatusChange(s)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
+                style={{ borderColor: m.color + '50', color: m.color, background: m.bg }}>
+                Mark as {m.label}
+              </button>
+            )
+          })}
+          <button onClick={() => setShowReport(true)} className="btn-primary text-xs">
+            <FileText className="w-3.5 h-3.5" /> Generate Quotation
+          </button>
+        </div>
 
         {/* Items section */}
         <div className="card overflow-hidden">
@@ -218,6 +223,16 @@ export default function TenderDetailClient({ tender: initialTender, allJobs }: P
           )}
         </div>
       </main>
+
+      {/* Quotation report modal */}
+      <Modal open={showReport} onClose={() => setShowReport(false)} title="Tender Quotation" maxWidth="max-w-7xl">
+        <TenderReportBuilder
+          tender={tender}
+          tenderItems={tender.items ?? []}
+          profile={profile}
+          onClose={() => setShowReport(false)}
+        />
+      </Modal>
 
       {/* Add item modal */}
       {showAddModal && (

@@ -977,6 +977,84 @@ export async function deleteWorkActivityRate(id: string, companyId: string) {
   return prisma.workActivityRate.update({ where: { id }, data: { isArchived: true } })
 }
 
+// ─── Tender Reports ──────────────────────────────────────────────────────────
+
+export async function getTenderReport(tenderId: string, companyId: string) {
+  return prisma.tenderReport.findFirst({
+    where: { tenderId, companyId, isArchived: false },
+    orderBy: { updatedAt: 'desc' },
+  })
+}
+
+export async function createTenderReport(companyId: string, createdById: string, tenderId: string, data: any) {
+  // Verify tender belongs to company
+  await verifyOwnership(prisma.tender, tenderId, companyId, 'Tender')
+  return prisma.tenderReport.create({
+    data: {
+      companyId,
+      createdById,
+      tenderId,
+      title: data.title ?? 'Quotation',
+      reference: data.reference,
+      date: data.date ? new Date(data.date) : new Date(),
+      validUntil: data.validUntil ? new Date(data.validUntil) : null,
+      preparedBy: data.preparedBy,
+      revisionNo: data.revisionNo ?? '0',
+      companyName: data.companyName,
+      companyLogo: data.companyLogo,
+      companyAddr: data.companyAddr,
+      registrationNo: data.registrationNo,
+      registrationLabel: data.registrationLabel,
+      accentColor: data.accentColor,
+      clientName: data.clientName,
+      clientContact: data.clientContact,
+      clientEmail: data.clientEmail,
+      clientAddr: data.clientAddr,
+      sections: data.sections ?? [],
+      overallMarginPct: data.overallMarginPct ?? 0,
+      paymentTerms: data.paymentTerms,
+      validityPeriod: data.validityPeriod,
+      disclaimer: data.disclaimer,
+      notes: data.notes,
+      currency: data.currency ?? 'SGD',
+      showAppendix: data.showAppendix ?? false,
+    },
+  })
+}
+
+export async function updateTenderReport(id: string, companyId: string, data: any) {
+  await verifyOwnership(prisma.tenderReport, id, companyId, 'TenderReport')
+  const { id: _, companyId: __, createdById: ___, tenderId: ____, ...rest } = data
+  return prisma.tenderReport.update({
+    where: { id },
+    data: {
+      ...(rest.title !== undefined && { title: rest.title }),
+      ...(rest.reference !== undefined && { reference: rest.reference }),
+      ...(rest.date !== undefined && { date: new Date(rest.date) }),
+      ...(rest.validUntil !== undefined && { validUntil: rest.validUntil ? new Date(rest.validUntil) : null }),
+      ...(rest.preparedBy !== undefined && { preparedBy: rest.preparedBy }),
+      ...(rest.revisionNo !== undefined && { revisionNo: rest.revisionNo }),
+      ...(rest.sections !== undefined && { sections: rest.sections }),
+      ...(rest.overallMarginPct !== undefined && { overallMarginPct: rest.overallMarginPct }),
+      ...(rest.paymentTerms !== undefined && { paymentTerms: rest.paymentTerms }),
+      ...(rest.validityPeriod !== undefined && { validityPeriod: rest.validityPeriod }),
+      ...(rest.disclaimer !== undefined && { disclaimer: rest.disclaimer }),
+      ...(rest.notes !== undefined && { notes: rest.notes }),
+      ...(rest.currency !== undefined && { currency: rest.currency }),
+      ...(rest.showAppendix !== undefined && { showAppendix: rest.showAppendix }),
+      ...(rest.clientName !== undefined && { clientName: rest.clientName }),
+      ...(rest.clientContact !== undefined && { clientContact: rest.clientContact }),
+      ...(rest.clientEmail !== undefined && { clientEmail: rest.clientEmail }),
+      ...(rest.clientAddr !== undefined && { clientAddr: rest.clientAddr }),
+    },
+  })
+}
+
+export async function archiveTenderReport(id: string, companyId: string) {
+  await verifyOwnership(prisma.tenderReport, id, companyId, 'TenderReport')
+  return prisma.tenderReport.update({ where: { id }, data: { isArchived: true } })
+}
+
 // ─── LimitError ───────────────────────────────────────────────────────────────
 
 export class LimitError extends Error {

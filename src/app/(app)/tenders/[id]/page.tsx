@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getTender, getMtoJobs, getUserCompany } from '@/lib/db/queries'
+import { getTender, getMtoJobs, getUserCompany, getProfile } from '@/lib/db/queries'
 import TenderDetailClient from './TenderDetailClient'
 
 interface PageProps { params: Promise<{ id: string }> }
@@ -17,9 +17,10 @@ export default async function TenderDetailPage({ params }: PageProps) {
   const company = await getUserCompany(user.id)
   if (!company) redirect('/auth/login')
 
-  const [tender, allJobs] = await Promise.all([
+  const [tender, allJobs, profile] = await Promise.all([
     getTender(id, company.id),
     getMtoJobs(company.id),
+    getProfile(user.id),
   ])
 
   if (!tender) notFound()
@@ -28,6 +29,7 @@ export default async function TenderDetailPage({ params }: PageProps) {
     <TenderDetailClient
       tender={tender as any}
       allJobs={allJobs as any[]}
+      profile={profile}
     />
   )
 }
