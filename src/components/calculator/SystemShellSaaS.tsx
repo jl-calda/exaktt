@@ -2,7 +2,7 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, FileText, Settings, BookOpen, Calculator, Tag, Lock, GitBranch, Copy, Link as LinkIcon, X } from 'lucide-react'
+import { ArrowLeft, Save, FileText, Settings, BookOpen, Calculator, Lock, GitBranch, Copy, Link as LinkIcon, X } from 'lucide-react'
 import type { MtoSystem, GlobalTag, CompanyProfile } from '@/types'
 import type { Plan } from '@prisma/client'
 import { useCalcStore } from '@/store'
@@ -12,13 +12,12 @@ import { Modal } from '@/components/ui/Modal'
 import SetupTab        from './SetupTab'
 import MaterialsTab    from './MaterialsTab'
 import CalculatorTab   from './CalculatorTab'
-import SettingsTab     from './SettingsTab'
 import SystemGraphTab  from './SystemGraphTab'
 import ReportBuilder from '@/components/report/ReportBuilder'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft'
 
-type Tab = 'setup' | 'materials' | 'calculator' | 'graph' | 'settings'
+type Tab = 'setup' | 'materials' | 'calculator' | 'graph'
 
 interface Props {
   system:      any
@@ -222,7 +221,6 @@ export default function SystemShellSaaS({
     { id: 'materials',  label: 'Materials',  Icon: BookOpen   },
     { id: 'calculator', label: 'Calculator', Icon: Calculator },
     { id: 'graph',      label: 'Graph',      Icon: GitBranch  },
-    { id: 'settings',   label: 'Tags',       Icon: Tag,       locked: !limits.tags },
   ]
 
   return (
@@ -382,18 +380,6 @@ export default function SystemShellSaaS({
                 globalTags={tags}
                 plan={plan}
               />
-            )}
-            {tab === 'settings' && limits.tags && (
-              <SettingsTab tags={tags} onTagsChange={setTags} />
-            )}
-            {tab === 'settings' && !limits.tags && (
-              <div className="max-w-lg">
-                <UpgradePrompt
-                  feature="Material Tags"
-                  description="Tags let you categorise materials across systems — filter by structural, FHLL, hot-dip-galv and more."
-                  upgradeTo="PRO"
-                />
-              </div>
             )}
           </div>
         )}
