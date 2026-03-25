@@ -247,6 +247,13 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
           )
         })}
       </div>
+      <ConfirmModal
+        open={deleteId !== null}
+        title="Remove from library?"
+        message="This item will be permanently removed from your library."
+        onConfirm={() => { if (deleteId) handleDelete(deleteId) }}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }
@@ -378,13 +385,6 @@ function ItemForm({ draft, plan, globalTags, onSet, onSetSpec }: {
           compact
         />
       )}
-      <ConfirmModal
-        open={deleteId !== null}
-        title="Remove from library?"
-        message="This item will be permanently removed from your library."
-        onConfirm={() => { if (deleteId) handleDelete(deleteId) }}
-        onCancel={() => setDeleteId(null)}
-      />
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus, ChevronDown, ChevronRight, Edit3, Trash2, Check, X, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { format } from 'date-fns'
@@ -44,6 +45,7 @@ export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshP
   const [showModal, setShowModal] = useState(false)
   const [editing,   setEditing]   = useState<any | null>(null)
   const [loading,   setLoading]   = useState(false)
+  const [deleteId,  setDeleteId]  = useState<string | null>(null)
 
   // Form state
   const [poId,         setPoId]         = useState('')
@@ -129,9 +131,9 @@ export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshP
     onRefresh()
   }
 
-  const remove = async (doItem: any) => {
-    if (!confirm(`Delete this delivery order?`)) return
-    await fetch('/api/logistics/do', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: doItem.id }) })
+  const remove = async (id: string) => {
+    await fetch('/api/logistics/do', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    setDeleteId(null)
     onRefresh()
   }
 
@@ -188,7 +190,7 @@ export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshP
                           icon={<Truck className="w-3 h-3" />}>Delivered</Button>
                       )}
                       <Button size="xs" variant="ghost" onClick={() => openEdit(doItem)} icon={<Edit3 className="w-3 h-3" />} />
-                      <Button size="xs" variant="danger" onClick={() => remove(doItem)} icon={<Trash2 className="w-3 h-3" />} />
+                      <Button size="xs" variant="danger" onClick={() => setDeleteId(doItem.id)} icon={<Trash2 className="w-3 h-3" />} />
                     </div>
                   </div>
                   {isExp && (doItem.lines ?? []).length > 0 && (
@@ -303,6 +305,13 @@ export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshP
           </div>
         </div>
       </Modal>
+      <ConfirmModal
+        open={deleteId !== null}
+        title="Delete delivery order?"
+        message="This delivery order will be permanently deleted."
+        onConfirm={() => { if (deleteId) remove(deleteId) }}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }
