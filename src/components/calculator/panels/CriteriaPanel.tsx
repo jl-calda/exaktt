@@ -2,7 +2,8 @@
 'use client'
 import { useState } from 'react'
 import type { CustomCriterion, CustomDim } from '@/types'
-import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, getDimUnit } from '@/lib/engine/constants'
+import type { DimOverride } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
 import { Plus, Trash2, Edit3, Check, X, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -17,6 +18,7 @@ interface Props {
   customCriteria: CustomCriterion[]
   customDims:     CustomDim[]
   inputModel?:    string
+  dimOverrides?:  Record<string, DimOverride>
   onChange:       (criteria: CustomCriterion[]) => void
 }
 
@@ -72,7 +74,7 @@ function FieldGuide({ type, items }: { type: string; items: { label: string; des
   )
 }
 
-export default function CriteriaPanel({ customCriteria, customDims, inputModel, onChange }: Props) {
+export default function CriteriaPanel({ customCriteria, customDims, inputModel, dimOverrides, onChange }: Props) {
   const [adding, setAdding]       = useState(false)
   const [draft, setDraft]         = useState({ ...BLANK })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -107,6 +109,9 @@ export default function CriteriaPanel({ customCriteria, customDims, inputModel, 
     onSave: () => void
     onCancel: () => void
   }) => {
+    const dimKey = (d as any).dimKey ?? 'corners'
+    const customDim = customDims.find(cd => cd.key === dimKey)
+    const resolvedUnit = customDim ? customDim.unit : getDimUnit(dimKey, dimOverrides)
     const [guideOpen, setGuideOpen] = useState(false)
     const guideItems = CRITERIA_FIELD_ITEMS[d.type] ?? []
     return (
@@ -143,7 +148,7 @@ export default function CriteriaPanel({ customCriteria, customDims, inputModel, 
                 onChange={e => set('operator')(e.target.value)}
                 options={OPS} className="w-20" />
               <NumberInput label="Threshold" value={(d as any).threshold ?? 0} step="any" min={0}
-                onChange={e => set('threshold')(parseFloat(e.target.value))} className="w-28" />
+                onChange={e => set('threshold')(parseFloat(e.target.value))} unit={resolvedUnit} className="w-28" />
             </>
           )}
         </div>

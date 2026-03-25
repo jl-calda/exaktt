@@ -60,11 +60,13 @@ function StepHeader({ step, children }: { step: typeof STEPS[number]; children: 
 export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, isLocked = false, onLock, onUnlock }: Props) {
   const [library,           setLibrary]           = useState<any[]>([])
   const [workActivityRates, setWorkActivityRates] = useState<any[]>([])
+  const [labourRates,       setLabourRates]       = useState<any[]>([])
   const [showOverview,      setShowOverview]      = useState(false)
 
   useEffect(() => {
     fetch('/api/mto/library').then(r => r.json()).then(({ data }) => { if (data) setLibrary(data) })
     fetch('/api/mto/work-activity-rates').then(r => r.json()).then(({ data }) => { if (data) setWorkActivityRates(data) })
+    fetch('/api/mto/labour-rates').then(r => r.json()).then(({ data }) => { if (data) setLabourRates(data) })
   }, [])
 
   const { saveMat, deleteMat, addMat, makeUnique, syncFromLib, addFromLib } =
@@ -285,7 +287,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, 
 
       {/* ── Step 3: Criteria + Warnings ── */}
       <StepHeader step={STEPS[2]}>
-        <CriteriaPanel customCriteria={sys.customCriteria} customDims={sys.customDims} inputModel={sys.inputModel} onChange={c => onUpdate({ customCriteria: c })} />
+        <CriteriaPanel customCriteria={sys.customCriteria} customDims={sys.customDims} inputModel={sys.inputModel} dimOverrides={sys.dimOverrides} onChange={c => onUpdate({ customCriteria: c })} />
         <WarningsPanel warnings={sys.warnings} onChange={w => onUpdate({ warnings: w })} customDims={sys.customDims} inputModel={sys.inputModel} dimOverrides={sys.dimOverrides} />
       </StepHeader>
 
@@ -335,8 +337,12 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, 
           customCriteria={sys.customCriteria}
           customBrackets={sys.customBrackets ?? []}
           workActivityRates={workActivityRates}
+          labourRates={labourRates}
           onChange={a => onUpdate({ workActivities: a })}
-          dimOverrides={sys.dimOverrides}
+          dimOverrides={{
+            ...sys.dimOverrides,
+            ...Object.fromEntries((sys.customDims ?? []).filter(cd => cd.unit && !sys.dimOverrides?.[cd.key]).map(cd => [cd.key, { unit: cd.unit }])),
+          }}
         />
       </StepHeader>
 

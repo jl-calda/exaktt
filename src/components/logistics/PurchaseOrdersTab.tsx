@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus, ChevronDown, ChevronRight, Edit3, Trash2, Check, X, Package } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { format } from 'date-fns'
 import { nanoid } from 'nanoid'
@@ -30,6 +31,10 @@ interface Props {
   library:   any[]
   onRefresh: () => void
 }
+
+const PO_UNITS = [
+  'each', 'pcs', 'm', 'mm', 'kg', 'L', 'set', 'pack',
+].map(u => ({ value: u, label: u }))
 
 const BLANK_LINE = (): LineItem => ({ _key: nanoid(6), libraryItemId: '', itemName: '', itemUnit: 'each', qtyOrdered: 1, unitPrice: '' })
 
@@ -255,9 +260,9 @@ export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }
                       </datalist>
                     </div>
                   </div>
-                  <div className="w-16">
+                  <div className="w-20">
                     <label className="label">Unit</label>
-                    <input className="input text-xs py-1.5" value={line.itemUnit} onChange={e => updateLine(line._key, { itemUnit: e.target.value })} />
+                    <Select options={PO_UNITS} value={line.itemUnit} onChange={e => updateLine(line._key, { itemUnit: e.target.value })} className="text-xs py-1.5" />
                   </div>
                   <div className="w-20">
                     <label className="label">Qty</label>
@@ -265,7 +270,10 @@ export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }
                   </div>
                   <div className="w-24">
                     <label className="label">Unit Price</label>
-                    <input className="input text-xs py-1.5" type="number" min={0} step="0.01" value={line.unitPrice} onChange={e => updateLine(line._key, { unitPrice: e.target.value === '' ? '' : parseFloat(e.target.value) })} placeholder="0.00" />
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-ink-faint pointer-events-none">$</span>
+                      <input className="input text-xs py-1.5 pl-6" type="number" min={0} step="0.01" value={line.unitPrice} onChange={e => updateLine(line._key, { unitPrice: e.target.value === '' ? '' : parseFloat(e.target.value) })} placeholder="0.00" />
+                    </div>
                   </div>
                   <Button size="xs" variant="danger" onClick={() => removeLine(line._key)} icon={<X className="w-3 h-3" />} />
                 </div>

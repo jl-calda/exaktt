@@ -671,6 +671,21 @@ export interface BracketBOMItem {
 
 export type LabourRateUnitType = 'per_piece' | 'per_dim' | 'per_hour' | 'lump_sum'
 
+export interface CrewRole {
+  labourRateId: string    // ref to company LabourRate
+  roleName:     string    // snapshot: "Supervisor", "Worker"
+  count:        number    // how many of this role
+  ratePerHr:    number    // snapshot: hourly rate
+}
+
+export interface WorkScheduleRoleCost {
+  roleName:   string
+  count:      number
+  ratePerHr:  number
+  manHours:   number    // elapsedHours × count
+  cost:       number    // manHours × ratePerHr
+}
+
 export interface LabourRate {
   id:         string
   name:       string
@@ -713,6 +728,7 @@ export interface WorkActivityRate {
   defaultTimePerUnit?: number        // min per unit
   defaultRatePerHr?:   number        // units per hr
   crewSize:       number
+  defaultCrewRoles?: CrewRole[]      // default crew composition (pre-fills when activity is created from this rate)
   notes?:         string | null
   isArchived:     boolean
   systemTags?:    string[]
@@ -729,6 +745,7 @@ export interface BracketWorkActivityRef {
   speedMode?:         SpeedMode       // override WAR default
   ratePerHr?:         number          // override WAR default
   crewSize?:          number          // override WAR default
+  crewRoles?:         CrewRole[]     // optional per-role breakdown
 
   // Snapshots (populated at save time from the WorkActivityRate)
   _categoryName:      string
@@ -795,7 +812,8 @@ export interface WorkActivity {
 
   // Work Activity Rate reference (replaces inline labour fields)
   workActivityRateId?: string
-  crewSize:            number    // default 1
+  crewSize:            number    // default 1 (auto-computed as sum of role counts when crewRoles present)
+  crewRoles?:          CrewRole[]  // optional per-role breakdown (supervisor, worker, etc.)
 
   // Snapshots from WorkActivityRate (populated at save time)
   _categoryName?:  string
@@ -851,6 +869,7 @@ export interface WorkScheduleResult {
   elapsedHours:    number    // totalHours / crewSize
   categoryName?:   string
   labourCost?:     number    // Pro+ only
+  crewRoles?:      WorkScheduleRoleCost[]  // per-role breakdown (when activity has crewRoles)
   isThirdParty:    boolean
   thirdPartyCost?: number
 }

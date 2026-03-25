@@ -2,7 +2,8 @@
 'use client'
 import { useState } from 'react'
 import type { Warning, CustomDim } from '@/types'
-import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, getDimLabel } from '@/lib/engine/constants'
+import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, getDimLabel, getDimUnit } from '@/lib/engine/constants'
+import type { DimOverride } from '@/lib/engine/constants'
 import { nanoid } from 'nanoid'
 import { Plus, Trash2, Edit3, Check, X, AlertTriangle, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -62,10 +63,14 @@ interface WarnFormProps {
   onSubmit:   () => void
   onCancel:   () => void
   submitLabel: string
+  dimOverrides?: Record<string, DimOverride>
+  customDims:   CustomDim[]
 }
 
-function WarnForm({ dimOptions, d, onField, onSubmit, onCancel, submitLabel }: WarnFormProps) {
+function WarnForm({ dimOptions, d, onField, onSubmit, onCancel, submitLabel, dimOverrides, customDims }: WarnFormProps) {
   const [guideOpen, setGuideOpen] = useState(false)
+  const customDim = customDims.find(cd => cd.key === d.dimKey)
+  const resolvedUnit = customDim ? customDim.unit : getDimUnit(d.dimKey, dimOverrides)
   return (
     <div className="space-y-3">
       <div className="flex-1 min-w-0 space-y-4">
@@ -79,7 +84,7 @@ function WarnForm({ dimOptions, d, onField, onSubmit, onCancel, submitLabel }: W
             onChange={e => onField('operator', e.target.value)}
             options={OPS} className="w-20" />
           <NumberInput label="Threshold" value={d.threshold} step="any" min={0}
-            onChange={e => onField('threshold', parseFloat(e.target.value))} className="w-28" />
+            onChange={e => onField('threshold', parseFloat(e.target.value))} unit={resolvedUnit} className="w-28" />
         </div>
         {/* Row 2: message */}
         <div className="flex flex-wrap gap-4 items-start">
@@ -165,6 +170,7 @@ export default function WarningsPanel({ warnings, customDims, onChange, inputMod
             dimOptions={dimOptions} d={draft}
             onField={(k, v) => setDraft(d => ({ ...d, [k]: v }))}
             onSubmit={add} onCancel={() => setAdding(false)} submitLabel="Add"
+            dimOverrides={dimOverrides} customDims={customDims}
           />
         </div>
       )}
@@ -207,6 +213,7 @@ export default function WarningsPanel({ warnings, customDims, onChange, inputMod
                     dimOptions={dimOptions} d={editDraft}
                     onField={(k, v) => setEditDraft(d => d ? { ...d, [k]: v } : d)}
                     onSubmit={saveEdit} onCancel={cancelEdit} submitLabel="Save"
+                    dimOverrides={dimOverrides} customDims={customDims}
                   />
                 </div>
               )}

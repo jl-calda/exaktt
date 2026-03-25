@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input, NumberInput } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import type { WorkActivity, WorkActivityRate, ActivityPhase, ActivityRateType, Material, CustomCriterion, WorkBracket } from '@/types'
+import type { WorkActivity, WorkActivityRate, ActivityPhase, ActivityRateType, Material, CustomCriterion, WorkBracket, LabourRate, CrewRole } from '@/types'
 import { PRIMITIVE_DIMS, getDimUnit, type DimOverride } from '@/lib/engine/constants'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { IconPicker }  from '@/components/ui/IconPicker'
@@ -19,6 +19,7 @@ interface Props {
   customCriteria:    CustomCriterion[]
   customBrackets:    WorkBracket[]
   workActivityRates: WorkActivityRate[]
+  labourRates:       LabourRate[]
   onChange:          (activities: WorkActivity[]) => void
   dimOverrides?:     Record<string, DimOverride>
 }
@@ -93,7 +94,10 @@ function applyRate(rate: WorkActivityRate, phase: ActivityPhase): Omit<WorkActiv
     speedMode:          (rate.speedMode as 'time_per_unit' | 'rate') ?? 'time_per_unit',
     timePerUnit:        rate.defaultTimePerUnit ?? undefined,
     ratePerHr:          rate.defaultRatePerHr ?? undefined,
-    crewSize:           rate.crewSize ?? 1,
+    crewSize:           rate.defaultCrewRoles?.length
+                          ? rate.defaultCrewRoles.reduce((s, r) => s + r.count, 0)
+                          : (rate.crewSize ?? 1),
+    crewRoles:          rate.defaultCrewRoles?.length ? [...rate.defaultCrewRoles] : undefined,
     workActivityRateId: rate.id,
     _categoryName:      rate.categoryName,
     _categoryIcon:      rate.categoryIcon,
@@ -211,7 +215,7 @@ function AddActivityDropdown({ rates, phase, onSelectRate, onManual }: {
 /* ── ActivityForm ──────────────────────────────────────────────────────────── */
 
 function ActivityForm({
-  d, set, materials, customCriteria, customBrackets, workActivityRates,
+  d, set, materials, customCriteria, customBrackets, workActivityRates, labourRates,
   onSave, onCancel, onChangeRate, label, dimOverrides, isLinked,
 }: {
   d: Partial<WorkActivity>
@@ -220,6 +224,7 @@ function ActivityForm({
   customCriteria: CustomCriterion[]
   customBrackets: WorkBracket[]
   workActivityRates: WorkActivityRate[]
+  labourRates: LabourRate[]
   onSave: () => void
   onCancel: () => void
   onChangeRate?: () => void
@@ -306,8 +311,98 @@ function ActivityForm({
               : <NumberInput label={`${rateU}/hr`} value={d.ratePerHr ?? ''} step="any" min={0}
                   onChange={e => set('ratePerHr')(parseFloat(e.target.value) || undefined)} className="w-32" />
           })()}
-          <NumberInput label="Crew size" value={d.crewSize ?? 1} step={1} min={1}
-            onChange={e => set('crewSize')(parseInt(e.target.value) || 1)} className="w-24" />
+          {!(d.crewRoles?.length) && (
+            <NumberInput label="Crew size" unit="crew" value={d.crewSize ?? 1} step={1} min={1}
+              onChange={e => set('crewSize')(parseInt(e.target.value) || 1)} className="w-24" />
+          )}
+          {(d.crewRoles?.length ?? 0) > 0 && (
+            <div className="self-end mb-px">
+              <span className="text-xs text-ink-muted">{d.crewRoles!.reduce((s, r) => s + r.count, 0)} crew</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Crew role breakdown (non-third-party) */}
+      {!isThirdParty && labourRates.length > 0 && (
+        <div>
+          <button type="button" onClick={() => {
+            if (d.crewRoles?.length) {
+              // Switch back to simple mode
+              set('crewRoles')(undefined)
+            } else {
+              // Start role breakdown with one default role
+              const first = labourRates[0]
+              set('crewRoles')([{
+                labourRateId: first.id,
+                roleName:     first.name,
+                count:        d.crewSize ?? 1,
+                ratePerHr:    first.rate,
+              }])
+            }
+          }}
+            className="text-[10px] text-ink-muted hover:text-primary transition-colors underline underline-offset-2 mb-2">
+            {d.crewRoles?.length ? 'Use simple crew size' : 'Break down by role'}
+          </button>
+          {(d.crewRoles?.length ?? 0) > 0 && (
+            <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius)' }}>
+              <div className="px-3 py-1.5 bg-surface-100 border-b border-surface-200 text-[10px] font-semibold text-ink-faint uppercase tracking-wide">
+                Crew Roles
+              </div>
+              <div className="divide-y divide-surface-100">
+                {d.crewRoles!.map((role, i) => (
+                  <div key={i} className="px-3 py-2 flex items-center gap-2">
+                    <select className="input text-xs py-1 flex-1 min-w-0" value={role.labourRateId}
+                      onChange={e => {
+                        const lr = labourRates.find(r => r.id === e.target.value)
+                        if (!lr) return
+                        const updated = [...d.crewRoles!]
+                        updated[i] = { ...role, labourRateId: lr.id, roleName: lr.name, ratePerHr: lr.rate }
+                        set('crewRoles')(updated)
+                        set('crewSize')(updated.reduce((s, r) => s + r.count, 0))
+                      }}>
+                      {labourRates.map(lr => (
+                        <option key={lr.id} value={lr.id}>{lr.name}</option>
+                      ))}
+                    </select>
+                    <NumberInput min={1} step={1} value={role.count}
+                      onChange={e => {
+                        const updated = [...d.crewRoles!]
+                        updated[i] = { ...role, count: parseInt(e.target.value) || 1 }
+                        set('crewRoles')(updated)
+                        set('crewSize')(updated.reduce((s, r) => s + r.count, 0))
+                      }}
+                      className="w-14 text-center" />
+                    <span className="text-[10px] text-ink-faint whitespace-nowrap">${role.ratePerHr}/hr</span>
+                    <button type="button" onClick={() => {
+                      const updated = d.crewRoles!.filter((_, j) => j !== i)
+                      if (updated.length === 0) {
+                        set('crewRoles')(undefined)
+                        set('crewSize')(1)
+                      } else {
+                        set('crewRoles')(updated)
+                        set('crewSize')(updated.reduce((s, r) => s + r.count, 0))
+                      }
+                    }}
+                      className="p-0.5 rounded text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={() => {
+                const first = labourRates[0]
+                const updated = [...(d.crewRoles ?? []), {
+                  labourRateId: first.id, roleName: first.name, count: 1, ratePerHr: first.rate,
+                }]
+                set('crewRoles')(updated)
+                set('crewSize')(updated.reduce((s, r) => s + r.count, 0))
+              }}
+                className="w-full px-3 py-1.5 text-[10px] text-ink-muted hover:text-primary hover:bg-primary/5 transition-colors border-t border-surface-200 flex items-center gap-1">
+                <Plus className="w-3 h-3" /> Add role
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -393,7 +488,7 @@ function ActivityForm({
 
 type Mode = 'idle' | 'adding' | 'editing'
 
-export default function WorkActivitiesPanel({ workActivities, materials, customCriteria, customBrackets, workActivityRates, onChange, dimOverrides }: Props) {
+export default function WorkActivitiesPanel({ workActivities, materials, customCriteria, customBrackets, workActivityRates, labourRates, onChange, dimOverrides }: Props) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [mode,      setMode]      = useState<Mode>('idle')
   const [draft,     setDraft]     = useState<Partial<WorkActivity>>({ ...BLANK })
@@ -470,7 +565,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
             {isLinked ? 'Configure Activity' : 'New Activity'}
           </div>
           <ActivityForm d={draft} set={sd} materials={materials} customCriteria={customCriteria}
-            customBrackets={customBrackets} workActivityRates={workActivityRates}
+            customBrackets={customBrackets} workActivityRates={workActivityRates} labourRates={labourRates}
             onSave={addActivity} onCancel={resetMode} label="Add"
             dimOverrides={dimOverrides} isLinked={isLinked} />
         </div>
@@ -551,7 +646,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
                       {isEd && (
                         <div className="px-5 pb-5 border-t border-primary/20 pt-4">
                           <ActivityForm d={draft} set={sd} materials={materials} customCriteria={customCriteria}
-                            customBrackets={customBrackets} workActivityRates={workActivityRates}
+                            customBrackets={customBrackets} workActivityRates={workActivityRates} labourRates={labourRates}
                             onSave={saveEdit} onCancel={resetMode} label="Save"
                             dimOverrides={dimOverrides} isLinked={!!draft.workActivityRateId} />
                         </div>

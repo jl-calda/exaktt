@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus, ChevronDown, ChevronRight, Edit3, Trash2, Check, X, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { format } from 'date-fns'
 import { nanoid } from 'nanoid'
@@ -30,6 +31,10 @@ interface Props {
   onRefresh:   () => void
   onRefreshPos: () => void
 }
+
+const DO_UNITS = [
+  'each', 'pcs', 'm', 'mm', 'kg', 'L', 'set', 'pack',
+].map(u => ({ value: u, label: u }))
 
 const BLANK_LINE = (): LineItem => ({ _key: nanoid(6), poLineId: null, libraryItemId: '', itemName: '', itemUnit: 'each', qtyExpected: 1, qtyDelivered: 0 })
 
@@ -267,9 +272,9 @@ export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshP
                       {library.map(item => <option key={item.id} value={item.name} />)}
                     </datalist>
                   </div>
-                  <div className="w-16">
+                  <div className="w-20">
                     <label className="label">Unit</label>
-                    <input className="input text-xs py-1.5" value={line.itemUnit} onChange={e => updateLine(line._key, { itemUnit: e.target.value })} />
+                    <Select options={DO_UNITS} value={line.itemUnit} onChange={e => updateLine(line._key, { itemUnit: e.target.value })} className="text-xs py-1.5" />
                   </div>
                   <div className="w-20">
                     <label className="label">Expected</label>

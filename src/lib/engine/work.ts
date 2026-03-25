@@ -3,6 +3,7 @@
 
 import type {
   WorkActivity, WorkBracket, SetupBracket, WorkScheduleResult, WorkScheduleSummary,
+  WorkScheduleRoleCost, CrewRole,
   MultiRunMaterial, CutListResult, CutListBar, CutItem, OffcutItem,
   BracketBOMItem, Material, MtoSystem, RuleRow,
 } from '@/types'
@@ -156,6 +157,22 @@ export function computeWorkSchedule(
   setupBrackets:   SetupBracket[] = [],
   sysMaterials:    Material[] = [],
 ): WorkScheduleSummary {
+  // Helper: compute per-role cost breakdown
+  function computeRoleCosts(roles: CrewRole[], elapsedHrs: number): { roleCosts: WorkScheduleRoleCost[]; totalCrew: number; totalLabour: number } {
+    const roleCosts = roles.map(r => ({
+      roleName:  r.roleName,
+      count:     r.count,
+      ratePerHr: r.ratePerHr,
+      manHours:  elapsedHrs * r.count,
+      cost:      elapsedHrs * r.count * r.ratePerHr,
+    }))
+    return {
+      roleCosts,
+      totalCrew:   roles.reduce((s, r) => s + r.count, 0),
+      totalLabour: roleCosts.reduce((s, r) => s + r.cost, 0),
+    }
+  }
+
   // Roll up bracket fab activities as auto-generated fabrication results
   const setupMap = new Map(setupBrackets.map(sb => [sb.bracketId, sb]))
   const bracketFabResults: WorkScheduleResult[] = []
@@ -170,23 +187,47 @@ export function computeWorkSchedule(
       const totalMinutes   = timePerBracket * bQty
       const timeUnit       = ref.timeUnit ?? 'min'
       const totalMins      = timeUnit === 'hr' ? totalMinutes * 60 : totalMinutes
-      const crewSize       = ref.crewSize ?? 1
-      // Input time is wall-clock (elapsed); multiply by crew for total man-hours
       const elapsedHours   = totalMins / 60
-      const totalManHours  = elapsedHours * crewSize
 
+      // Crew roles or simple crew size
+      let crewSize: number
+      let totalManHours: number
       let labourCost: number | undefined
-      if (showCost) {
-        if (ref._rateUnitType === 'per_piece' && ref._unitCost != null)
-          labourCost = bQty * ref._unitCost
-        else if (ref._rateUnitType === 'per_hour' && ref._labourRateHr != null)
-          labourCost = totalManHours * ref._labourRateHr
-        else if (ref._rateUnitType === 'lump_sum' && ref._unitCost != null)
-          labourCost = ref._unitCost
-        else if (ref._rateUnitType === 'per_dim' && ref._unitCost != null)
-          labourCost = bQty * ref._unitCost
-        else if (ref._labourRateHr)
-          labourCost = totalManHours * ref._labourRateHr
+      let roleCosts: WorkScheduleRoleCost[] | undefined
+
+      if (ref.crewRoles?.length) {
+        const rc = computeRoleCosts(ref.crewRoles, elapsedHours)
+        crewSize      = rc.totalCrew
+        totalManHours = elapsedHours * crewSize
+        roleCosts     = rc.roleCosts
+        labourCost    = showCost ? rc.totalLabour : undefined
+      } else {
+        crewSize      = ref.crewSize ?? 1
+        totalManHours = elapsedHours * crewSize
+
+        if (showCost) {
+          if (ref._rateUnitType === 'per_piece' && ref._unitCost != null)
+            labourCost = bQty * ref._unitCost
+          else if (ref._rateUnitType === 'per_hour' && ref._labourRateHr != null)
+            labourCost = totalManHours * ref._labourRateHr
+          else if (ref._rateUnitType === 'lump_sum' && ref._unitCost != null)
+            labourCost = ref._unitCost
+          else if (ref._rateUnitType === 'per_dim' && ref._unitCost != null)
+            labourCost = bQty * ref._unitCost
+          else if (ref._labourRateHr)
+            labourCost = totalManHours * ref._labourRateHr
+        }
+        // Default to "Worker" role for legacy bracket activities
+        if (showCost && labourCost != null) {
+          const rate = ref._labourRateHr ?? ref._unitCost ?? 0
+          roleCosts = [{
+            roleName:  ref._rateName ?? 'Worker',
+            count:     crewSize,
+            ratePerHr: rate,
+            manHours:  totalManHours,
+            cost:      labourCost,
+          }]
+        }
       }
 
       bracketFabResults.push({
@@ -202,6 +243,7 @@ export function computeWorkSchedule(
         elapsedHours,
         categoryName:  ref._categoryName,
         labourCost,
+        crewRoles:     roleCosts,
         isThirdParty:  false,
       })
     }
@@ -296,13 +338,47 @@ export function computeWorkSchedule(
     }
 
     // Input time is wall-clock (elapsed); multiply by crew for total man-hours
-    const crewSize     = Math.max(1, act.crewSize ?? 1)
     const elapsedHours = totalMinutes / 60
-    const totalManHours = elapsedHours * crewSize
 
-    const labourCost = (showCost && act._labourRateHr && !isThirdParty)
-      ? totalManHours * act._labourRateHr
-      : undefined
+    let crewSize: number
+    let totalManHours: number
+    let labourCost: number | undefined
+    let roleCosts: WorkScheduleRoleCost[] | undefined
+
+    if (act.crewRoles?.length) {
+      const rc = computeRoleCosts(act.crewRoles, elapsedHours)
+      crewSize      = Math.max(1, rc.totalCrew)
+      totalManHours = elapsedHours * crewSize
+      roleCosts     = rc.roleCosts
+      labourCost    = (showCost && !isThirdParty) ? rc.totalLabour : undefined
+    } else {
+      crewSize      = Math.max(1, act.crewSize ?? 1)
+      totalManHours = elapsedHours * crewSize
+
+      // Support all four rate unit types (matching bracket activity logic)
+      if (showCost && !isThirdParty) {
+        if (act._rateUnitType === 'per_piece' && act._unitCost != null)
+          labourCost = sourceQty * act._unitCost
+        else if (act._rateUnitType === 'lump_sum' && act._unitCost != null)
+          labourCost = act._unitCost
+        else if (act._rateUnitType === 'per_dim' && act._unitCost != null)
+          labourCost = sourceQty * act._unitCost
+        else if (act._labourRateHr)
+          labourCost = totalManHours * act._labourRateHr
+      }
+
+      // Default to role entry for consistent output
+      if (showCost && labourCost != null && !isThirdParty) {
+        const rate = act._labourRateHr ?? act._unitCost ?? 0
+        roleCosts = [{
+          roleName:  act._rateName ?? 'Worker',
+          count:     crewSize,
+          ratePerHr: rate,
+          manHours:  totalManHours,
+          cost:      labourCost,
+        }]
+      }
+    }
 
     results.push({
       activityId:    act.id,
@@ -317,6 +393,7 @@ export function computeWorkSchedule(
       elapsedHours,
       categoryName:  act._categoryName,
       labourCost,
+      crewRoles:     roleCosts,
       isThirdParty,
       thirdPartyCost,
     })

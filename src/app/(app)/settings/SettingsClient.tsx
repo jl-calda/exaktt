@@ -9,9 +9,16 @@ import type { Plan } from '@prisma/client'
 import { getLimits, PLAN_META } from '@/lib/limits'
 import { createClient } from '@/lib/supabase/client'
 import { useTheme } from '@/components/ThemeProvider'
+import { Select } from '@/components/ui/Select'
 import { THEME_PRESETS } from '@/lib/theme'
 
 type Tab = 'company' | 'tags' | 'labour' | 'appearance' | 'account'
+
+const COUNTRIES = [
+  'Australia', 'Canada', 'China', 'India', 'Indonesia', 'Japan', 'Malaysia',
+  'New Zealand', 'Philippines', 'Singapore', 'South Korea', 'Thailand',
+  'United Arab Emirates', 'United Kingdom', 'United States', 'Vietnam',
+].map(c => ({ value: c, label: c }))
 
 const UNIT_OPTIONS = [
   { value: 'per_piece', label: 'Per piece' },
@@ -162,7 +169,7 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
                   </div>
                   <div>
                     <label className="label">Country</label>
-                    <input value={profile.country ?? ''} onChange={e => set('country')(e.target.value)} className="input" />
+                    <Select options={COUNTRIES} value={profile.country ?? ''} onChange={e => set('country')(e.target.value)} />
                   </div>
                 </div>
               </div>

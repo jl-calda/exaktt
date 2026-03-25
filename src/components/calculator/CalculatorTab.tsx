@@ -681,6 +681,14 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
         dimValues[k] = (dimValues[k] ?? 0) + (parseFloat(String(v)) || 0)
       }
     }
+    // Merge computed custom dimension values from engine results
+    for (const rr of (calc.multiResults as any)?.runResults ?? []) {
+      if (rr.customVals) {
+        for (const [k, v] of Object.entries(rr.customVals as Record<string, number>)) {
+          dimValues[k] = (dimValues[k] ?? 0) + (v ?? 0)
+        }
+      }
+    }
     const mergedCriteria = calc.runs.reduce((acc: Record<string, boolean>, r: Run) => {
       for (const [k, v] of Object.entries(r.criteriaState ?? {})) { if (v) acc[k] = true }
       return acc
@@ -693,6 +701,13 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     const wsTemplateMap   = new Map(wsTemplates.map(t => [t.id, t]))
     const wsActiveBrackets = wsSetupBrackets.map(sb => wsTemplateMap.get(sb.bracketId)).filter(Boolean) as WorkBracket[]
     const bracketQtys = computeBracketQtys(wsSetupBrackets, wsTemplates, dimValues, sys, mergedCriteria, mergedVariants)
+    // Merge custom dim units into dimOverrides so work schedule rate conversion works
+    const allDimOverrides = { ...sys.dimOverrides }
+    for (const cd of sys.customDims ?? []) {
+      if (cd.unit && !allDimOverrides[cd.key]) {
+        allDimOverrides[cd.key] = { unit: cd.unit }
+      }
+    }
     return computeWorkSchedule(
       sys.workActivities ?? [],
       combinedWithBrackets,
@@ -702,7 +717,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
       limits.pricing ?? false,
       wsActiveBrackets,
       bracketQtys,
-      sys.dimOverrides,
+      allDimOverrides,
       wsSetupBrackets,
       sys.materials,
     )
