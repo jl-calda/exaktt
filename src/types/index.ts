@@ -883,6 +883,89 @@ export interface WorkScheduleSummary {
   totalThirdPartyCost?:  number
 }
 
+// ─── Tender Report (Quotation Builder) ────────────────────────────────────────
+
+export type TenderReportSectionType = 'job_line' | 'custom_line' | 'text_block'
+
+export interface TenderReportJobLine {
+  type: 'job_line'
+  id: string
+  tenderItemId: string
+  systemName: string
+  jobName: string
+  description: string
+  amount: number
+  marginPct: number
+  resultSnapshot: JobLastResults | null
+}
+
+export interface TenderReportCustomLine {
+  type: 'custom_line'
+  id: string
+  description: string
+  amount: number
+  marginPct: number
+}
+
+export interface TenderReportTextBlock {
+  type: 'text_block'
+  id: string
+  title?: string
+  content: string
+  templateId?: string
+}
+
+export type TenderReportSection = TenderReportJobLine | TenderReportCustomLine | TenderReportTextBlock
+
+export interface TenderReport {
+  id: string
+  companyId: string
+  createdById: string
+  tenderId: string
+  title: string
+  reference?: string | null
+  date: Date
+  validUntil?: Date | null
+  preparedBy?: string | null
+  revisionNo: string
+  companyName?: string | null
+  companyLogo?: string | null
+  companyAddr?: string | null
+  registrationNo?: string | null
+  registrationLabel?: string | null
+  accentColor?: string | null
+  clientName?: string | null
+  clientContact?: string | null
+  clientEmail?: string | null
+  clientAddr?: string | null
+  sections: TenderReportSection[]
+  overallMarginPct: number
+  paymentTerms?: string | null
+  validityPeriod?: string | null
+  disclaimer?: string | null
+  notes?: string | null
+  currency: string
+  showAppendix: boolean
+  isArchived: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface TenderTemplate {
+  id: string
+  name: string
+  category: 'full' | 'header' | 'footer' | 'text_block'
+  title?: string
+  preparedBy?: string
+  validityPeriod?: string
+  paymentTerms?: string
+  disclaimer?: string
+  notes?: string
+  blockTitle?: string
+  blockContent?: string
+  defaultSections?: TenderReportSection[]
+}
+
 // ─── Engine: Cut list ─────────────────────────────────────────────────────────
 
 export interface CutItem {

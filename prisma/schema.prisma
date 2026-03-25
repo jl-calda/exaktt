@@ -91,6 +91,8 @@ model Company {
   materialCategories     MaterialCategory[]
   globalTags             GlobalTag[]
   activityLibrary        ActivityLibraryItem[]
+  tenderReports          TenderReport[]
+  tenderTemplates        Json           @default("[]")
   labourRates            LabourRate[]
   workCategories         WorkCategory[]
   workActivityRates      WorkActivityRate[]
@@ -162,6 +164,7 @@ model User {
   createdMaterialCategories  MaterialCategory[]      @relation("createdByUser")
   createdGlobalTags          GlobalTag[]             @relation("createdByUser")
   createdActivityLibrary     ActivityLibraryItem[]   @relation("createdByUser")
+  createdTenderReports       TenderReport[]          @relation("createdByUser")
   createdLabourRates         LabourRate[]            @relation("createdByUser")
   createdWorkCategories      WorkCategory[]          @relation("createdByUser")
   createdWorkActivityRates   WorkActivityRate[]      @relation("createdByUser")
@@ -439,6 +442,7 @@ model Tender {
   isArchived     Boolean       @default(false)
 
   items     TenderItem[]
+  reports   TenderReport[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -850,4 +854,64 @@ model WorkActivityRate {
   @@index([workCategoryId])
   @@index([labourRateId])
   @@map("work_activity_rates")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TENDER REPORTS (quotation builder)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model TenderReport {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User     @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
+  tenderId    String
+  tender      Tender   @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  // Header
+  title             String   @default("Quotation")
+  reference         String?
+  date              DateTime @default(now())
+  validUntil        DateTime?
+  preparedBy        String?
+  revisionNo        String   @default("0")
+
+  // Branding snapshots
+  companyName       String?
+  companyLogo       String?
+  companyAddr       String?
+  registrationNo    String?
+  registrationLabel String?
+  accentColor       String?
+
+  // Client snapshot
+  clientName        String?
+  clientContact     String?
+  clientEmail       String?
+  clientAddr        String?
+
+  // Content (JSON array of TenderReportSection)
+  sections          Json     @default("[]")
+
+  // Margins
+  overallMarginPct  Float    @default(0)
+
+  // Footer
+  paymentTerms      String?
+  validityPeriod    String?
+  disclaimer        String?
+  notes             String?
+
+  // Config
+  currency          String   @default("SGD")
+  showAppendix      Boolean  @default(false)
+
+  isArchived Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([tenderId])
+  @@map("tender_reports")
 }
