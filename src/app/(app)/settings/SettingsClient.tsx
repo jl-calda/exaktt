@@ -12,7 +12,7 @@ import { useTheme } from '@/components/ThemeProvider'
 import { Select } from '@/components/ui/Select'
 import { THEME_PRESETS } from '@/lib/theme'
 
-type Tab = 'company' | 'tags' | 'labour' | 'appearance' | 'account'
+type Tab = 'company' | 'labour' | 'appearance' | 'account'
 
 const COUNTRIES = [
   'Australia', 'Canada', 'China', 'India', 'Indonesia', 'Japan', 'Malaysia',
@@ -57,9 +57,6 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
   const [tags,       setTags]       = useState<GlobalTag[]>(initialTags)
   const [saving,     setSaving]     = useState(false)
   const [saveMsg,    setSaveMsg]    = useState<string | null>(null)
-  const [newTagName, setNewTagName] = useState('')
-  const [newTagColor,setNewTagColor]= useState('#7c3aed')
-
   // ─── Labour Rates state (owner-only) ──────────────────────────────────────
   const [labourRates, setLabourRates] = useState<any[]>(initialLabourRates)
   const [editingRateId, setEditingRateId] = useState<string | null>(null)
@@ -90,23 +87,10 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
     await fetch('/api/tags', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tags: updated }) })
   }
 
-  const addTag = () => {
-    if (!newTagName.trim()) return
-    const updated = [...tags, { id: nanoid(), name: newTagName.trim(), color: newTagColor, order: tags.length }]
-    setTags(updated); saveTags(updated)
-    setNewTagName(''); setNewTagColor('#7c3aed')
-  }
-
-  const removeTag = (id: string) => {
-    const updated = tags.filter(t => t.id !== id)
-    setTags(updated); saveTags(updated)
-  }
-
   const set = (k: keyof CompanyProfile) => (v: any) => setProfile(p => ({ ...p, [k]: v }))
 
   const TABS = [
     { id: 'company'    as Tab, label: 'Company Profile', icon: <Building2 className="w-3.5 h-3.5" /> },
-    { id: 'tags'       as Tab, label: 'Material Tags',   icon: <Tag       className="w-3.5 h-3.5" /> },
     ...(isOwner ? [{ id: 'labour' as Tab, label: 'Labour Rates', icon: <DollarSign className="w-3.5 h-3.5" /> }] : []),
     { id: 'appearance' as Tab, label: 'Appearance',      icon: <Palette   className="w-3.5 h-3.5" /> },
     { id: 'account'    as Tab, label: 'Account',         icon: <User2     className="w-3.5 h-3.5" /> },
@@ -232,70 +216,6 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
                 <Save className="w-4 h-4" />
                 {saving ? 'Saving…' : 'Save Profile'}
               </button>
-            </div>
-          )}
-
-          {/* ── Material Tags ────────────────────────────────────── */}
-          {tab === 'tags' && (
-            <div className="space-y-5">
-              {!limits.tags && (
-                <div className="card p-4 flex items-center gap-3 bg-primary/5 border-primary/20">
-                  <Crown className="w-5 h-5 text-primary flex-shrink-0" />
-                  <div className="flex-1 text-sm text-ink">Material tags require <strong>Pro or Max</strong> plan.</div>
-                  <button onClick={() => router.push('/billing')} className="btn-primary text-xs py-1.5 px-3">Upgrade</button>
-                </div>
-              )}
-
-              <div className="card p-6">
-                <h2 className="font-semibold text-[13px] text-ink mb-1">Material Tags</h2>
-                <p className="text-sm text-ink-muted mb-5">Tags categorise materials across all systems — e.g. "FHLL", "structural", "hot-dip-galv".</p>
-
-                {/* Add tag */}
-                <div className="flex flex-wrap gap-3 items-end p-4 bg-surface-100 rounded-xl border border-surface-300 mb-5">
-                  <div className="flex-1 min-w-36">
-                    <label className="label">New tag</label>
-                    <input value={newTagName} onChange={e => setNewTagName(e.target.value)}
-                      placeholder='e.g. "structural"'
-                      className="input" onKeyDown={e => { if (e.key === 'Enter') addTag() }}
-                      disabled={!limits.tags} />
-                  </div>
-                  <div>
-                    <label className="label">Colour</label>
-                    <div className="flex gap-2 flex-wrap">
-                      {TAG_COLORS.map(c => (
-                        <button key={c} type="button" onClick={() => setNewTagColor(c)} disabled={!limits.tags}
-                          style={{ background: c, outline: newTagColor === c ? `3px solid ${c}` : 'none', outlineOffset: 2 }}
-                          className="w-6 h-6 rounded-md transition-all disabled:opacity-40" />
-                      ))}
-                    </div>
-                  </div>
-                  <button onClick={addTag} disabled={!limits.tags || !newTagName.trim()} className="btn-primary">Add</button>
-                </div>
-
-                {/* Tag chips preview */}
-                {tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-5">
-                    {tags.map(t => (
-                      <span key={t.id} style={{ background: t.color + '18', color: t.color, borderColor: t.color + '40' }}
-                        className="badge border rounded-full px-3 py-1 text-sm font-bold">
-                        {t.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Tag list */}
-                <div className="space-y-2">
-                  {tags.map(t => (
-                    <div key={t.id} className="flex items-center gap-3 p-3 rounded-xl border border-surface-300 bg-surface-50">
-                      <span style={{ background: t.color }} className="w-3 h-3 rounded-full flex-shrink-0" />
-                      <span className="flex-1 text-sm font-medium text-ink">{t.name}</span>
-                      <button onClick={() => removeTag(t.id)} className="text-xs text-red-400 hover:text-red-600 font-semibold">Remove</button>
-                    </div>
-                  ))}
-                  {tags.length === 0 && <p className="text-sm text-ink-faint text-center py-6">No tags yet.</p>}
-                </div>
-              </div>
             </div>
           )}
 
