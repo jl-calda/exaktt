@@ -339,7 +339,10 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, 
           workActivityRates={workActivityRates}
           labourRates={labourRates}
           onChange={a => onUpdate({ workActivities: a })}
-          dimOverrides={sys.dimOverrides}
+          dimOverrides={{
+            ...sys.dimOverrides,
+            ...Object.fromEntries((sys.customDims ?? []).filter(cd => cd.unit && !sys.dimOverrides?.[cd.key]).map(cd => [cd.key, { unit: cd.unit }])),
+          }}
         />
       </StepHeader>
 
