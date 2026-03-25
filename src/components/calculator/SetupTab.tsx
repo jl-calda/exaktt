@@ -338,6 +338,8 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, 
           customBrackets={sys.customBrackets ?? []}
           workActivityRates={workActivityRates}
           labourRates={labourRates}
+          inputModel={sys.inputModel}
+          customDims={sys.customDims}
           onChange={a => onUpdate({ workActivities: a })}
           dimOverrides={{
             ...sys.dimOverrides,
