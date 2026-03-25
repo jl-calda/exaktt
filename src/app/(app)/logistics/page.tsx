@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { prisma } from '@/lib/db/prisma'
 import { getLibraryItems, getSuppliers, getPurchaseOrders, getDeliveryOrders, getCompanyPlan, getMaterialCategories, getMaterialGrades, getManufacturers, getLabourRates, getWorkCategories, getWorkActivityRates, getUserCompany } from '@/lib/db/queries'
 import LogisticsClient from '@/components/logistics/LogisticsClient'
 
@@ -14,6 +15,9 @@ export default async function LogisticsPage() {
   const company = await getUserCompany(user.id)
   if (!company) redirect('/auth/login')
   const companyId = company.id
+
+  const member = await prisma.companyMember.findFirst({ where: { userId: user.id, companyId }, select: { role: true } })
+  const userRole = (member?.role ?? 'MEMBER') as string
 
   const [library, suppliers, pos, dos, plan, categories, grades, manufacturers, labourRates, workCategories, workActivityRates] = await Promise.all([
     getLibraryItems(companyId),
@@ -42,6 +46,7 @@ export default async function LogisticsPage() {
       labourRates={labourRates as any[]}
       workCategories={workCategories as any[]}
       workActivityRates={workActivityRates as any[]}
+      userRole={userRole as any}
     />
   )
 }
