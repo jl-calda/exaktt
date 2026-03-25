@@ -2,7 +2,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import type { MtoSystem, GlobalTag } from '@/types'
-import { BookOpen } from 'lucide-react'
+import { BookOpen, Lock, Unlock } from 'lucide-react'
 import { useMaterialMutations } from '@/lib/hooks/useMaterialMutations'
 import { PRIMITIVE_DIMS, INPUT_MODELS, DIMS_FOR_INPUT_MODEL, LINEAR_UNITS, UNIT_SELECTABLE_DIMS } from '@/lib/engine/constants'
 import { Button }          from '@/components/ui/Button'
@@ -23,6 +23,9 @@ interface Props {
   onUpdate:     (patch: Partial<MtoSystem>) => void
   globalTags?:  GlobalTag[]
   onViewGraph?: () => void
+  isLocked?:    boolean
+  onLock?:      () => void
+  onUnlock?:    () => void
 }
 
 const STEPS = [
@@ -54,7 +57,7 @@ function StepHeader({ step, children }: { step: typeof STEPS[number]; children: 
   )
 }
 
-export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }: Props) {
+export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, isLocked = false, onLock, onUnlock }: Props) {
   const [library,           setLibrary]           = useState<any[]>([])
   const [workActivityRates, setWorkActivityRates] = useState<any[]>([])
   const [showOverview,      setShowOverview]      = useState(false)
@@ -88,6 +91,44 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
     </FloatingPanel>
 
     <div className="flex-1 min-w-0 space-y-4 w-full">
+
+      {/* ── Lock / Unlock bar ── */}
+      {(onLock || onUnlock) && (
+        <div className={`flex items-center gap-3 px-4 py-2.5 border ${
+          isLocked
+            ? 'bg-emerald-50 border-emerald-200'
+            : 'bg-amber-50 border-amber-200'
+        }`} style={{ borderRadius: 'var(--radius-card)' }}>
+          {isLocked ? (
+            <>
+              <Lock className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span className="text-xs font-semibold text-emerald-800 flex-1">System is locked</span>
+              {onUnlock && (
+                <button onClick={onUnlock}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 transition-colors"
+                  style={{ borderRadius: 'var(--radius)' }}>
+                  <Unlock className="w-3 h-3" /> Unlock to Edit
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <Unlock className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <span className="text-xs font-semibold text-amber-800 flex-1">System is unlocked — save and lock when done</span>
+              {onLock && (
+                <button onClick={onLock}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                  style={{ borderRadius: 'var(--radius)' }}>
+                  <Lock className="w-3 h-3" /> Save & Lock
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Editable content (disabled when locked) ── */}
+      <div className={`space-y-4 ${isLocked ? 'pointer-events-none opacity-60 select-none' : ''}`}>
 
       {/* ── System Identity ── */}
       <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
@@ -298,6 +339,8 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph }
           dimOverrides={sys.dimOverrides}
         />
       </StepHeader>
+
+      </div>{/* end locked overlay wrapper */}
     </div>
 
     {/* Persistent sidebar — xl+ only */}

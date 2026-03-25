@@ -1,6 +1,6 @@
 // src/lib/db/queries.ts
 import { prisma } from './prisma'
-import type { Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { getLimits, withinLimit } from '@/lib/limits'
 import type { Plan } from '@prisma/client'
 import type { MtoSystem, SavedJob, LibraryItem, GlobalTag, MaterialSpec, Report, Profile, ActivityLibraryItem, Supplier } from '@/types'
@@ -201,6 +201,8 @@ export async function updateMtoSystem(id: string, companyId: string, data: Parti
       ...(data.warnings       !== undefined && { warnings:       asJson(data.warnings) }),
       ...(data.customBrackets !== undefined && { customBrackets: asJson(data.customBrackets) }),
       ...(data.workActivities !== undefined && { workActivities: asJson(data.workActivities) }),
+      ...(data.isLocked         !== undefined && { isLocked:         data.isLocked }),
+      ...(data.materialSnapshot !== undefined && { materialSnapshot: data.materialSnapshot === null ? Prisma.JsonNull : asJson(data.materialSnapshot) }),
     },
   })
 }

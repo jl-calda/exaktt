@@ -283,6 +283,8 @@ export interface MtoSystem {
   customBrackets?: WorkBracket[]
   setupBrackets?:  SetupBracket[]
   workActivities?: WorkActivity[]
+  isLocked?:       boolean
+  materialSnapshot?: Record<string, number> | null
   createdAt?:     Date
   updatedAt?:     Date
 }

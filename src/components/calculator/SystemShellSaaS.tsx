@@ -111,8 +111,27 @@ export default function SystemShellSaaS({
     if (data?.id) router.push('/mto/system/' + data.id)
   }
 
+  // Lock / unlock system setup
+  const lockSystem = useCallback(async () => {
+    const snapshot: Record<string, number> = {}
+    sys.materials.forEach((m: any) => { snapshot[m.id] = m._updatedAt ?? 0 })
+    const patch: Partial<MtoSystem> = { isLocked: true, materialSnapshot: snapshot }
+    setSys(s => ({ ...s, ...patch }))
+    await persistSystem({ ...sys, ...patch })
+  }, [sys, persistSystem])
+
+  const unlockSystem = useCallback(async () => {
+    const patch: Partial<MtoSystem> = { isLocked: false }
+    setSys(s => ({ ...s, ...patch }))
+    await persistSystem({ ...sys, ...patch })
+  }, [sys, persistSystem])
+
   // Plan-gated update wrappers
   const updateSystemGated = useCallback((patch: Partial<MtoSystem>) => {
+    if (sys.isLocked) {
+      setLimitWarning('System is locked — unlock it first to make changes.')
+      return
+    }
     if (isSample) {
       setLimitWarning('This is a sample system — duplicate it to make your own editable copy.')
       return
@@ -130,7 +149,7 @@ export default function SystemShellSaaS({
       return
     }
     updateSystem(patch)
-  }, [limits, plan, updateSystem, isSample])
+  }, [limits, plan, updateSystem, isSample, sys.isLocked])
 
   // Save job
   const saveJob = async (name: string, lastResults?: any) => {
@@ -341,7 +360,8 @@ export default function SystemShellSaaS({
         {tab !== 'graph' && (
           <div className="px-3 pt-3 pb-4 md:px-6 md:pt-4 md:pb-6">
             {tab === 'setup' && (
-              <SetupTab sys={sys} onUpdate={updateSystemGated} globalTags={tags} onViewGraph={() => setTab('graph')} />
+              <SetupTab sys={sys} onUpdate={updateSystemGated} globalTags={tags} onViewGraph={() => setTab('graph')}
+                isLocked={!!sys.isLocked} onLock={lockSystem} onUnlock={unlockSystem} />
             )}
             {tab === 'materials' && (
               <MaterialsTab

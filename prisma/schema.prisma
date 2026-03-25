@@ -227,6 +227,9 @@ model MtoSystem {
   customBrackets Json @default("[]")
   workActivities Json @default("[]")
 
+  isLocked         Boolean @default(false)
+  materialSnapshot Json?
+
   mtoJobs     MtoJob[]
   reports     Report[]
   tenderItems TenderItem[]

@@ -16,6 +16,7 @@ export function useSystemSync(sys: MtoSystem, dirty: boolean, onSaved: () => voi
           color: sys.color, inputModel: sys.inputModel,
           materials: sys.materials, customDims: sys.customDims,
           customCriteria: sys.customCriteria, variants: sys.variants, warnings: sys.warnings,
+          isLocked: sys.isLocked, materialSnapshot: sys.materialSnapshot,
         }),
       })
       if (res.ok) onSaved()

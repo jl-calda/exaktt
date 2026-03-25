@@ -741,15 +741,20 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     onRunCalc()
   }
 
-  const driftedMats = calc.lastCalcVersions && calc.lastCalcAt
-    ? sys.materials.filter(m => { const s = calc.lastCalcVersions[m.id]; return s !== undefined && (m._updatedAt ?? 0) > s })
+  // Use lastCalcVersions if available, otherwise fall back to the locked materialSnapshot
+  const versionBaseline = (calc.lastCalcVersions && calc.lastCalcAt)
+    ? calc.lastCalcVersions
+    : sys.materialSnapshot ?? null
+
+  const driftedMats = versionBaseline
+    ? sys.materials.filter(m => { const s = versionBaseline[m.id]; return s !== undefined && (m._updatedAt ?? 0) > s })
     : []
 
   const deletedMats = (() => {
     const currentIds = new Set(sys.materials.map((m: any) => m.id))
-    // Check lastCalcVersions first (has material IDs from when calc was run)
-    if (calc.lastCalcVersions && calc.lastCalcAt) {
-      return Object.keys(calc.lastCalcVersions)
+    // Check version baseline (lastCalcVersions or locked materialSnapshot)
+    if (versionBaseline) {
+      return Object.keys(versionBaseline)
         .filter(id => !currentIds.has(id))
         .map(id => {
           const prev = (calc.multiResults?.combined ?? []).find((m: any) => m.id === id)
