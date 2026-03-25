@@ -8,7 +8,8 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input, NumberInput } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import type { WorkActivity, WorkActivityRate, ActivityPhase, ActivityRateType, Material, CustomCriterion, WorkBracket, LabourRate, CrewRole } from '@/types'
-import { PRIMITIVE_DIMS, getDimUnit, type DimOverride } from '@/lib/engine/constants'
+import type { InputModel, CustomDim } from '@/types'
+import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL, getDimUnit, type DimOverride } from '@/lib/engine/constants'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { IconPicker }  from '@/components/ui/IconPicker'
 import FloatingPanel from '../FloatingPanel'
@@ -20,6 +21,8 @@ interface Props {
   customBrackets:    WorkBracket[]
   workActivityRates: WorkActivityRate[]
   labourRates:       LabourRate[]
+  inputModel:        InputModel
+  customDims?:       CustomDim[]
   onChange:          (activities: WorkActivity[]) => void
   dimOverrides?:     Record<string, DimOverride>
 }
@@ -216,7 +219,7 @@ function AddActivityDropdown({ rates, phase, onSelectRate, onManual }: {
 
 function ActivityForm({
   d, set, materials, customCriteria, customBrackets, workActivityRates, labourRates,
-  onSave, onCancel, onChangeRate, label, dimOverrides, isLinked,
+  onSave, onCancel, onChangeRate, label, dimOverrides, isLinked, inputModel, customDims,
 }: {
   d: Partial<WorkActivity>
   set: (k: keyof Omit<WorkActivity, 'id'>) => (v: any) => void
@@ -231,8 +234,15 @@ function ActivityForm({
   label: string
   dimOverrides?: Record<string, DimOverride>
   isLinked: boolean
+  inputModel: InputModel
+  customDims?: CustomDim[]
 }) {
-  const allDims = PRIMITIVE_DIMS
+  // Filter dims to those relevant for this system's input model + custom dims
+  const modelDimKeys = new Set(DIMS_FOR_INPUT_MODEL[inputModel] ?? [])
+  const allDims = [
+    ...PRIMITIVE_DIMS.filter(d => modelDimKeys.has(d.key)),
+    ...(customDims ?? []).map(cd => ({ key: cd.key, label: cd.name || cd.key, icon: cd.icon ?? '🔧', unit: cd.unit ?? '', step: '1' })),
+  ]
   const isThirdParty = d.rateType?.startsWith('third_party') ?? false
   const [guideOpen, setGuideOpen] = useState(false)
   const rateTypeOptions = isLinked ? SOURCE_TYPES : ALL_RATE_TYPES
@@ -493,7 +503,7 @@ function ActivityForm({
 
 type Mode = 'idle' | 'adding' | 'editing'
 
-export default function WorkActivitiesPanel({ workActivities, materials, customCriteria, customBrackets, workActivityRates, labourRates, onChange, dimOverrides }: Props) {
+export default function WorkActivitiesPanel({ workActivities, materials, customCriteria, customBrackets, workActivityRates, labourRates, inputModel, customDims, onChange, dimOverrides }: Props) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [mode,      setMode]      = useState<Mode>('idle')
   const [draft,     setDraft]     = useState<Partial<WorkActivity>>({ ...BLANK })
@@ -572,7 +582,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
           <ActivityForm d={draft} set={sd} materials={materials} customCriteria={customCriteria}
             customBrackets={customBrackets} workActivityRates={workActivityRates} labourRates={labourRates}
             onSave={addActivity} onCancel={resetMode} label="Add"
-            dimOverrides={dimOverrides} isLinked={isLinked} />
+            dimOverrides={dimOverrides} isLinked={isLinked} inputModel={inputModel} customDims={customDims} />
         </div>
       )}
 
@@ -653,7 +663,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
                           <ActivityForm d={draft} set={sd} materials={materials} customCriteria={customCriteria}
                             customBrackets={customBrackets} workActivityRates={workActivityRates} labourRates={labourRates}
                             onSave={saveEdit} onCancel={resetMode} label="Save"
-                            dimOverrides={dimOverrides} isLinked={!!draft.workActivityRateId} />
+                            dimOverrides={dimOverrides} isLinked={!!draft.workActivityRateId} inputModel={inputModel} customDims={customDims} />
                         </div>
                       )}
                     </div>
