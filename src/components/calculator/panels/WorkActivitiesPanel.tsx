@@ -94,7 +94,10 @@ function applyRate(rate: WorkActivityRate, phase: ActivityPhase): Omit<WorkActiv
     speedMode:          (rate.speedMode as 'time_per_unit' | 'rate') ?? 'time_per_unit',
     timePerUnit:        rate.defaultTimePerUnit ?? undefined,
     ratePerHr:          rate.defaultRatePerHr ?? undefined,
-    crewSize:           rate.crewSize ?? 1,
+    crewSize:           rate.defaultCrewRoles?.length
+                          ? rate.defaultCrewRoles.reduce((s, r) => s + r.count, 0)
+                          : (rate.crewSize ?? 1),
+    crewRoles:          rate.defaultCrewRoles?.length ? [...rate.defaultCrewRoles] : undefined,
     workActivityRateId: rate.id,
     _categoryName:      rate.categoryName,
     _categoryIcon:      rate.categoryIcon,

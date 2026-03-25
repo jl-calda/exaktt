@@ -217,6 +217,17 @@ export function computeWorkSchedule(
           else if (ref._labourRateHr)
             labourCost = totalManHours * ref._labourRateHr
         }
+        // Default to "Worker" role for legacy bracket activities
+        if (showCost && labourCost != null) {
+          const rate = ref._labourRateHr ?? ref._unitCost ?? 0
+          roleCosts = [{
+            roleName:  ref._rateName ?? 'Worker',
+            count:     crewSize,
+            ratePerHr: rate,
+            manHours:  totalManHours,
+            cost:      labourCost,
+          }]
+        }
       }
 
       bracketFabResults.push({
@@ -343,9 +354,20 @@ export function computeWorkSchedule(
     } else {
       crewSize      = Math.max(1, act.crewSize ?? 1)
       totalManHours = elapsedHours * crewSize
-      labourCost    = (showCost && act._labourRateHr && !isThirdParty)
-        ? totalManHours * act._labourRateHr
+      const rate    = act._labourRateHr
+      labourCost    = (showCost && rate && !isThirdParty)
+        ? totalManHours * rate
         : undefined
+      // Default to "Worker" role for legacy activities (no crewRoles)
+      if (showCost && rate && !isThirdParty) {
+        roleCosts = [{
+          roleName:  act._rateName ?? 'Worker',
+          count:     crewSize,
+          ratePerHr: rate,
+          manHours:  totalManHours,
+          cost:      labourCost!,
+        }]
+      }
     }
 
     results.push({

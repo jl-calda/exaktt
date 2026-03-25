@@ -728,6 +728,7 @@ export interface WorkActivityRate {
   defaultTimePerUnit?: number        // min per unit
   defaultRatePerHr?:   number        // units per hr
   crewSize:       number
+  defaultCrewRoles?: CrewRole[]      // default crew composition (pre-fills when activity is created from this rate)
   notes?:         string | null
   isArchived:     boolean
 }
