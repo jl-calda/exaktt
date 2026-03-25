@@ -136,7 +136,7 @@ function CriteriaOverridesSection({ d, set, criteria, sys }: {
   criteria: { id: string; key: string; name: string; type: string }[]
   sys?: MtoSystem | null
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1280)
   const overrides: CriteriaParamOverride[] = (d as any).criteriaOverrides ?? []
   const inputCriteria = criteria.filter(c => c.type === 'input')
 
@@ -514,23 +514,28 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
           )}
         </div>
 
-        {/* Field Guide floating toggle */}
-        {guideItems.length > 0 && (
-          <>
-            <Button size="xs" variant={guideOpen ? 'primary' : 'secondary'}
-              onClick={() => setGuideOpen(v => !v)}
-              icon={<BookOpen className="w-3 h-3" />}>
-              Field Guide
-            </Button>
-            <FloatingPanel open={guideOpen} onClose={() => setGuideOpen(false)} title="Field Guide"
-              icon={<BookOpen className="w-3.5 h-3.5 text-primary" />} width="w-80">
-              <FieldGuide derivType={d.derivType} items={guideItems} />
-            </FloatingPanel>
-          </>
-        )}
-
         {/* Criteria param overrides (#1) */}
         {sys && <CriteriaOverridesSection d={d} set={set} criteria={sys.customCriteria ?? []} sys={sys} />}
+
+        {/* Field Guide: inline on xl+, floating on small screens */}
+        {guideItems.length > 0 && (
+          <>
+            <div className="hidden xl:block">
+              <FieldGuide derivType={d.derivType} items={guideItems} />
+            </div>
+            <div className="xl:hidden">
+              <Button size="xs" variant={guideOpen ? 'primary' : 'secondary'}
+                onClick={() => setGuideOpen(v => !v)}
+                icon={<BookOpen className="w-3 h-3" />}>
+                Field Guide
+              </Button>
+              <FloatingPanel open={guideOpen} onClose={() => setGuideOpen(false)} title="Field Guide"
+                icon={<BookOpen className="w-3.5 h-3.5 text-primary" />} width="w-80">
+                <FieldGuide derivType={d.derivType} items={guideItems} />
+              </FloatingPanel>
+            </div>
+          </>
+        )}
       </div>
     )
   }
