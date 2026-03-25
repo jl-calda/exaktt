@@ -680,18 +680,62 @@ export interface LabourRate {
   isArchived: boolean
 }
 
-export interface BracketFabActivity {
-  id:              string
-  name:            string
-  timeFormula:     string    // e.g. "5" or "3 + projection_mm / 100"
-  timeUnit:        'min' | 'hr'
-  labourCategory?: string
-  // Rate reference
-  labourRateId?:   string              // -> LabourRate.id
-  labourRateHr?:   number              // snapshot: $/hr (for per_hour rates)
-  unitCost?:       number              // snapshot: $/unit (for per_piece, per_dim, lump_sum)
-  unitType?:       LabourRateUnitType  // snapshot of rate unit type
-  crewSize?:       number              // default 1
+// ─── Work Categories & Activity Rates ────────────────────────────────────────
+
+export interface WorkCategory {
+  id:          string
+  name:        string       // "Cutting", "Welding", "Handling"
+  icon:        string
+  color:       string
+  description?: string | null
+  sortOrder:   number
+  isArchived:  boolean
+}
+
+export interface WorkActivityRate {
+  id:             string
+  name:           string             // e.g. "Welding @ $85/hr"
+  workCategoryId: string
+  labourRateId:   string
+
+  // Snapshots for display / offline computation
+  categoryName:   string
+  categoryIcon:   string
+  rateName:       string
+  rateValue:      number
+  rateUnitType:   LabourRateUnitType
+  rateUnitLabel:  string
+
+  // Default speed definition
+  speedMode:      SpeedMode          // 'time_per_unit' | 'rate'
+  defaultTimePerUnit?: number        // min per unit
+  defaultRatePerHr?:   number        // units per hr
+  crewSize:       number
+  notes?:         string | null
+  isArchived:     boolean
+}
+
+// Instance of a WorkActivityRate applied to a bracket
+export interface BracketWorkActivityRef {
+  id:                 string
+  workActivityRateId: string
+
+  // Instance-specific (supports formula or fixed value)
+  timeFormula:        string          // "5" or "3 + projection_mm / 100"
+  timeUnit:           'min' | 'hr'
+  speedMode?:         SpeedMode       // override WAR default
+  ratePerHr?:         number          // override WAR default
+  crewSize?:          number          // override WAR default
+
+  // Snapshots (populated at save time from the WorkActivityRate)
+  _categoryName:      string
+  _categoryIcon:      string
+  _rateName:          string
+  _rateValue:         number
+  _rateUnitType:      LabourRateUnitType
+  _rateUnitLabel:     string
+  _labourRateHr?:     number
+  _unitCost?:         number
 }
 
 export interface WorkBracket {
@@ -701,9 +745,9 @@ export interface WorkBracket {
   description?:  string
   icon:          string
   color:         string
-  parameters:    BracketParameter[]       // drive BOM item formulas (parametric dims)
-  bom:           BracketBOMItem[]
-  fabActivities: BracketFabActivity[]
+  parameters:       BracketParameter[]       // drive BOM item formulas (parametric dims)
+  bom:              BracketBOMItem[]
+  workActivityRefs: BracketWorkActivityRef[]
 }
 
 // ─── Work Activities ──────────────────────────────────────────────────────────
@@ -746,11 +790,19 @@ export interface WorkActivity {
   thirdPartyRate?:     number
   thirdPartySupplier?: string
 
-  // Labour
-  labourRateId?:   string    // -> LabourRate.id
-  labourCategory?: string
-  labourRateHr?:   number    // S$/hr — Pro+ only
-  crewSize:        number    // default 1
+  // Work Activity Rate reference (replaces inline labour fields)
+  workActivityRateId?: string
+  crewSize:            number    // default 1
+
+  // Snapshots from WorkActivityRate (populated at save time)
+  _categoryName?:  string
+  _categoryIcon?:  string
+  _rateName?:      string
+  _rateValue?:     number
+  _rateUnitType?:  LabourRateUnitType
+  _rateUnitLabel?: string
+  _labourRateHr?:  number
+  _unitCost?:      number
 
   // Criteria gating
   criteriaKeys: string[]
@@ -774,8 +826,7 @@ export interface ActivityLibraryItem {
   defaultTimeMin?: number | null
   speedMode?:      SpeedMode | null
   defaultRate?:    number | null
-  labourCategory?: string | null
-  labourRateHr?:   number | null
+  workActivityRateId?: string | null
   supplier?:       string | null
   supplierContact?: string | null
   createdAt:       Date
@@ -795,7 +846,7 @@ export interface WorkScheduleResult {
   totalHours:      number
   crewSize:        number
   elapsedHours:    number    // totalHours / crewSize
-  labourCategory?: string
+  categoryName?:   string
   labourCost?:     number    // Pro+ only
   isThirdParty:    boolean
   thirdPartyCost?: number

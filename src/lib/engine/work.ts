@@ -165,32 +165,32 @@ export function computeWorkSchedule(
     const sb = setupMap.get(bracket.id)
     const overrides = Object.fromEntries((sb?.params ?? []).map(p => [p.key, p.value]))
     const params = resolveBracketParams(bracket, overrides, sysMaterials)
-    for (const fa of bracket.fabActivities ?? []) {
-      const timePerBracket = evaluateFormula(fa.timeFormula, params)
+    for (const ref of bracket.workActivityRefs ?? []) {
+      const timePerBracket = evaluateFormula(ref.timeFormula, params)
       const totalMinutes   = timePerBracket * bQty
-      const timeUnit       = fa.timeUnit ?? 'min'
+      const timeUnit       = ref.timeUnit ?? 'min'
       const totalMins      = timeUnit === 'hr' ? totalMinutes * 60 : totalMinutes
-      const crewSize       = fa.crewSize ?? 1
+      const crewSize       = ref.crewSize ?? 1
       const elapsedHours   = (totalMins / 60) / crewSize
 
       let labourCost: number | undefined
       if (showCost) {
-        if (fa.unitType === 'per_piece' && fa.unitCost != null)
-          labourCost = bQty * fa.unitCost
-        else if (fa.unitType === 'per_hour' && fa.labourRateHr != null)
-          labourCost = (totalMins / 60) * fa.labourRateHr
-        else if (fa.unitType === 'lump_sum' && fa.unitCost != null)
-          labourCost = fa.unitCost
-        else if (fa.unitType === 'per_dim' && fa.unitCost != null)
-          labourCost = bQty * fa.unitCost
-        else if (fa.labourRateHr)
-          labourCost = (totalMins / 60) * fa.labourRateHr
+        if (ref._rateUnitType === 'per_piece' && ref._unitCost != null)
+          labourCost = bQty * ref._unitCost
+        else if (ref._rateUnitType === 'per_hour' && ref._labourRateHr != null)
+          labourCost = (totalMins / 60) * ref._labourRateHr
+        else if (ref._rateUnitType === 'lump_sum' && ref._unitCost != null)
+          labourCost = ref._unitCost
+        else if (ref._rateUnitType === 'per_dim' && ref._unitCost != null)
+          labourCost = bQty * ref._unitCost
+        else if (ref._labourRateHr)
+          labourCost = (totalMins / 60) * ref._labourRateHr
       }
 
       bracketFabResults.push({
-        activityId:    `${bracket.id}_${fa.id}`,
+        activityId:    `${bracket.id}_${ref.id}`,
         phase:         'fabrication',
-        activityName:  `${bracket.icon ?? '🔩'} ${bracket.name} — ${fa.name}`,
+        activityName:  `${bracket.icon ?? '🔩'} ${bracket.name} — ${ref._categoryName ?? 'Activity'}`,
         sourceQty:     bQty,
         sourceUnit:    'bracket',
         timePerUnit:   timePerBracket,
@@ -198,7 +198,7 @@ export function computeWorkSchedule(
         totalHours:    totalMins / 60,
         crewSize,
         elapsedHours,
-        labourCategory: fa.labourCategory,
+        categoryName:  ref._categoryName,
         labourCost,
         isThirdParty:  false,
       })
@@ -297,8 +297,8 @@ export function computeWorkSchedule(
     const crewSize    = Math.max(1, act.crewSize ?? 1)
     const elapsedHours = totalHours / crewSize
 
-    const labourCost = (showCost && act.labourRateHr && !isThirdParty)
-      ? totalHours * act.labourRateHr
+    const labourCost = (showCost && act._labourRateHr && !isThirdParty)
+      ? totalHours * act._labourRateHr
       : undefined
 
     results.push({
@@ -312,7 +312,7 @@ export function computeWorkSchedule(
       totalHours,
       crewSize,
       elapsedHours,
-      labourCategory: act.labourCategory,
+      categoryName:  act._categoryName,
       labourCost,
       isThirdParty,
       thirdPartyCost,

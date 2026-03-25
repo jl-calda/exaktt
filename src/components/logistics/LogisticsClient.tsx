@@ -32,10 +32,12 @@ interface Props {
   categories:    any[]
   grades:        any[]
   manufacturers: any[]
-  labourRates:   any[]
+  labourRates:       any[]
+  workCategories:    any[]
+  workActivityRates: any[]
 }
 
-export default function LogisticsClient({ library: initialLibrary, suppliers: initialSuppliers, pos: initialPos, dos: initialDos, plan, categories: initialCategories, grades: initialGrades, manufacturers: initialManufacturers, labourRates: initialLabourRates }: Props) {
+export default function LogisticsClient({ library: initialLibrary, suppliers: initialSuppliers, pos: initialPos, dos: initialDos, plan, categories: initialCategories, grades: initialGrades, manufacturers: initialManufacturers, labourRates: initialLabourRates, workCategories: initialWorkCategories, workActivityRates: initialWorkActivityRates }: Props) {
   const [tab,           setTab]           = useState<Tab>('overview')
   const [library,       setLibrary]       = useState(initialLibrary)
   const [suppliers,     setSuppliers]     = useState(initialSuppliers)
@@ -44,7 +46,9 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
   const [categories,    setCategories]    = useState(initialCategories)
   const [grades,        setGrades]        = useState(initialGrades)
   const [manufacturers, setManufacturers] = useState(initialManufacturers)
-  const [labourRates,   setLabourRates]   = useState(initialLabourRates)
+  const [labourRates,       setLabourRates]       = useState(initialLabourRates)
+  const [workCategories,    setWorkCategories]    = useState(initialWorkCategories)
+  const [workActivityRates, setWorkActivityRates] = useState(initialWorkActivityRates)
 
   const refreshLibrary       = () => fetch('/api/mto/library').then(r => r.json()).then(j => { if (j.data) setLibrary(j.data) })
   const refreshSuppliers     = () => fetch('/api/logistics/suppliers').then(r => r.json()).then(j => { if (j.data) setSuppliers(j.data) })
@@ -53,7 +57,9 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
   const refreshCategories    = () => fetch('/api/mto/categories').then(r => r.json()).then(j => { if (j.data) setCategories(j.data) })
   const refreshGrades        = () => fetch('/api/mto/grades').then(r => r.json()).then(j => { if (j.data) setGrades(j.data) })
   const refreshManufacturers = () => fetch('/api/mto/manufacturers').then(r => r.json()).then(j => { if (j.data) setManufacturers(j.data) })
-  const refreshLabourRates   = () => fetch('/api/mto/labour-rates').then(r => r.json()).then(j => { if (j.data) setLabourRates(j.data) })
+  const refreshLabourRates       = () => fetch('/api/mto/labour-rates').then(r => r.json()).then(j => { if (j.data) setLabourRates(j.data) })
+  const refreshWorkCategories    = () => fetch('/api/mto/work-categories').then(r => r.json()).then(j => { if (j.data) setWorkCategories(j.data) })
+  const refreshWorkActivityRates = () => fetch('/api/mto/work-activity-rates').then(r => r.json()).then(j => { if (j.data) setWorkActivityRates(j.data) })
 
   return (
     <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
@@ -125,7 +131,7 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
           {tab === 'materials'  && <MaterialsTab library={library} suppliers={suppliers} categories={categories} grades={grades} manufacturers={manufacturers} onRefresh={refreshLibrary} onRefreshCategories={refreshCategories} onRefreshGrades={refreshGrades} onRefreshManufacturers={refreshManufacturers} />}
           {tab === 'suppliers'      && <SuppliersTab suppliers={suppliers} onRefresh={refreshSuppliers} />}
           {tab === 'manufacturers'  && <ManufacturersTab manufacturers={manufacturers} library={library} onRefresh={refreshManufacturers} />}
-          {tab === 'fabrication'    && <FabricationTab labourRates={labourRates} onRefresh={refreshLabourRates} />}
+          {tab === 'fabrication'    && <FabricationTab labourRates={labourRates} workCategories={workCategories} workActivityRates={workActivityRates} onRefreshRates={refreshLabourRates} onRefreshCategories={refreshWorkCategories} onRefreshActivityRates={refreshWorkActivityRates} />}
           {tab === 'orders'     && <PurchaseOrdersTab pos={pos} suppliers={suppliers} library={library} onRefresh={refreshPos} />}
           {tab === 'deliveries' && <DeliveriesTab dos={dos} pos={pos} library={library} onRefresh={refreshDos} onRefreshPos={refreshPos} />}
         </div>
