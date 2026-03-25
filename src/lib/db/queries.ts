@@ -272,6 +272,42 @@ export async function archiveMtoJob(id: string, companyId: string) {
   return prisma.mtoJob.update({ where: { id }, data: { isArchived: true } })
 }
 
+// ─── Run Drafts (auto-save) ──────────────────────────────────────────────────
+
+export async function getRunDraft(userId: string, mtoSystemId: string) {
+  return prisma.mtoRunDraft.findUnique({
+    where: { userId_mtoSystemId: { userId, mtoSystemId } },
+  })
+}
+
+export async function upsertRunDraft(
+  companyId: string,
+  userId: string,
+  mtoSystemId: string,
+  data: { runs: any[]; stockOptimMode: string },
+) {
+  return prisma.mtoRunDraft.upsert({
+    where: { userId_mtoSystemId: { userId, mtoSystemId } },
+    update: {
+      runs: asJson(data.runs),
+      stockOptimMode: data.stockOptimMode,
+    },
+    create: {
+      companyId,
+      userId,
+      mtoSystemId,
+      runs: asJson(data.runs),
+      stockOptimMode: data.stockOptimMode,
+    },
+  })
+}
+
+export async function deleteRunDraft(userId: string, mtoSystemId: string) {
+  return prisma.mtoRunDraft.deleteMany({
+    where: { userId, mtoSystemId },
+  })
+}
+
 // ─── Material Specs ───────────────────────────────────────────────────────────
 
 export async function getMaterialSpecs(companyId: string) {

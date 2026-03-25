@@ -16,6 +16,7 @@ import SettingsTab     from './SettingsTab'
 import SystemGraphTab  from './SystemGraphTab'
 import ReportBuilder from '@/components/report/ReportBuilder'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
+import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft'
 
 type Tab = 'setup' | 'materials' | 'calculator' | 'graph' | 'settings'
 
@@ -26,10 +27,11 @@ interface Props {
   userId:      string
   plan:        Plan
   profile?:    CompanyProfile | null
+  initialDraft?: { runs?: any[]; stockOptimMode?: string } | null
 }
 
 export default function SystemShellSaaS({
-  system: initialSystem, initialJobs, globalTags: initialTags, plan, profile,
+  system: initialSystem, initialJobs, globalTags: initialTags, plan, profile, initialDraft,
 }: Props) {
   const router   = useRouter()
   const limits   = getLimits(plan)
@@ -79,6 +81,20 @@ export default function SystemShellSaaS({
     const t = setTimeout(() => persistSystem(sys), 1500)
     return () => clearTimeout(t)
   }, [sys, dirty, persistSystem])
+
+  // Restore draft on mount
+  useEffect(() => {
+    if (initialDraft?.runs && Array.isArray(initialDraft.runs) && initialDraft.runs.length > 0) {
+      calc.setRuns(initialDraft.runs)
+      if (initialDraft.stockOptimMode) {
+        calc.setStockOptimMode(initialDraft.stockOptimMode as 'min_waste' | 'min_sections')
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Auto-save runs draft
+  useAutoSaveDraft(sys.id)
 
   // Duplicate sample system
   const handleDuplicate = async () => {
@@ -141,7 +157,11 @@ export default function SystemShellSaaS({
       }),
     })
     const { data, error } = await res.json()
-    if (data)  setJobs((j: any[]) => [data, ...j])
+    if (data) {
+      setJobs((j: any[]) => [data, ...j])
+      // Clear auto-saved draft after explicit job save
+      fetch(`/api/mto/drafts?systemId=${sys.id}`, { method: 'DELETE' }).catch(() => {})
+    }
     if (error) setLimitWarning(error)
   }
 
