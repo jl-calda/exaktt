@@ -745,6 +745,13 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     ? sys.materials.filter(m => { const s = calc.lastCalcVersions[m.id]; return s !== undefined && (m._updatedAt ?? 0) > s })
     : []
 
+  const deletedMats = calc.lastCalcVersions && calc.lastCalcAt
+    ? Object.keys(calc.lastCalcVersions).filter(id => !sys.materials.some((m: any) => m.id === id)).map(id => {
+        const prev = (calc.multiResults?.combined ?? []).find((m: any) => m.id === id)
+        return { id, name: prev?.name ?? id }
+      })
+    : []
+
   return (
     <div className="flex flex-col xl:flex-row gap-6 items-start relative">
       <div className="w-full xl:w-96 flex-shrink-0 space-y-5">
@@ -1207,6 +1214,16 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
               <span className="text-xs text-ink-faint">— Calculated material quantities and costs</span>
               <div className="flex-1 h-px bg-surface-200" />
             </div>
+            {deletedMats.length > 0 && (
+              <div className="bg-red-50 border border-red-200 p-4 flex gap-3" style={{ borderRadius: 'var(--radius-card)' }}>
+                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-red-800">Materials removed since last calculation</p>
+                  <ul className="mt-1 text-xs text-red-700 space-y-0.5">{deletedMats.map(m => <li key={m.id}>• {m.name}</li>)}</ul>
+                  <p className="text-xs text-red-600 mt-1 italic">Recalculate to update results.</p>
+                </div>
+              </div>
+            )}
             {driftedMats.length > 0 && (
               <div className="bg-amber-50 border border-amber-200 p-4 flex gap-3" style={{ borderRadius: 'var(--radius-card)' }}>
                 <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
