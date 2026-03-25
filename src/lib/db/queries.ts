@@ -970,6 +970,9 @@ export async function createWorkActivityRate(
 
 export async function updateWorkActivityRate(id: string, companyId: string, data: any) {
   await verifyOwnership(prisma.workActivityRate, id, companyId, 'WorkActivityRate')
+  if (Array.isArray(data.systemTags)) {
+    data.systemTags = asJson(data.systemTags)
+  }
   return prisma.workActivityRate.update({ where: { id }, data })
 }
 
