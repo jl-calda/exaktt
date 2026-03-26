@@ -60,7 +60,7 @@ export default function Sidebar({ role }: Props) {
       )}
 
       {/* Nav */}
-      <nav className="flex-1 py-2 flex flex-col gap-px px-2 overflow-y-auto overflow-x-hidden">
+      <nav className="flex-1 py-2 flex flex-col gap-0.5 px-2 overflow-y-auto overflow-x-hidden">
         {visible.map(item => {
           const active = isActive(item)
           const Icon   = item.icon
@@ -92,7 +92,7 @@ export default function Sidebar({ role }: Props) {
       {/* Mobile hamburger button */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed top-0 left-0 z-50 h-[52px] w-[52px] flex items-center justify-center text-ink-muted hover:text-ink"
+        className="md:hidden fixed top-0 left-0 z-50 h-14 w-14 flex items-center justify-center text-ink-muted hover:text-ink"
         style={{ background: 'var(--sidebar-bg)' }}
       >
         <Menu className="w-5 h-5" />
@@ -101,9 +101,9 @@ export default function Sidebar({ role }: Props) {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <aside
-            className="relative w-56 flex flex-col h-screen"
+            className="relative w-56 flex flex-col h-screen backdrop-blur-xl backdrop-saturate-150"
             style={{ background: 'var(--sidebar-bg)', borderRight: '1px solid var(--sidebar-border)' }}
           >
             {/* Logo + close */}
@@ -111,7 +111,7 @@ export default function Sidebar({ role }: Props) {
               style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
               <Link href="/dashboard" onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-md shrink-0 flex items-center justify-center font-bold text-white text-[11px]"
+                <div className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center font-bold text-white text-[11px] shadow-sm"
                   style={{ background: 'var(--color-primary)' }}>E</div>
                 <span className="font-bold text-[13px] text-ink">Exakt</span>
               </Link>
@@ -126,14 +126,14 @@ export default function Sidebar({ role }: Props) {
 
       {/* Desktop sidebar */}
       <aside
-        className="group/sb hidden md:flex w-[52px] hover:w-52 transition-[width] duration-200 ease-out shrink-0 overflow-hidden flex-col h-screen sticky top-0 z-40"
+        className="group/sb hidden md:flex w-[56px] hover:w-52 transition-[width] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] shrink-0 overflow-hidden flex-col h-screen sticky top-0 z-40 backdrop-blur-xl backdrop-saturate-150"
         style={{ background: 'var(--sidebar-bg)', borderRight: '1px solid var(--sidebar-border)' }}
       >
         {/* Logo */}
         <div className="h-[52px] flex items-center px-[14px] shrink-0"
           style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
           <Link href="/dashboard"
-            className="w-6 h-6 rounded-md shrink-0 flex items-center justify-center font-bold text-white text-[11px]"
+            className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center font-bold text-white text-[11px] shadow-sm"
             style={{ background: 'var(--color-primary)' }}>
             E
           </Link>
