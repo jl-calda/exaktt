@@ -1084,6 +1084,8 @@ export async function updateTenderReport(id: string, companyId: string, data: an
       ...(rest.clientContact !== undefined && { clientContact: rest.clientContact }),
       ...(rest.clientEmail !== undefined && { clientEmail: rest.clientEmail }),
       ...(rest.clientAddr !== undefined && { clientAddr: rest.clientAddr }),
+      ...(rest.status !== undefined && { status: rest.status }),
+      ...(rest.internalNotes !== undefined && { internalNotes: rest.internalNotes }),
     },
   })
 }
@@ -1091,6 +1093,49 @@ export async function updateTenderReport(id: string, companyId: string, data: an
 export async function archiveTenderReport(id: string, companyId: string) {
   await verifyOwnership(prisma.tenderReport, id, companyId, 'TenderReport')
   return prisma.tenderReport.update({ where: { id }, data: { isArchived: true } })
+}
+
+export async function duplicateTenderReport(id: string, companyId: string, createdById: string) {
+  await verifyOwnership(prisma.tenderReport, id, companyId, 'TenderReport')
+  const source = await prisma.tenderReport.findUnique({ where: { id } })
+  if (!source) throw new Error('Report not found')
+
+  const newRef = await generateTenderReportReference(companyId, source.companyName ?? '', source.clientName ?? '')
+  const revNo = String(parseInt(source.revisionNo ?? '0') + 1)
+
+  return prisma.tenderReport.create({
+    data: {
+      companyId,
+      createdById,
+      tenderId:          source.tenderId,
+      title:             source.title,
+      reference:         newRef,
+      date:              new Date(),
+      validUntil:        source.validUntil,
+      preparedBy:        source.preparedBy,
+      revisionNo:        revNo,
+      status:            'draft',
+      companyName:       source.companyName,
+      companyLogo:       source.companyLogo,
+      companyAddr:       source.companyAddr,
+      registrationNo:    source.registrationNo,
+      registrationLabel: source.registrationLabel,
+      accentColor:       source.accentColor,
+      clientName:        source.clientName,
+      clientContact:     source.clientContact,
+      clientEmail:       source.clientEmail,
+      clientAddr:        source.clientAddr,
+      sections:          source.sections ?? [],
+      overallMarginPct:  source.overallMarginPct,
+      paymentTerms:      source.paymentTerms,
+      validityPeriod:    source.validityPeriod,
+      disclaimer:        source.disclaimer,
+      notes:             source.notes,
+      internalNotes:     source.internalNotes,
+      currency:          source.currency,
+      showAppendix:      source.showAppendix,
+    },
+  })
 }
 
 // ─── LimitError ───────────────────────────────────────────────────────────────

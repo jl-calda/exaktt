@@ -405,8 +405,23 @@ export default function TenderReportBuilder({
             onClick={() => setConfirmAction('submit')}>Submit</Button>
         )}
         {status === 'submitted' && (
-          <Button size="xs" variant="ghost" icon={<Unlock className="w-3 h-3" />}
-            onClick={() => setConfirmAction('revert')}>Revert to Draft</Button>
+          <>
+            <Button size="xs" variant="ghost" icon={<Unlock className="w-3 h-3" />}
+              onClick={() => setConfirmAction('revert')}>Revert to Draft</Button>
+            <Button size="xs" variant="secondary" icon={<Plus className="w-3 h-3" />}
+              onClick={async () => {
+                if (!reportId) return
+                try {
+                  const res = await fetch(`/api/tenders/${tender.id}/report`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ _action: 'duplicate', reportId }),
+                  })
+                  const { data } = await res.json()
+                  if (data?.id) router.push(`/tenders/${tender.id}/report/${data.id}`)
+                } catch {}
+              }}>Duplicate</Button>
+          </>
         )}
         <Button size="xs" variant="primary" loading={saving} icon={<Save className="w-3 h-3" />}
           onClick={saveReport} disabled={isReadOnly}>Save</Button>
