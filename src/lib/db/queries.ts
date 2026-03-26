@@ -964,7 +964,6 @@ export async function createWorkActivityRate(
       defaultRatePerHr:   data.defaultRatePerHr    ?? null,
       crewSize:           data.crewSize            ?? 1,
       notes:              data.notes               ?? null,
-      systemTags:         asJson(data.systemTags   ?? []),
     },
   })
 }
