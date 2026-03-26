@@ -98,6 +98,8 @@ model Company {
   labourRates            LabourRate[]
   workCategories         WorkCategory[]
   workActivityRates      WorkActivityRate[]
+  tasks                  Task[]
+  notifications          Notification[]
 
   @@map("companies")
 }
@@ -170,6 +172,10 @@ model User {
   createdLabourRates         LabourRate[]            @relation("createdByUser")
   createdWorkCategories      WorkCategory[]          @relation("createdByUser")
   createdWorkActivityRates   WorkActivityRate[]      @relation("createdByUser")
+  tasksCreated               Task[]                  @relation("taskCreatedBy")
+  tasksAssigned              Task[]                  @relation("taskAssignee")
+  taskComments               TaskComment[]           @relation("taskComments")
+  notifications              Notification[]          @relation("notifications")
 
   @@map("users")
 }
@@ -914,4 +920,85 @@ model TenderReport {
   @@index([companyId])
   @@index([tenderId])
   @@map("tender_reports")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TASKS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Task {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User     @relation("taskCreatedBy", fields: [createdById], references: [id])
+  assigneeId  String
+  assignee    User     @relation("taskAssignee", fields: [assigneeId], references: [id])
+
+  title       String
+  description String?
+  priority    String   @default("medium")
+  status      String   @default("open")
+
+  startDate   DateTime?
+  targetDate  DateTime?
+
+  linkedUrl   String?
+  linkedType  String?
+  linkedLabel String?
+
+  checklist   Json     @default("[]")
+  output      Json     @default("[]")
+  ccUserIds   String[] @default([])
+
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  comments    TaskComment[]
+
+  @@index([companyId])
+  @@index([assigneeId])
+  @@index([createdById])
+  @@map("tasks")
+}
+
+model TaskComment {
+  id          String   @id @default(cuid())
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("taskComments", fields: [userId], references: [id])
+
+  content     String
+  attachments Json     @default("[]")
+
+  createdAt   DateTime @default(now())
+
+  @@index([taskId])
+  @@map("task_comments")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation("notifications", fields: [userId], references: [id])
+
+  type      String
+  title     String
+  body      String?
+  taskId    String?
+  isRead    Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([companyId])
+  @@map("notifications")
 }

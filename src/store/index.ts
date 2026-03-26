@@ -201,3 +201,31 @@ export const useMtoJobsStore = create<JobsStore>()(
     { name: 'mto-jobs' }
   )
 )
+
+// ─── Task Drawer Store ────────────────────────────────────────────────────────
+
+interface TaskStore {
+  drawerOpen: boolean
+  activeTaskId: string | null
+  filter: 'assigned' | 'created' | 'all'
+  linkedFilter: string | null
+  unreadCount: number
+  openDrawer: (linkedFilter?: string | null) => void
+  closeDrawer: () => void
+  setActiveTask: (id: string | null) => void
+  setUnreadCount: (n: number) => void
+  incrementUnread: () => void
+}
+
+export const useTaskStore = create<TaskStore>((set) => ({
+  drawerOpen: false,
+  activeTaskId: null,
+  filter: 'assigned',
+  linkedFilter: null,
+  unreadCount: 0,
+  openDrawer: (linkedFilter = null) => set({ drawerOpen: true, linkedFilter }),
+  closeDrawer: () => set({ drawerOpen: false, activeTaskId: null, linkedFilter: null }),
+  setActiveTask: (id) => set({ activeTaskId: id }),
+  setUnreadCount: (n) => set({ unreadCount: n }),
+  incrementUnread: () => set((st) => ({ unreadCount: st.unreadCount + 1 })),
+}))

@@ -2,6 +2,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Toast } from '@/components/ui/Toast'
 import ThemeProvider from '@/components/ThemeProvider'
+import TaskFAB from '@/components/tasks/TaskFAB'
+import TaskDrawer from '@/components/tasks/TaskDrawer'
 import './globals.css'
 
 export const viewport: Viewport = {
@@ -35,6 +37,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-surface text-ink font-sans antialiased">
         <ThemeProvider>
           <Toast>{children}</Toast>
+          <TaskFAB />
+          <TaskDrawer />
         </ThemeProvider>
       </body>
     </html>
