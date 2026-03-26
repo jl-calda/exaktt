@@ -6,7 +6,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import TopNav from '@/components/layout/TopNav'
 import type { CompanyRole } from '@/types'
 import type { Plan } from '@prisma/client'
-import { PermissionProvider, createPermissionValue } from '@/lib/hooks/usePermissions'
+import PermissionWrapper from '@/components/layout/PermissionWrapper'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -20,13 +20,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const name  = userData?.name  ?? null
   const email = userData?.email ?? null
 
-  const permValue = createPermissionValue(
-    role as any,
-    (member?.permissions as Record<string, string>) ?? {}
-  )
-
   return (
-    <PermissionProvider value={permValue}>
+    <PermissionWrapper role={role} permissions={(member?.permissions as Record<string, string>) ?? {}}>
       <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-surface)' }}>
         <Sidebar role={role} plan={plan} />
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -36,6 +31,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </main>
         </div>
       </div>
-    </PermissionProvider>
+    </PermissionWrapper>
   )
 }
