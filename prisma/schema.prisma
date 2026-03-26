@@ -410,8 +410,6 @@ model Client {
   notes         String?
   isArchived    Boolean  @default(false)
 
-  tenders Tender[]
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -431,14 +429,12 @@ model Tender {
   createdBy      User          @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
 
   name           String
-  clientId       String?
-  clientName     String?       // snapshot — preserved if Client record deleted
-  client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
   projectName    String?
   reference      String?       // RFQ / tender reference number
   submissionDate DateTime?
   status         TenderStatus  @default(DRAFT)
   notes          String?
+  predefinedItems Json         @default("[]")  // { id, description, amount }[]
   isArchived     Boolean       @default(false)
 
   items     TenderItem[]

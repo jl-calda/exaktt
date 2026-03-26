@@ -26,7 +26,7 @@ export default async function TenderReportPage({ params }: { params: Promise<{ i
   return (
     <TenderReportBuilder
       tender={tender}
-      tenderItems={tender.items ?? []}
+      tenderItems={(tender as any).items ?? []}
       profile={profile}
       existingReport={report}
     />

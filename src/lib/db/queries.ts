@@ -768,8 +768,7 @@ export async function getTenders(companyId: string) {
   return prisma.tender.findMany({
     where:   { companyId, isArchived: false },
     select:  {
-      id: true, name: true, clientName: true, clientId: true,
-      client: { select: { id: true, name: true } },
+      id: true, name: true,
       reference: true,
       submissionDate: true, status: true, createdAt: true, updatedAt: true,
       _count: { select: { items: true } },
@@ -782,7 +781,6 @@ export async function getTender(id: string, companyId: string) {
   return prisma.tender.findFirst({
     where:   { id, companyId, isArchived: false },
     include: {
-      client: { select: { id: true, name: true, contactPerson: true, email: true, phone: true } },
       items: {
         orderBy: { sortOrder: 'asc' },
         include: {
@@ -795,16 +793,17 @@ export async function getTender(id: string, companyId: string) {
 }
 
 export async function createTender(companyId: string, createdById: string, data: {
-  name: string; clientId?: string | null; clientName?: string | null;
+  name: string;
   projectName?: string; reference?: string; submissionDate?: Date | null; notes?: string;
 }) {
   return prisma.tender.create({ data: { companyId, createdById, ...data } })
 }
 
 export async function updateTender(id: string, companyId: string, data: Partial<{
-  name: string; clientId: string | null; clientName: string | null;
+  name: string;
   projectName: string; reference: string;
   submissionDate: Date | null; status: string; notes: string;
+  predefinedItems: any[];
 }>) {
   await verifyOwnership(prisma.tender, id, companyId, 'Tender')
   return prisma.tender.update({ where: { id }, data: data as any })
@@ -815,7 +814,7 @@ export async function updateTender(id: string, companyId: string, data: Partial<
 export async function getClients(companyId: string) {
   return prisma.client.findMany({
     where:   { companyId, isArchived: false },
-    select:  { id: true, name: true, contactPerson: true, email: true, phone: true, address: true, notes: true, createdAt: true, _count: { select: { tenders: true } } },
+    select:  { id: true, name: true, contactPerson: true, email: true, phone: true, address: true, notes: true, createdAt: true },
     orderBy: { name: 'asc' },
   })
 }
@@ -982,6 +981,14 @@ export async function deleteWorkActivityRate(id: string, companyId: string) {
 export async function getTenderReport(tenderId: string, companyId: string) {
   return prisma.tenderReport.findFirst({
     where: { tenderId, companyId, isArchived: false },
+    orderBy: { updatedAt: 'desc' },
+  })
+}
+
+export async function getTenderReports(tenderId: string, companyId: string) {
+  return prisma.tenderReport.findMany({
+    where: { tenderId, companyId, isArchived: false },
+    select: { id: true, title: true, reference: true, clientName: true, status: true, date: true, revisionNo: true, currency: true },
     orderBy: { updatedAt: 'desc' },
   })
 }

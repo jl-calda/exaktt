@@ -1,8 +1,10 @@
 // src/app/(app)/tenders/[id]/TenderDetailClient.tsx
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, Trash2, CalendarDays, X, FileText } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, CalendarDays, X, FileText, ChevronRight } from 'lucide-react'
+import { nanoid } from 'nanoid'
+import { NumberInput } from '@/components/ui/Input'
 import { format } from 'date-fns'
 
 type TenderStatus = 'DRAFT' | 'SUBMITTED' | 'WON' | 'LOST' | 'CANCELLED'
@@ -27,9 +29,11 @@ interface Props {
   tender:  any
   allJobs: any[]  // all MtoJobs for the user
   profile?: any
+  tenderReports: any[]
+  clients: any[]
 }
 
-export default function TenderDetailClient({ tender: initialTender, allJobs, profile }: Props) {
+export default function TenderDetailClient({ tender: initialTender, allJobs, profile, tenderReports, clients }: Props) {
   const router = useRouter()
 
   const [tender,      setTender]      = useState(initialTender)
@@ -40,6 +44,29 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
   const [adding,      setAdding]      = useState(false)
   const [removing,    setRemoving]    = useState<string | null>(null)
   const [creating,    setCreating]    = useState(false)
+  const [predefinedItems, setPredefinedItems] = useState<any[]>(initialTender.predefinedItems ?? [])
+  const currency = 'SGD'
+
+  const addPredefinedItem = () => {
+    setPredefinedItems(prev => [...prev, { id: nanoid(), description: '', amount: 0 }])
+  }
+  const updatePredefinedItem = (id: string, patch: any) => {
+    setPredefinedItems(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i))
+  }
+  const removePredefinedItem = (id: string) => {
+    setPredefinedItems(prev => prev.filter(i => i.id !== id))
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetch(`/api/tenders/${tender.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ predefinedItems }),
+      })
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [predefinedItems, tender.id])
 
   const meta = STATUS_META[tender.status as TenderStatus] ?? STATUS_META.DRAFT
 
@@ -138,12 +165,6 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
               </span>
             </div>
             <div className="text-sm text-ink-muted flex items-center gap-3 mt-1 flex-wrap">
-              {(tender.client?.name ?? tender.clientName) && (
-                <span>{tender.client?.name ?? tender.clientName}</span>
-              )}
-              {tender.client?.contactPerson && (
-                <span className="text-ink-faint text-xs">{tender.client.contactPerson}</span>
-              )}
               {tender.reference && <span className="font-mono text-xs bg-surface-200 px-2 py-0.5 rounded">{tender.reference}</span>}
               {tender.submissionDate && (
                 <span className="flex items-center gap-1">
@@ -236,6 +257,61 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
                 ))}
               </tbody>
             </table>
+          )}
+        </div>
+
+        {/* Reports */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-sm text-ink">Quotation Reports</h2>
+          </div>
+          {tenderReports.length === 0 ? (
+            <div className="card p-8 text-center text-sm text-ink-faint">No quotations generated yet.</div>
+          ) : (
+            <div className="space-y-2">
+              {tenderReports.map(r => (
+                <button key={r.id} onClick={() => router.push(`/tenders/${tender.id}/report/${r.id}`)}
+                  className="card w-full text-left p-4 flex items-center gap-3 hover:ring-1 hover:ring-primary transition-all group">
+                  <FileText className="w-4 h-4 text-ink-muted" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm text-ink">{r.reference || r.title}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${r.status === 'submitted' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{r.status}</span>
+                    </div>
+                    <div className="text-xs text-ink-muted mt-0.5">
+                      {r.clientName ? `To: ${r.clientName} · ` : ''}{r.date ? format(new Date(r.date), 'dd MMM yyyy') : ''}{r.revisionNo ? ` · Rev ${r.revisionNo}` : ''}
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-ink-faint group-hover:text-primary" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Predefined Items */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-sm text-ink">Predefined Items</h2>
+            <button onClick={addPredefinedItem} className="btn-secondary text-xs"><Plus className="w-3.5 h-3.5" /> Add Item</button>
+          </div>
+          {predefinedItems.length === 0 ? (
+            <div className="card p-8 text-center text-sm text-ink-faint">No predefined items. Add mobilisation, project management, or other fixed costs.</div>
+          ) : (
+            <div className="space-y-2">
+              {predefinedItems.map((item, i) => (
+                <div key={item.id} className="card p-3 flex items-center gap-3">
+                  <input className="input text-sm flex-1" value={item.description} placeholder="Description"
+                    onChange={e => updatePredefinedItem(item.id, { description: e.target.value })} />
+                  <NumberInput value={item.amount} unit={currency} min={0} step="any" className="w-32"
+                    onChange={e => updatePredefinedItem(item.id, { amount: parseFloat(e.target.value) || 0 })} />
+                  <button onClick={() => removePredefinedItem(item.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+              ))}
+              <div className="text-xs text-ink-muted text-right">
+                Total: <span className="font-mono font-semibold">{currency} {predefinedItems.reduce((s, i) => s + i.amount, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
           )}
         </div>
       </main>

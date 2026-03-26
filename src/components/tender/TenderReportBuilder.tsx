@@ -268,10 +268,10 @@ export default function TenderReportBuilder({
     registrationNo: profile?.registrationNumber ?? null,
     registrationLabel: profile?.registrationLabel ?? null,
     accentColor: profile?.reportAccentColor ?? null,
-    clientName: tender?.client?.name ?? null,
-    clientContact: tender?.client?.contactPerson ?? null,
-    clientEmail: tender?.client?.email ?? null,
-    clientAddr: tender?.client?.address ?? null,
+    clientName: null,
+    clientContact: null,
+    clientEmail: null,
+    clientAddr: null,
   })
 
   /* ── API calls ────────────────────────────────────────────────────────── */
@@ -1024,7 +1024,6 @@ export default function TenderReportBuilder({
                   <span>{date ? format(new Date(date), 'dd MMM yyyy') : ''}</span>
                 </div>
                 {preparedBy && <div className="text-xs text-ink-muted mt-0.5">Prepared by: {preparedBy}</div>}
-                {tender?.client?.name && <div className="text-xs text-ink-muted">Client: {tender.client.name}</div>}
                 {validUntil && <div className="text-xs text-ink-muted">Valid until: {format(new Date(validUntil), 'dd MMM yyyy')}</div>}
               </div>
               {profile?.companyLogo && (

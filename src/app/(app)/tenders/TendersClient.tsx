@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Plus, ChevronRight, CalendarDays, Trash2, Edit3, Check, X, FileText, Layers } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { nanoid } from 'nanoid'
-import ClientCombobox from '@/components/ui/ClientCombobox'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 type TenderStatus = 'DRAFT' | 'SUBMITTED' | 'WON' | 'LOST' | 'CANCELLED'
@@ -26,10 +25,6 @@ const FILTER_TABS: Array<{ id: TenderStatus | 'all'; label: string }> = [
   { id: 'LOST',      label: 'Lost' },
 ]
 
-interface ClientOption {
-  id: string; name: string; contactPerson?: string | null; email?: string | null; phone?: string | null
-}
-
 const BLOCK_CATEGORIES = [
   { value: 'scope',         label: 'Scope of Work' },
   { value: 'exclusions',    label: 'Exclusions' },
@@ -45,11 +40,10 @@ interface TenderBlock {
 
 interface Props {
   initialTenders: any[]
-  initialClients: ClientOption[]
   initialBlocks?: TenderBlock[]
 }
 
-export default function TendersClient({ initialTenders, initialClients, initialBlocks = [] }: Props) {
+export default function TendersClient({ initialTenders, initialBlocks = [] }: Props) {
   const router = useRouter()
 
   /* ── Page tab ─────────────────────────────────────────────── */
@@ -57,13 +51,10 @@ export default function TendersClient({ initialTenders, initialClients, initialB
   const [pageTab, setPageTab] = useState<PageTab>('tenders')
 
   const [tenders,     setTenders]     = useState(initialTenders)
-  const [clients,     setClients]     = useState<ClientOption[]>(initialClients)
   const [filter,      setFilter]      = useState<TenderStatus | 'all'>('all')
   const [creating,    setCreating]    = useState(false)
   const [loading,     setLoading]     = useState(false)
   const [newName,     setNewName]     = useState('')
-  const [newClientName, setNewClientName] = useState('')
-  const [newClientId,   setNewClientId]   = useState<string | null>(null)
   const [newRef,      setNewRef]      = useState('')
   const [newDate,     setNewDate]     = useState('')
 
@@ -78,8 +69,6 @@ export default function TendersClient({ initialTenders, initialClients, initialB
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name:           newName.trim(),
-        clientId:       newClientId,
-        clientName:     newClientName.trim() || undefined,
         reference:      newRef.trim() || undefined,
         submissionDate: newDate || undefined,
       }),
@@ -91,7 +80,7 @@ export default function TendersClient({ initialTenders, initialClients, initialB
   }
 
   const resetForm = () => {
-    setNewName(''); setNewClientName(''); setNewClientId(null); setNewRef(''); setNewDate('')
+    setNewName(''); setNewRef(''); setNewDate('')
   }
 
   /* ── Blocks state ─────────────────────────────────────────── */
@@ -191,17 +180,6 @@ export default function TendersClient({ initialTenders, initialClients, initialB
                     className="input" autoFocus required />
                 </div>
                 <div>
-                  <label className="label">Client</label>
-                  <ClientCombobox
-                    clients={clients}
-                    value={newClientName}
-                    clientId={newClientId}
-                    onChange={(name, id) => { setNewClientName(name); setNewClientId(id) }}
-                    onNewClient={c => setClients(prev => [...prev, c].sort((a, b) => a.name.localeCompare(b.name)))}
-                    placeholder="Client name"
-                  />
-                </div>
-                <div>
                   <label className="label">Reference / RFQ No.</label>
                   <input value={newRef} onChange={e => setNewRef(e.target.value)}
                     placeholder="T-2024-001" className="input" />
@@ -262,7 +240,6 @@ export default function TendersClient({ initialTenders, initialClients, initialB
           <div className="card overflow-hidden divide-y divide-surface-200">
             {filtered.map(tender => {
               const meta        = STATUS_META[tender.status as TenderStatus] ?? STATUS_META.DRAFT
-              const displayName = tender.client?.name ?? tender.clientName
               return (
                 <button key={tender.id}
                   onClick={() => router.push('/tenders/' + tender.id)}
@@ -278,7 +255,6 @@ export default function TendersClient({ initialTenders, initialClients, initialB
                       </span>
                     </div>
                     <div className="text-xs text-ink-faint flex items-center gap-3">
-                      {displayName && <span>{displayName}</span>}
                       {tender.reference && <span className="font-mono">{tender.reference}</span>}
                       {tender.submissionDate && (
                         <span className="flex items-center gap-1">
