@@ -221,8 +221,9 @@ export async function getMtoJobs(companyId: string, mtoSystemId?: string) {
     where:   { companyId, isArchived: false, ...(mtoSystemId && { mtoSystemId }) },
     orderBy: { updatedAt: 'desc' },
     select:  {
-      id: true, name: true, mtoSystemId: true, calculatedAt: true, createdAt: true, updatedAt: true,
+      id: true, name: true, notes: true, mtoSystemId: true, calculatedAt: true, createdAt: true, updatedAt: true,
       mtoSystem: { select: { id: true, name: true, icon: true, color: true } },
+      createdBy: { select: { id: true, name: true } },
     },
   })
 }
@@ -246,6 +247,7 @@ export async function createMtoJob(companyId: string, createdById: string, mtoSy
       data: {
         companyId, createdById, mtoSystemId,
         name:           data.name           ?? 'Untitled Job',
+        notes:          data.notes          ?? null,
         runs:           asJson(data.runs           ?? []),
         criteriaState:  asJson(data.criteriaState  ?? {}),
         variantState:   asJson(data.variantState   ?? {}),

@@ -54,7 +54,7 @@ export default function SystemShell({ system: initialSystem, initialJobs, global
     return () => clearTimeout(t)
   }, [sys, dirty, persistSystem])
 
-  const saveJob = async (name: string, lastResults?: any) => {
+  const saveJob = async (name: string, lastResults?: any, notes?: string): Promise<string | void> => {
     const _matVersions: Record<string, number> = {}
     sys.materials.forEach((m: any) => { _matVersions[m.id] = m._updatedAt ?? 0 })
     const res = await fetch('/api/mto/jobs', {
@@ -67,10 +67,11 @@ export default function SystemShell({ system: initialSystem, initialJobs, global
         calculatedAt: calc.lastCalcAt ?? Date.now(),
         matVersions: _matVersions,
         lastResults: lastResults ?? null,
+        notes,
       }),
     })
     const { data } = await res.json()
-    if (data) setJobs((j: any[]) => [data, ...j])
+    if (data) { setJobs((j: any[]) => [data, ...j]); return data.id as string }
   }
 
   const runCalc = useCallback(() => {

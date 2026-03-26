@@ -2,8 +2,8 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, FileText, Settings, BookOpen, Calculator, Lock, GitBranch, Copy, Link as LinkIcon, X, Network } from 'lucide-react'
-import type { MtoSystem, GlobalTag, CompanyProfile } from '@/types'
+import { ArrowLeft, Save, FileText, Settings, BookOpen, Calculator, Lock, GitBranch, Copy, Link as LinkIcon, X, Network, List } from 'lucide-react'
+import type { MtoSystem, GlobalTag, CompanyProfile, JobLastResults } from '@/types'
 import type { Plan } from '@prisma/client'
 import { useCalcStore } from '@/store'
 import { computeMultiRun } from '@/lib/engine/compute'
@@ -13,11 +13,12 @@ import SetupTab        from './SetupTab'
 import MaterialsTab    from './MaterialsTab'
 import CalculatorTab   from './CalculatorTab'
 import SystemGraphTab  from './SystemGraphTab'
+import RunsTab         from './RunsTab'
 import ReportBuilder from '@/components/report/ReportBuilder'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft'
 
-type Tab = 'setup' | 'calculator'
+type Tab = 'setup' | 'calculator' | 'runs'
 type SetupSubTab = 'setup' | 'materials' | 'dependency'
 
 interface Props {
@@ -153,7 +154,13 @@ export default function SystemShellSaaS({
   }, [limits, plan, updateSystem, isSample, sys.isLocked])
 
   // Save job
-  const saveJob = async (name: string, lastResults?: any) => {
+  const refreshJobs = async () => {
+    const res = await fetch(`/api/jobs?systemId=${sys.id}`)
+    const json = await res.json()
+    if (json.data) setJobs(json.data)
+  }
+
+  const saveJob = async (name: string, lastResults?: JobLastResults | null, notes?: string): Promise<string | void> => {
     if (limits.maxJobsSaved !== -1) {
       const res  = await fetch('/api/limits')
       const { data } = await res.json()
@@ -174,6 +181,7 @@ export default function SystemShellSaaS({
         calculatedAt: calc.lastCalcAt ?? Date.now(),
         matVersions: _matVersions,
         lastResults: lastResults ?? null,
+        notes,
       }),
     })
     const { data, error } = await res.json()
@@ -181,6 +189,7 @@ export default function SystemShellSaaS({
       setJobs((j: any[]) => [data, ...j])
       // Clear auto-saved draft after explicit job save
       fetch(`/api/mto/drafts?systemId=${sys.id}`, { method: 'DELETE' }).catch(() => {})
+      return data.id as string
     }
     if (error) setLimitWarning(error)
   }
@@ -221,10 +230,11 @@ export default function SystemShellSaaS({
   const NAV_TABS: { id: Tab; label: string; Icon: React.ElementType }[] = [
     { id: 'setup',      label: 'Setup',      Icon: Settings   },
     { id: 'calculator', label: 'Calculator', Icon: Calculator },
+    { id: 'runs',       label: 'Runs',       Icon: List       },
   ]
 
   const SETUP_SUB_TABS: { id: SetupSubTab; label: string; Icon: React.ElementType }[] = [
-    { id: 'setup',      label: 'Setup',      Icon: Settings   },
+    { id: 'setup',      label: 'Settings',   Icon: Settings   },
     { id: 'materials',  label: 'Materials',  Icon: BookOpen   },
     { id: 'dependency', label: 'Dependency', Icon: Network    },
   ]
@@ -404,6 +414,13 @@ export default function SystemShellSaaS({
               globalTags={tags}
               plan={plan}
             />
+          </div>
+        )}
+
+        {/* Runs tab */}
+        {tab === 'runs' && (
+          <div className="px-3 pt-3 pb-4 md:px-6 md:pt-4 md:pb-6">
+            <RunsTab sys={sys} jobs={jobs} onRefresh={refreshJobs} />
           </div>
         )}
       </div>

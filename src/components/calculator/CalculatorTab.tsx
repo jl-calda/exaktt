@@ -1,6 +1,6 @@
 // src/components/calculator/CalculatorTab.tsx
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Copy, Trash2, Play, Save, AlertTriangle, Lock, ChevronDown, ChevronUp, Clock, Printer, TableProperties, PanelRightOpen, PanelRightClose, BookOpen, X } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import type { MtoSystem, GlobalTag, Run, Segment, WorkScheduleSummary, WorkScheduleResult, ActivityPhase, JobLastResults, WorkBracket } from '@/types'
@@ -17,11 +17,12 @@ import { getFormulaDef, getVariantLeafLabel, type FormulaDef } from '@/lib/engin
 import { buildLastResults } from '@/lib/engine/results-snapshot'
 import { openPrintWindow } from '@/lib/print/print-builder'
 import SystemOverviewPanel from './SystemOverviewPanel'
+import { Select } from '@/components/ui/Select'
 
 interface Props {
   sys:        MtoSystem
   jobs:       any[]
-  onSaveJob:  (name: string, lastResults?: JobLastResults | null) => Promise<void>
+  onSaveJob:  (name: string, lastResults?: JobLastResults | null, notes?: string) => Promise<string | void>
   onRunCalc:  () => void
   globalTags: GlobalTag[]
   plan?:      Plan
@@ -578,6 +579,16 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
   const toggleRunCollapse = (id: string) => setCollapsedRuns(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
   const [showOverview, setShowOverview] = useState(false)
   const [showFieldGuide, setShowFieldGuide] = useState(false)
+  const [saveNotes, setSaveNotes] = useState('')
+  const [tenders, setTenders] = useState<any[]>([])
+  const [selectedTender, setSelectedTender] = useState('')
+
+  // Fetch draft tenders on mount
+  useEffect(() => {
+    fetch('/api/tenders').then(r => r.json()).then(j => {
+      if (j.data) setTenders(j.data.filter((t: any) => t.status === 'DRAFT'))
+    }).catch(() => {})
+  }, [])
 
   const runsAtLimit  = limits.maxRuns !== -1 && calc.runs.length >= limits.maxRuns
   const spacingDims  = (sys.customDims ?? []).filter(cd => cd.derivType === 'spacing' && cd.spacingMode === 'user')
@@ -738,8 +749,15 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
     if (!jobName.trim()) return
     setSaving(true)
     const lastResults = calc.multiResults ? buildLastResults(sys, calc.runs, { ...calc.multiResults, combined: combinedWithBrackets }, workSchedule) : null
-    await onSaveJob(jobName.trim(), lastResults)
-    setJobName(''); setSaving(false)
+    const savedJobId = await onSaveJob(jobName.trim(), lastResults, saveNotes || undefined)
+    if (selectedTender && savedJobId) {
+      fetch(`/api/tenders/${selectedTender}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ systemId: sys.id, jobId: savedJobId }),
+      }).catch(() => {})
+    }
+    setJobName(''); setSaveNotes(''); setSelectedTender(''); setSaving(false)
   }
 
   const handleLoadJob = (job: any) => {
@@ -1158,9 +1176,22 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
           <div className="flex gap-2 mb-2">
             <input value={jobName} onChange={e => setJobName(e.target.value)}
               placeholder="Job name…" className="input flex-1 text-sm"
+              onFocus={() => { if (!jobName) { const runCount = jobs.filter((j: any) => j.systemId === sys.id).length + 1; setJobName(`${sys.shortName || sys.name?.slice(0, 3).toUpperCase() || 'RUN'}-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${runCount}`) } }}
               onKeyDown={e => { if (e.key === 'Enter' && jobName.trim()) handleSave() }} />
             <button onClick={handleSave} disabled={!jobName.trim() || saving} className="btn-primary py-2 px-3"><Save className="w-4 h-4" /></button>
           </div>
+          <div className="mb-2">
+            <label className="label">Notes (optional)</label>
+            <textarea className="input text-sm resize-none w-full" rows={2} value={saveNotes}
+              onChange={e => setSaveNotes(e.target.value)} placeholder="Add notes about this calculation..." />
+          </div>
+          {tenders.length > 0 && (
+            <div className="mb-2">
+              <Select label="Link to tender (optional)" value={selectedTender}
+                onChange={e => setSelectedTender(e.target.value)}
+                options={[{ value: '', label: '— none —' }, ...tenders.map(t => ({ value: t.id, label: t.name }))]} />
+            </div>
+          )}
           {jobs.filter((j: any) => j.systemId === sys.id).length > 0 && (
             <>
               <button onClick={() => setShowJobs(v => !v)} className="w-full flex items-center justify-between text-xs text-ink-muted py-1 hover:text-ink transition-colors">
