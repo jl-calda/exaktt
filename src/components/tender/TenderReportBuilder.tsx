@@ -105,6 +105,8 @@ export default function TenderReportBuilder({
 
   /* ── UI state ─────────────────────────────────────────────────────────── */
   const [saving, setSaving]             = useState(false)
+  const [templateModalOpen, setTemplateModalOpen] = useState(false)
+  const [templateName, setTemplateName] = useState('')
 
   const [error, setError]               = useState<string | null>(null)
   const [jobDropdownOpen, setJobDropdownOpen] = useState(false)
@@ -418,31 +420,44 @@ export default function TenderReportBuilder({
   }
 
   const saveAsTemplate = async () => {
-    const name = window.prompt('Template name:')
-    if (!name) return
+    if (!templateName.trim()) return
     setError(null)
     try {
-      const res = await fetch('/api/tenders/templates', {
-        method: 'POST',
+      await fetch('/api/tenders/blocks', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
-          category: 'full' as const,
-          title,
-          preparedBy,
-          validityPeriod,
-          paymentTerms,
-          disclaimer,
-          notes,
-          defaultSections: sections,
+          blocks: [...(templates ?? []), {
+            id: nanoid(),
+            name: templateName.trim(),
+            category: 'full',
+            title,
+            preparedBy,
+            validityPeriod,
+            paymentTerms,
+            disclaimer,
+            notes,
+            blockTitle: title,
+            blockContent: '',
+            defaultSections: sections,
+          }],
         }),
       })
-      const json = await res.json()
-      if (json.error) throw new Error(json.error)
+      setTemplateModalOpen(false)
+      setTemplateName('')
     } catch (e: any) {
       setError(e.message ?? 'Failed to save template')
     }
   }
+
+  /* ── Step headers for vertical flow ────────────────────────────────────── */
+  const QUOTE_STEPS = [
+    { label: 'Header',  desc: 'Report title, reference, and dates', icon: '📋' },
+    { label: 'Client',  desc: 'Select the recipient company',       icon: '🏢' },
+    { label: 'Content', desc: 'Line items, text blocks, and images', icon: '📝' },
+    { label: 'Pricing', desc: 'Cost summary and margins',            icon: '💰' },
+    { label: 'Footer',  desc: 'Payment terms and disclaimers',       icon: '📎' },
+  ]
 
   /* ── Accent color helper ──────────────────────────────────────────────── */
   const accent = profile?.reportAccentColor ?? '#0f172a'
@@ -693,9 +708,16 @@ export default function TenderReportBuilder({
       {/* ── Left: Editor ───────────────────────────────────────────────── */}
       <div className="w-full lg:w-[420px] flex-shrink-0 space-y-4 overflow-y-auto">
 
-        {/* ── Header Fields ─────────────────────────────────────────── */}
+        {/* ── Step 1: Header ───────────────────────────────────────── */}
+        <div>
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <span className="text-sm flex-shrink-0">{QUOTE_STEPS[0].icon}</span>
+            <span className="text-xs font-semibold text-ink">{QUOTE_STEPS[0].label}</span>
+            <span className="text-xs text-ink-faint">— {QUOTE_STEPS[0].desc}</span>
+            <div className="flex-1 h-px bg-surface-200" />
+          </div>
+          <div className="space-y-3 pl-3.5 border-l-2 border-surface-200">
         <div className="card p-4 space-y-3">
-          <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wide">Header</h3>
           <Input label="Title" value={title} onChange={e => setTitle(e.target.value)} />
           <div className="grid grid-cols-2 gap-3">
             <Input label="Reference" value={reference} onChange={e => setReference(e.target.value)} placeholder="QT-2026-001" />
@@ -713,10 +735,19 @@ export default function TenderReportBuilder({
             options={['SGD','USD','AUD','GBP','EUR','MYR'].map(c => ({ value: c, label: c }))}
           />
         </div>
+          </div>
+        </div>
 
-        {/* ── Client (report-level) ───────────────────────────────── */}
+        {/* ── Step 2: Client ──────────────────────────────────────── */}
+        <div>
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <span className="text-sm flex-shrink-0">{QUOTE_STEPS[1].icon}</span>
+            <span className="text-xs font-semibold text-ink">{QUOTE_STEPS[1].label}</span>
+            <span className="text-xs text-ink-faint">— {QUOTE_STEPS[1].desc}</span>
+            <div className="flex-1 h-px bg-surface-200" />
+          </div>
+          <div className="space-y-3 pl-3.5 border-l-2 border-surface-200">
         <div className="card p-4 space-y-3">
-          <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wide">Client / Recipient</h3>
           <Select label="Select Client" value={clientName}
             onChange={e => {
               const c = clients.find((cl: any) => cl.name === e.target.value)
@@ -735,6 +766,18 @@ export default function TenderReportBuilder({
             </div>
           )}
         </div>
+          </div>
+        </div>
+
+        {/* ── Step 3: Content ─────────────────────────────────────── */}
+        <div>
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <span className="text-sm flex-shrink-0">{QUOTE_STEPS[2].icon}</span>
+            <span className="text-xs font-semibold text-ink">{QUOTE_STEPS[2].label}</span>
+            <span className="text-xs text-ink-faint">— {QUOTE_STEPS[2].desc}</span>
+            <div className="flex-1 h-px bg-surface-200" />
+          </div>
+          <div className="space-y-3 pl-3.5 border-l-2 border-surface-200">
 
         {/* ── Setup Sub-Tabs ──────────────────────────────────────── */}
         <div className="flex gap-1 border-b border-surface-200 pb-px">
@@ -1063,8 +1106,18 @@ export default function TenderReportBuilder({
         </div>
         )}
         {/* end document sub-tab */}
+          </div>
+        </div>
 
-        {/* ── Cost Summary ──────────────────────────────────────────── */}
+        {/* ── Step 4: Pricing ─────────────────────────────────────── */}
+        <div>
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <span className="text-sm flex-shrink-0">{QUOTE_STEPS[3].icon}</span>
+            <span className="text-xs font-semibold text-ink">{QUOTE_STEPS[3].label}</span>
+            <span className="text-xs text-ink-faint">— {QUOTE_STEPS[3].desc}</span>
+            <div className="flex-1 h-px bg-surface-200" />
+          </div>
+          <div className="space-y-3 pl-3.5 border-l-2 border-surface-200">
         <div className="card p-4 space-y-3">
           <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wide">Cost Summary</h3>
           <div className="flex items-center justify-between text-sm">
@@ -1082,7 +1135,18 @@ export default function TenderReportBuilder({
           </div>
         </div>
 
-        {/* ── Footer Fields ─────────────────────────────────────────── */}
+          </div>
+        </div>
+
+        {/* ── Step 5: Footer ──────────────────────────────────────── */}
+        <div>
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <span className="text-sm flex-shrink-0">{QUOTE_STEPS[4].icon}</span>
+            <span className="text-xs font-semibold text-ink">{QUOTE_STEPS[4].label}</span>
+            <span className="text-xs text-ink-faint">— {QUOTE_STEPS[4].desc}</span>
+            <div className="flex-1 h-px bg-surface-200" />
+          </div>
+          <div className="space-y-3 pl-3.5 border-l-2 border-surface-200">
         <div className="card p-4 space-y-3">
           <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wide">Footer</h3>
           <div>
@@ -1132,9 +1196,11 @@ export default function TenderReportBuilder({
             Download PDF
           </Button>
           <Button variant="ghost" fullWidth icon={<BookTemplate className="w-4 h-4" />}
-            onClick={saveAsTemplate}>
+            onClick={() => setTemplateModalOpen(true)}>
             Save as Template
           </Button>
+        </div>
+          </div>
         </div>
       </div>
 
@@ -1290,6 +1356,29 @@ export default function TenderReportBuilder({
         onConfirm={() => handleSubmitStatus('draft')}
         onCancel={() => setConfirmAction(null)}
       />
+
+      {/* Save as Template Modal */}
+      {templateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-surface rounded-xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
+            <div className="px-5 py-4 border-b border-surface-200">
+              <h3 className="font-semibold text-sm text-ink">Save as Template</h3>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-ink-muted">Save the current report layout (header, footer, text blocks) as a reusable template for future quotations.</p>
+              <div>
+                <label className="label">Template name</label>
+                <input className="input" value={templateName} onChange={e => setTemplateName(e.target.value)}
+                  placeholder="e.g. Standard HLL Quotation" autoFocus onKeyDown={e => { if (e.key === 'Enter') saveAsTemplate() }} />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button size="sm" variant="secondary" onClick={() => { setTemplateModalOpen(false); setTemplateName('') }}>Cancel</Button>
+                <Button size="sm" variant="primary" onClick={saveAsTemplate} disabled={!templateName.trim()}>Save Template</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
