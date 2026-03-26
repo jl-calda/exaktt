@@ -149,7 +149,7 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
       {/* ── Your Products ────────────────────────────────────────── */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs font-semibold text-ink-muted uppercase tracking-wide">
+          <h2 className="section-title">
             Your Products <span className="font-normal normal-case ml-1">{systems.length}</span>
           </h2>
           {systemsAtLimit ? (
@@ -316,7 +316,7 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
       {/* ── Recent Reports ───────────────────────────────────────── */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs font-semibold text-ink-muted uppercase tracking-wide">
+          <h2 className="section-title">
             Recent Reports <span className="font-normal normal-case ml-1">{reports.length}</span>
           </h2>
         </div>
@@ -329,30 +329,30 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
             </p>
           </div>
         ) : (
-          <div className="card overflow-hidden">
-            <table className="w-full text-sm border-collapse">
+          <div className="table-wrap">
+            <table>
               <thead>
-                <tr className="bg-surface-100 border-b border-surface-200">
-                  <th className="text-left px-4 py-2.5 font-semibold text-ink-muted text-xs">Report</th>
-                  <th className="text-left px-3 py-2.5 font-semibold text-ink-muted text-xs">Product</th>
-                  <th className="text-left px-3 py-2.5 font-semibold text-ink-muted text-xs">Date</th>
-                  <th className="px-3 py-2.5 w-16" />
+                <tr>
+                  <th>Report</th>
+                  <th>Product</th>
+                  <th>Date</th>
+                  <th className="w-16" />
                 </tr>
               </thead>
               <tbody>
-                {recentReports.map((r: any, i: number) => (
-                  <tr key={r.id} className={i % 2 === 0 ? 'bg-surface-50' : 'bg-surface-100/50'}>
-                    <td className="px-4 py-2.5">
+                {recentReports.map((r: any) => (
+                  <tr key={r.id}>
+                    <td>
                       <div className="font-medium text-ink text-xs">{r.title}</div>
                       {r.jobRef && <div className="text-[11px] text-ink-faint">{r.jobRef}</div>}
                     </td>
-                    <td className="px-3 py-2.5 text-xs text-ink-muted">
+                    <td className="text-xs text-ink-muted">
                       {r.mtoSystem?.icon} {r.mtoSystem?.name}
                     </td>
-                    <td className="px-3 py-2.5 text-xs text-ink-muted" suppressHydrationWarning>
+                    <td className="text-xs text-ink-muted" suppressHydrationWarning>
                       {format(new Date(r.reportDate), 'dd MMM yyyy')}
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td>
                       <a href={`/api/mto/reports/${r.id}/pdf`} target="_blank"
                         className="btn-ghost text-xs py-1 px-2 flex items-center gap-1">
                         <FileText className="w-3 h-3" /> PDF
@@ -370,7 +370,7 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
       <section>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xs font-semibold text-ink-muted uppercase tracking-wide">Sample Systems</h2>
+            <h2 className="section-title">Sample Systems</h2>
             <p className="text-xs text-ink-faint mt-0.5">
               Global templates available to all users — duplicate to your account to edit.
             </p>
@@ -384,21 +384,13 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
         <div className="flex flex-wrap gap-1.5 mb-4">
           <button
             onClick={() => { setSampleCategory(null); setShowAllSamples(false) }}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ${
-              sampleCategory === null
-                ? 'bg-ink text-surface-50 border-ink'
-                : 'bg-surface-50 text-ink-faint border-surface-200 hover:border-surface-300 hover:text-ink-muted'
-            }`}>
+            className={`filter-pill ${sampleCategory === null ? 'active' : ''}`}>
             All <span className="opacity-60 ml-0.5">{SAMPLE_SYSTEMS.length}</span>
           </button>
           {sampleCategories.map(cat => (
             <button key={cat}
               onClick={() => { setSampleCategory(sampleCategory === cat ? null : cat); setShowAllSamples(false) }}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ${
-                sampleCategory === cat
-                  ? 'bg-ink text-surface-50 border-ink'
-                  : 'bg-surface-50 text-ink-faint border-surface-200 hover:border-surface-300 hover:text-ink-muted'
-              }`}>
+              className={`filter-pill ${sampleCategory === cat ? 'active' : ''}`}>
               {cat} <span className="opacity-60 ml-0.5">{SAMPLE_SYSTEMS.filter(s => s.category === cat).length}</span>
             </button>
           ))}

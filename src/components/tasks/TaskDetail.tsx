@@ -63,7 +63,7 @@ export default function TaskDetail({ taskId, onBack, onRefresh }: Props) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-surface-200">
+      <div className="card-header flex-col !items-start">
         <button onClick={onBack} className="flex items-center gap-1 text-xs text-ink-faint hover:text-ink mb-2"><ArrowLeft className="w-3 h-3" /> Back</button>
         <div className="flex items-center gap-2">
           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${STATUS_COLORS[task.status]}`}>{task.status.replace('_', ' ')}</span>

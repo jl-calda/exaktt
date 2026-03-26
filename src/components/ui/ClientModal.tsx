@@ -59,9 +59,9 @@ export default function ClientModal({ initial, onSave, onClose, title }: Props) 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
-        <div className="px-6 py-4 border-b border-surface-200 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-md">
+      <div className="bg-surface-50 rounded-2xl shadow-float w-full max-w-lg mx-4 overflow-hidden animate-scale-in">
+        <div className="card-header">
           <h3 className="font-display font-bold text-ink">{title ?? (initial?.id ? 'Edit client' : 'New client')}</h3>
           <button onClick={onClose} className="text-ink-muted hover:text-ink p-1 rounded-lg hover:bg-surface-100 transition-colors">
             <X className="w-5 h-5" />

@@ -58,7 +58,7 @@ export default function TaskDrawer() {
       {/* Drawer */}
       <div className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-surface border-l border-surface-200 shadow-xl flex flex-col">
         {/* Header */}
-        <div className="px-4 py-3 border-b border-surface-200 flex items-center justify-between">
+        <div className="card-header">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-sm text-ink">Tasks</span>
           </div>
