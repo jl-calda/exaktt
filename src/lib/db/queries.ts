@@ -785,7 +785,7 @@ export async function getTender(id: string, companyId: string) {
         orderBy: { sortOrder: 'asc' },
         include: {
           system: { select: { id: true, name: true, icon: true, color: true } },
-          job:    { select: { id: true, name: true, calculatedAt: true, lastResults: true } },
+          job:    { select: { id: true, name: true, calculatedAt: true, createdAt: true, lastResults: true, createdBy: { select: { id: true, name: true } } } },
         },
       },
     },

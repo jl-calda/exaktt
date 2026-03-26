@@ -198,11 +198,11 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
         <div className="card overflow-hidden">
           <div className="px-5 py-4 border-b border-surface-200 flex items-center justify-between">
             <div>
-              <h2 className="font-semibold text-ink">Calculation Runs</h2>
-              <p className="text-xs text-ink-muted mt-0.5">Saved calculation runs linked to this tender</p>
+              <h2 className="font-semibold text-ink">Estimates</h2>
+              <p className="text-xs text-ink-muted mt-0.5">Saved estimates linked to this tender</p>
             </div>
             <button onClick={() => setShowAddModal(true)} className="btn-primary text-sm">
-              <Plus className="w-4 h-4" /> Add run
+              <Plus className="w-4 h-4" /> Add Estimate
             </button>
           </div>
 
@@ -210,7 +210,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
             <div className="p-16 text-center">
               <div className="text-4xl mb-3">📐</div>
               <p className="text-sm text-ink-muted max-w-xs mx-auto">
-                No runs linked yet. Open a product, run and save a calculation, then add it here.
+                No estimates linked yet. Open a product, run and save a calculation, then add it here.
               </p>
               <button onClick={() => router.push('/products')} className="btn-secondary text-sm mt-4">
                 Go to Products →
@@ -221,8 +221,10 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
               <thead>
                 <tr className="bg-surface-50 border-b border-surface-200">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-ink-muted">Product</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-ink-muted">Calculation run</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-ink-muted">Estimate</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-ink-muted">Calculated</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-ink-muted">Created by</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-ink-muted">Created</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-ink-muted">Notes</th>
                   <th className="px-4 py-3 w-10"></th>
                 </tr>
@@ -245,6 +247,8 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
                     <td className="px-4 py-3 text-xs text-ink-faint">
                       {item.job?.calculatedAt ? format(new Date(item.job.calculatedAt), 'dd MMM yyyy') : '—'}
                     </td>
+                    <td className="px-3 py-3 text-sm text-ink-muted">{item.job?.createdBy?.name ?? '—'}</td>
+                    <td className="px-3 py-3 text-sm text-ink-muted">{item.job?.createdAt ? format(new Date(item.job.createdAt), 'dd MMM yyyy') : '—'}</td>
                     <td className="px-4 py-3 text-xs text-ink-muted">{item.notes ?? ''}</td>
                     <td className="px-4 py-3">
                       <button onClick={() => handleRemoveItem(item.id)}
@@ -321,22 +325,22 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
             <div className="px-6 py-4 border-b border-surface-200 flex items-center justify-between">
-              <h3 className="font-display font-bold text-ink">Add calculation run</h3>
+              <h3 className="font-display font-bold text-ink">Add Estimate</h3>
               <button onClick={() => setShowAddModal(false)} className="text-ink-muted hover:text-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleAddItem} className="p-6 space-y-4">
               <div>
-                <label className="label">Select calculation run</label>
+                <label className="label">Select estimate</label>
                 {Object.keys(jobsBySystem).length === 0 ? (
                   <p className="text-sm text-ink-muted py-3">
-                    No saved calculation runs yet. Open a product, run a calculation, and save it first.
+                    No saved estimates yet. Open a product, run a calculation, and save it first.
                   </p>
                 ) : (
                   <select value={selectedJob} onChange={e => setSelectedJob(e.target.value)}
                     className="input" required>
-                    <option value="">— choose a run —</option>
+                    <option value="">— choose an estimate —</option>
                     {Object.entries(jobsBySystem).map(([, { system, jobs }]) => (
                       <optgroup key={system?.id ?? 'unknown'} label={system?.name ?? 'Unknown product'}>
                         {jobs.map(job => (
@@ -350,7 +354,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
               <div>
                 <label className="label">Notes (optional)</label>
                 <input value={addNotes} onChange={e => setAddNotes(e.target.value)}
-                  placeholder="Any notes about this run…" className="input" />
+                  placeholder="Any notes about this estimate…" className="input" />
               </div>
               <div className="flex gap-2 pt-2">
                 <button type="submit" disabled={adding || !selectedJob} className="btn-primary flex-1">
