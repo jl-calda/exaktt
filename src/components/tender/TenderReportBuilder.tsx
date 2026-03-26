@@ -106,6 +106,8 @@ export default function TenderReportBuilder({
   const router = useRouter()
   type TabId = 'setup' | 'summary' | 'notes'
   const [tab, setTab] = useState<TabId>('setup')
+  type SetupSubTab = 'runs' | 'blocks' | 'document'
+  const [setupSubTab, setSetupSubTab] = useState<SetupSubTab>('runs')
   const [status, setStatus] = useState<'draft' | 'submitted'>(existingReport?.status ?? 'draft')
   const [internalNotes, setInternalNotes] = useState(existingReport?.internalNotes ?? '')
   const [confirmAction, setConfirmAction] = useState<'submit' | 'revert' | null>(null)
@@ -600,9 +602,140 @@ export default function TenderReportBuilder({
           />
         </div>
 
-        {/* ── Sections ──────────────────────────────────────────────── */}
+        {/* ── Setup Sub-Tabs ──────────────────────────────────────── */}
+        <div className="flex gap-1 border-b border-surface-200 pb-px">
+          {([
+            { id: 'runs' as const, label: 'Runs & Lines', count: lineItems.length },
+            { id: 'blocks' as const, label: 'Blocks', count: sections.filter(s => s.type === 'text_block' || s.type === 'image_block').length },
+            { id: 'document' as const, label: 'Document', count: sections.length },
+          ]).map(t => (
+            <button key={t.id} onClick={() => setSetupSubTab(t.id)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-t-md transition-colors ${
+                setupSubTab === t.id ? 'bg-surface-100 text-ink border-b-2 border-primary' : 'text-ink-muted hover:text-ink'
+              }`}>
+              {t.label} <span className="ml-1 text-ink-faint">({t.count})</span>
+            </button>
+          ))}
+        </div>
+
+        {/* ── Runs Sub-Tab ─────────────────────────────────────── */}
+        {setupSubTab === 'runs' && (
         <div className="card p-4 space-y-3">
-          <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wide">Line Items & Content</h3>
+          <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wide">Select Runs & Custom Lines</h3>
+
+          {/* Run checkboxes */}
+          <div className="space-y-2">
+            {tenderItems.map(ti => {
+              const job = ti.job
+              const system = ti.system
+              const isIncluded = sections.some(s => s.type === 'job_line' && (s as any).tenderItemId === ti.id)
+              return (
+                <label key={ti.id} className="flex items-center gap-3 p-2.5 border border-surface-200 bg-surface-50 cursor-pointer hover:bg-surface-100 transition-colors" style={{ borderRadius: 'var(--radius)' }}>
+                  <input type="checkbox" checked={isIncluded} onChange={() => {
+                    if (isIncluded) {
+                      setSections(prev => prev.filter(s => !(s.type === 'job_line' && (s as any).tenderItemId === ti.id)))
+                    } else {
+                      addJobLine(ti)
+                    }
+                  }} className="w-4 h-4 rounded border-surface-300 text-primary focus:ring-primary" disabled={isReadOnly} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-ink">{system?.name ?? 'System'}</div>
+                    <div className="text-xs text-ink-muted">{job?.name ?? 'Job'} · {fmtCurrency(job?.lastResults?.totals?.grandTotal ?? 0, currency)}</div>
+                  </div>
+                </label>
+              )
+            })}
+          </div>
+
+          {/* Included job lines with margin editing */}
+          {lineItems.filter(s => s.type === 'job_line').map(section => (
+            <div key={section.id} className="border border-surface-300 rounded-lg p-3 space-y-2 bg-white">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Job</span>
+                <span className="text-xs font-medium text-ink truncate flex-1">{(section as any).description || 'Untitled'}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><label className="label">Raw Cost</label><input className="input text-sm text-right font-mono bg-surface-100" readOnly value={fmtCurrency(section.amount, currency)} /></div>
+                <NumberInput label="Margin %" value={section.marginPct} unit="%" disabled={isReadOnly}
+                  onChange={e => updateSection(section.id, { marginPct: parseFloat(e.target.value) || 0 })} />
+                <div><label className="label">Final</label><input className="input text-sm text-right font-mono bg-surface-100 font-bold" readOnly value={fmtCurrency(computeFinalPrice(section.amount, section.marginPct), currency)} /></div>
+              </div>
+            </div>
+          ))}
+
+          {/* Custom lines */}
+          {lineItems.filter(s => s.type === 'custom_line').map(section => (
+            <div key={section.id} className="border border-surface-300 rounded-lg p-3 space-y-2 bg-white">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Custom</span>
+                <input className="input text-xs flex-1" value={(section as any).description ?? ''} disabled={isReadOnly}
+                  onChange={e => updateSection(section.id, { description: e.target.value })} placeholder="Description" />
+                {!isReadOnly && <button onClick={() => removeSection(section.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <NumberInput label="Amount" value={section.amount} unit={currency} min={0} disabled={isReadOnly}
+                  onChange={e => updateSection(section.id, { amount: parseFloat(e.target.value) || 0 })} />
+                <NumberInput label="Margin %" value={section.marginPct} unit="%" disabled={isReadOnly}
+                  onChange={e => updateSection(section.id, { marginPct: parseFloat(e.target.value) || 0 })} />
+                <div><label className="label">Final</label><input className="input text-sm text-right font-mono bg-surface-100 font-bold" readOnly value={fmtCurrency(computeFinalPrice(section.amount, section.marginPct), currency)} /></div>
+              </div>
+            </div>
+          ))}
+
+          {!isReadOnly && (
+            <Button size="sm" variant="secondary" icon={<DollarSign className="w-3.5 h-3.5" />} onClick={addCustomLine}>
+              Add Custom Line
+            </Button>
+          )}
+        </div>
+        )}
+
+        {/* ── Blocks Sub-Tab ───────────────────────────────────── */}
+        {setupSubTab === 'blocks' && (
+        <div className="card p-4 space-y-3">
+          <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wide">Pick from Saved Blocks</h3>
+
+          {templates.length === 0 && (
+            <p className="text-xs text-ink-faint py-4 text-center">No blocks saved yet. Create blocks in the Blocks tab on the Tenders page.</p>
+          )}
+
+          <div className="space-y-2">
+            {templates.filter(t => t.category === 'text_block' || !t.category || t.blockContent).map(t => {
+              const alreadyAdded = sections.some(s => s.type === 'text_block' && (s as any).templateId === t.id)
+              return (
+                <button key={t.id} type="button" onClick={() => { if (!alreadyAdded && !isReadOnly) addTextBlock(t) }}
+                  disabled={alreadyAdded || isReadOnly}
+                  className={`w-full text-left p-3 border rounded-lg transition-colors ${alreadyAdded ? 'bg-primary/5 border-primary/30' : 'border-surface-200 hover:border-primary hover:bg-primary/5'} ${isReadOnly ? 'opacity-60' : ''}`}>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm text-ink">{t.name}</span>
+                    {alreadyAdded && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold">Added</span>}
+                  </div>
+                  {t.blockTitle && <div className="text-xs text-ink-muted mt-0.5">{t.blockTitle}</div>}
+                  {t.blockContent && <div className="text-xs text-ink-faint mt-0.5 line-clamp-2">{t.blockContent}</div>}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            {!isReadOnly && (
+              <>
+                <Button size="sm" variant="secondary" icon={<Type className="w-3.5 h-3.5" />} onClick={() => addTextBlock()}>
+                  Custom Block
+                </Button>
+                <Button size="sm" variant="secondary" icon={<Upload className="w-3.5 h-3.5" />} onClick={addImageBlock}>
+                  Image Block
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+        )}
+
+        {/* ── Document Sub-Tab ─────────────────────────────────── */}
+        {setupSubTab === 'document' && (
+        <div className="card p-4 space-y-3">
+          <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wide">Document Order</h3>
 
           {sections.length === 0 && (
             <p className="text-xs text-ink-faint py-4 text-center">No sections yet. Add a job line, custom line, or text block.</p>
@@ -794,6 +927,8 @@ export default function TenderReportBuilder({
             </Button>
           </div>
         </div>
+        )}
+        {/* end document sub-tab */}
 
         {/* ── Cost Summary ──────────────────────────────────────────── */}
         <div className="card p-4 space-y-3">
