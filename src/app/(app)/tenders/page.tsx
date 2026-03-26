@@ -15,5 +15,14 @@ export default async function TendersPage() {
   if (!company) redirect('/auth/login')
   const tenders = await getTenders(company.id)
   const blocks = (company as any).tenderTemplates ?? []
-  return <TendersClient initialTenders={tenders as any[]} initialBlocks={blocks} />
+  const reportDefaults = (company as any).tenderReportDefaults ?? {}
+  const predefinedItemsLibrary = (company as any).predefinedItemsLibrary ?? []
+  return (
+    <TendersClient
+      initialTenders={tenders as any[]}
+      initialBlocks={blocks}
+      initialReportDefaults={reportDefaults}
+      initialPredefinedItemsLibrary={predefinedItemsLibrary}
+    />
+  )
 }

@@ -2,10 +2,15 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, ChevronRight, CalendarDays, Trash2, Edit3, Check, X, FileText, Layers } from 'lucide-react'
+import {
+  Plus, ChevronRight, ChevronDown, CalendarDays, Trash2, Edit3, Check, X,
+  FileText, Layers, Settings as SettingsIcon,
+} from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { nanoid } from 'nanoid'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { Button, Input } from '@/components/ui'
+import { NumberInput } from '@/components/ui/Input'
 
 type TenderStatus = 'DRAFT' | 'SUBMITTED' | 'WON' | 'LOST' | 'CANCELLED'
 
@@ -17,13 +22,8 @@ const STATUS_META: Record<TenderStatus, { label: string; bg: string; color: stri
   CANCELLED: { label: 'Cancelled', bg: '#f9fafb', color: '#9ca3af' },
 }
 
-const FILTER_TABS: Array<{ id: TenderStatus | 'all'; label: string }> = [
-  { id: 'all',       label: 'All' },
-  { id: 'DRAFT',     label: 'Draft' },
-  { id: 'SUBMITTED', label: 'Submitted' },
-  { id: 'WON',       label: 'Won' },
-  { id: 'LOST',      label: 'Lost' },
-]
+const KANBAN_COLUMNS: TenderStatus[] = ['DRAFT', 'SUBMITTED', 'WON', 'LOST']
+const ALL_STATUSES: TenderStatus[] = ['DRAFT', 'SUBMITTED', 'WON', 'LOST', 'CANCELLED']
 
 const BLOCK_CATEGORIES = [
   { value: 'scope',         label: 'Scope of Work' },
@@ -41,24 +41,47 @@ interface TenderBlock {
 interface Props {
   initialTenders: any[]
   initialBlocks?: TenderBlock[]
+  initialReportDefaults?: any
+  initialPredefinedItemsLibrary?: any[]
 }
 
-export default function TendersClient({ initialTenders, initialBlocks = [] }: Props) {
+export default function TendersClient({
+  initialTenders,
+  initialBlocks = [],
+  initialReportDefaults,
+  initialPredefinedItemsLibrary,
+}: Props) {
   const router = useRouter()
 
   /* ── Page tab ─────────────────────────────────────────────── */
-  type PageTab = 'tenders' | 'blocks'
+  type PageTab = 'tenders' | 'settings'
   const [pageTab, setPageTab] = useState<PageTab>('tenders')
 
-  const [tenders,     setTenders]     = useState(initialTenders)
-  const [filter,      setFilter]      = useState<TenderStatus | 'all'>('all')
-  const [creating,    setCreating]    = useState(false)
-  const [loading,     setLoading]     = useState(false)
-  const [newName,     setNewName]     = useState('')
-  const [newRef,      setNewRef]      = useState('')
-  const [newDate,     setNewDate]     = useState('')
+  /* ── Settings sub-sections collapsed state ─────────────────── */
+  const [settingsCollapsed, setSettingsCollapsed] = useState<Set<string>>(new Set())
+  const toggleSettings = (key: string) =>
+    setSettingsCollapsed(prev => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
 
-  const filtered = filter === 'all' ? tenders : tenders.filter(t => t.status === filter)
+  /* ── Tenders state ──────────────────────────────────────────── */
+  const [tenders,  setTenders]  = useState(initialTenders)
+  const [creating, setCreating] = useState(false)
+  const [loading,  setLoading]  = useState(false)
+  const [newName,  setNewName]  = useState('')
+  const [newRef,   setNewRef]   = useState('')
+  const [newDate,  setNewDate]  = useState('')
+
+  /* ── Collapsible groups ─────────────────────────────────────── */
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const toggleSection = (status: string) =>
+    setCollapsed(prev => {
+      const next = new Set(prev)
+      next.has(status) ? next.delete(status) : next.add(status)
+      return next
+    })
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -127,6 +150,44 @@ export default function TendersClient({ initialTenders, initialBlocks = [] }: Pr
     setBlockAdding(false)
   }
 
+  /* ── Report Defaults state ──────────────────────────────────── */
+  const [reportDefaults, setReportDefaults] = useState<any>(initialReportDefaults ?? {})
+  const [savingDefaults, setSavingDefaults] = useState(false)
+
+  const saveReportDefaults = async () => {
+    setSavingDefaults(true)
+    await fetch('/api/tenders/settings', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reportDefaults }),
+    })
+    setSavingDefaults(false)
+  }
+
+  /* ── Predefined Items Library state ─────────────────────────── */
+  const [libraryItems, setLibraryItems] = useState<any[]>(initialPredefinedItemsLibrary ?? [])
+  const [savingLibrary, setSavingLibrary] = useState(false)
+
+  const addLibraryItem = () => {
+    setLibraryItems(prev => [...prev, { id: nanoid(), description: '', amount: 0 }])
+  }
+
+  const updateLibraryItem = (id: string, patch: any) => {
+    setLibraryItems(prev => prev.map(item => item.id === id ? { ...item, ...patch } : item))
+  }
+
+  const removeLibraryItem = (id: string) => {
+    setLibraryItems(prev => prev.filter(item => item.id !== id))
+  }
+
+  const saveLibraryItems = async () => {
+    setSavingLibrary(true)
+    await fetch('/api/tenders/settings', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ predefinedItemsLibrary: libraryItems }),
+    })
+    setSavingLibrary(false)
+  }
+
   return (
     <div className="min-h-full">
       <main className="px-4 py-4 md:px-6 md:py-5">
@@ -138,7 +199,7 @@ export default function TendersClient({ initialTenders, initialBlocks = [] }: Pr
             <div className="flex gap-1">
               {([
                 { id: 'tenders' as PageTab, label: 'Tenders', Icon: FileText },
-                { id: 'blocks' as PageTab, label: 'Blocks', Icon: Layers },
+                { id: 'settings' as PageTab, label: 'Settings', Icon: SettingsIcon },
               ]).map(t => (
                 <button key={t.id} onClick={() => setPageTab(t.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -146,9 +207,6 @@ export default function TendersClient({ initialTenders, initialBlocks = [] }: Pr
                   }`} style={{ borderRadius: 'var(--radius)' }}>
                   <t.Icon className="w-3.5 h-3.5" />
                   {t.label}
-                  {t.id === 'blocks' && blocks.length > 0 && (
-                    <span className="text-[10px] text-ink-faint ml-0.5">({blocks.length})</span>
-                  )}
                 </button>
               ))}
             </div>
@@ -158,216 +216,295 @@ export default function TendersClient({ initialTenders, initialBlocks = [] }: Pr
               <Plus className="w-4 h-4" /> New Tender
             </button>
           )}
-          {pageTab === 'blocks' && (
-            <button onClick={() => { setBlockAdding(v => !v); setBlockEditing(null) }} className="btn-primary text-sm">
-              <Plus className="w-4 h-4" /> New Block
-            </button>
-          )}
         </div>
 
+        {/* ── Tenders Tab ────────────────────────────────────────── */}
         {pageTab === 'tenders' && (<>
-        {/* Tenders tab content */}
 
-        {/* Create form */}
-        {creating && (
-          <div className="card p-5 mb-4 animate-fade-in">
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="label">Tender name *</label>
-                  <input value={newName} onChange={e => setNewName(e.target.value)}
-                    placeholder='e.g. "City Hall Renovation — Tender 2024"'
-                    className="input" autoFocus required />
-                </div>
-                <div>
-                  <label className="label">Reference / RFQ No.</label>
-                  <input value={newRef} onChange={e => setNewRef(e.target.value)}
-                    placeholder="T-2024-001" className="input" />
-                </div>
-                <div>
-                  <label className="label">Submission date</label>
-                  <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-                    className="input" />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button type="submit" disabled={loading || !newName.trim()} className="btn-primary">
-                  {loading ? 'Creating…' : 'Create tender'}
-                </button>
-                <button type="button" onClick={() => { setCreating(false); resetForm() }} className="btn-secondary">
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Filter tabs */}
-        <div className="flex gap-0.5 mb-4 bg-surface-100 border border-surface-200 p-0.5 rounded-lg w-fit">
-          {FILTER_TABS.map(t => (
-            <button key={t.id} onClick={() => setFilter(t.id)}
-              className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all ${
-                filter === t.id
-                  ? 'bg-surface-50 text-ink shadow-card'
-                  : 'text-ink-faint hover:text-ink-muted'
-              }`}>
-              {t.label}
-              <span className="ml-1.5 text-[10px] text-ink-faint">
-                {t.id === 'all' ? tenders.length : tenders.filter(x => x.status === t.id).length}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {filtered.length === 0 ? (
-          <div className="card p-12 text-center">
-            <div className="text-5xl mb-4">📋</div>
-            <h2 className="font-semibold text-sm text-ink mb-1.5">
-              {filter === 'all' ? 'No tenders yet' : `No ${filter.toLowerCase()} tenders`}
-            </h2>
-            <p className="text-sm text-ink-muted mb-6 max-w-sm mx-auto">
-              {filter === 'all'
-                ? 'Create a tender to start aggregating product calculations for a bid.'
-                : 'No tenders match this filter.'}
-            </p>
-            {filter === 'all' && (
-              <button onClick={() => setCreating(true)} className="btn-primary mx-auto">
-                <Plus className="w-4 h-4" /> Create first tender
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="card overflow-hidden divide-y divide-surface-200">
-            {filtered.map(tender => {
-              const meta        = STATUS_META[tender.status as TenderStatus] ?? STATUS_META.DRAFT
-              return (
-                <button key={tender.id}
-                  onClick={() => router.push('/tenders/' + tender.id)}
-                  className="w-full flex items-center gap-4 px-5 py-4 hover:bg-surface-50 transition-colors text-left group">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-semibold text-ink group-hover:text-primary transition-colors truncate">
-                        {tender.name}
-                      </span>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-                        style={{ background: meta.bg, color: meta.color }}>
-                        {meta.label}
-                      </span>
-                    </div>
-                    <div className="text-xs text-ink-faint flex items-center gap-3">
-                      {tender.reference && <span className="font-mono">{tender.reference}</span>}
-                      {tender.submissionDate && (
-                        <span className="flex items-center gap-1">
-                          <CalendarDays className="w-3 h-3" />
-                          {format(new Date(tender.submissionDate), 'dd MMM yyyy')}
-                        </span>
-                      )}
-                      <span>{tender._count?.items ?? 0} item{(tender._count?.items ?? 0) !== 1 ? 's' : ''}</span>
-                      <span>· Updated {formatDistanceToNow(new Date(tender.updatedAt), { addSuffix: true })}</span>
-                    </div>
+          {/* Create form */}
+          {creating && (
+            <div className="card p-5 mb-4 animate-fade-in">
+              <form onSubmit={handleCreate} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="label">Tender name *</label>
+                    <input value={newName} onChange={e => setNewName(e.target.value)}
+                      placeholder='e.g. "City Hall Renovation — Tender 2024"'
+                      className="input" autoFocus required />
                   </div>
-                  <ChevronRight className="w-4 h-4 text-ink-faint group-hover:text-primary transition-colors flex-shrink-0" />
-                </button>
+                  <div>
+                    <label className="label">Reference / RFQ No.</label>
+                    <input value={newRef} onChange={e => setNewRef(e.target.value)}
+                      placeholder="T-2024-001" className="input" />
+                  </div>
+                  <div>
+                    <label className="label">Submission date</label>
+                    <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
+                      className="input" />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button type="submit" disabled={loading || !newName.trim()} className="btn-primary">
+                    {loading ? 'Creating...' : 'Create tender'}
+                  </button>
+                  <button type="button" onClick={() => { setCreating(false); resetForm() }} className="btn-secondary">
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Kanban Board */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            {KANBAN_COLUMNS.map(status => {
+              const items = tenders.filter(t => t.status === status)
+              const meta = STATUS_META[status]
+              return (
+                <div key={status} className="card p-3 min-h-[120px]">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: meta.bg, color: meta.color }}>{meta.label}</span>
+                    <span className="text-[10px] text-ink-faint">({items.length})</span>
+                  </div>
+                  <div className="space-y-2">
+                    {items.map(t => (
+                      <button key={t.id} onClick={() => router.push(`/tenders/${t.id}`)}
+                        className="w-full text-left p-2.5 rounded-lg border border-surface-200 hover:border-primary/30 hover:bg-primary/5 transition-all">
+                        <div className="font-medium text-xs text-ink truncate">{t.name}</div>
+                        <div className="flex items-center gap-2 mt-1 text-[10px] text-ink-faint">
+                          {t.reference && <span className="font-mono">{t.reference}</span>}
+                          {t._count?.items > 0 && <span>{t._count.items} est.</span>}
+                        </div>
+                      </button>
+                    ))}
+                    {items.length === 0 && <div className="text-[10px] text-ink-faint text-center py-4">No tenders</div>}
+                  </div>
+                </div>
               )
             })}
           </div>
-        )}
+
+          {/* Collapsible Status Groups */}
+          <div className="card overflow-hidden">
+            {ALL_STATUSES.map(status => {
+              const items = tenders.filter(t => t.status === status)
+              const meta = STATUS_META[status]
+              const isCollapsed = collapsed.has(status)
+              const Chevron = isCollapsed ? ChevronRight : ChevronDown
+              return (
+                <div key={status}>
+                  <div className="cursor-pointer select-none border-b border-t" onClick={() => toggleSection(status)}
+                    style={{ background: meta.bg + '40', borderColor: 'var(--color-surface-200)' }}>
+                    <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderLeft: `3px solid ${meta.color}` }}>
+                      <Chevron className="w-3.5 h-3.5" style={{ color: meta.color }} />
+                      <span className="font-semibold text-xs" style={{ color: meta.color }}>{meta.label}</span>
+                      <span className="text-[10px] text-ink-faint">({items.length})</span>
+                    </div>
+                  </div>
+                  {!isCollapsed && (
+                    <div className="divide-y divide-surface-100">
+                      {items.length === 0 && <div className="px-4 py-4 text-center text-xs text-ink-faint">No {meta.label.toLowerCase()} tenders</div>}
+                      {items.map(t => (
+                        <button key={t.id} onClick={() => router.push(`/tenders/${t.id}`)}
+                          className="w-full flex items-center gap-4 px-5 py-3 hover:bg-surface-50 transition-colors text-left group">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm text-ink group-hover:text-primary transition-colors truncate">{t.name}</div>
+                            <div className="flex items-center gap-3 text-xs text-ink-faint mt-0.5">
+                              {t.reference && <span className="font-mono">{t.reference}</span>}
+                              {t.submissionDate && <span>{format(new Date(t.submissionDate), 'dd MMM yyyy')}</span>}
+                              <span>{t._count?.items ?? 0} estimates</span>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-ink-faint group-hover:text-primary flex-shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </>)}
 
-        {/* ── Blocks Tab ────────────────────────────────────────── */}
-        {pageTab === 'blocks' && (
+        {/* ── Settings Tab ────────────────────────────────────────── */}
+        {pageTab === 'settings' && (
           <div className="space-y-4">
-            {/* Add block form */}
-            {blockAdding && (
-              <div className="card p-4 border-primary/30 bg-primary/5 space-y-3">
-                <div className="text-xs font-bold text-primary uppercase tracking-wide">New Block</div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="label">Name *</label>
-                    <input className="input" value={blockForm.name} onChange={e => setBlockForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Standard Payment Terms" autoFocus />
-                  </div>
-                  <div>
-                    <label className="label">Category</label>
-                    <select className="input" value={blockForm.category} onChange={e => setBlockForm(f => ({ ...f, category: e.target.value }))}>
-                      {BLOCK_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="label">Block Title (optional)</label>
-                  <input className="input" value={blockForm.blockTitle} onChange={e => setBlockForm(f => ({ ...f, blockTitle: e.target.value }))} placeholder="Title shown in the PDF" />
-                </div>
-                <div>
-                  <label className="label">Content</label>
-                  <textarea className="input resize-none" rows={4} value={blockForm.blockContent}
-                    onChange={e => setBlockForm(f => ({ ...f, blockContent: e.target.value }))}
-                    placeholder="Block content text..." />
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={addBlock} disabled={!blockForm.name.trim() || blockSaving} className="btn-primary text-sm">
-                    <Check className="w-3.5 h-3.5" /> {blockSaving ? 'Saving...' : 'Add Block'}
-                  </button>
-                  <button onClick={() => setBlockAdding(false)} className="btn-secondary text-sm">
-                    <X className="w-3.5 h-3.5" /> Cancel
-                  </button>
-                </div>
-              </div>
-            )}
 
-            {/* Block list */}
-            {blocks.length === 0 && !blockAdding && (
-              <div className="card p-12 text-center text-sm text-ink-faint">
-                No blocks yet. Create reusable text blocks for your quotations — scope of work, payment terms, exclusions, etc.
+            {/* 1. Blocks */}
+            <div className="card overflow-hidden">
+              <div className="cursor-pointer select-none px-4 py-3 flex items-center justify-between border-b border-surface-200 bg-surface-50"
+                onClick={() => toggleSettings('blocks')}>
+                <div className="flex items-center gap-2">
+                  {settingsCollapsed.has('blocks') ? <ChevronRight className="w-4 h-4 text-ink-muted" /> : <ChevronDown className="w-4 h-4 text-ink-muted" />}
+                  <Layers className="w-4 h-4 text-ink-muted" />
+                  <span className="font-semibold text-sm text-ink">Blocks</span>
+                  {blocks.length > 0 && <span className="text-[10px] text-ink-faint">({blocks.length})</span>}
+                </div>
+                {!settingsCollapsed.has('blocks') && (
+                  <button onClick={(e) => { e.stopPropagation(); setBlockAdding(v => !v); setBlockEditing(null) }} className="btn-primary text-xs">
+                    <Plus className="w-3.5 h-3.5" /> New Block
+                  </button>
+                )}
               </div>
-            )}
 
-            <div className="space-y-2">
-              {blocks.map(b => {
-                const isEd = blockEditing === b.id
-                const catMeta = BLOCK_CATEGORIES.find(c => c.value === b.category)
-                return (
-                  <div key={b.id} className={`card p-4 ${isEd ? 'ring-2 ring-primary' : ''}`}>
-                    {!isEd ? (
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm text-ink">{b.name}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-surface-100 text-ink-muted">{catMeta?.label ?? b.category}</span>
-                          </div>
-                          {b.blockTitle && <div className="text-xs text-ink-muted mt-0.5">{b.blockTitle}</div>}
-                          {b.blockContent && <div className="text-xs text-ink-faint mt-1 line-clamp-2">{b.blockContent}</div>}
+              {!settingsCollapsed.has('blocks') && (
+                <div className="p-4 space-y-4">
+                  {/* Add block form */}
+                  {blockAdding && (
+                    <div className="card p-4 border-primary/30 bg-primary/5 space-y-3">
+                      <div className="text-xs font-bold text-primary uppercase tracking-wide">New Block</div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="label">Name *</label>
+                          <input className="input" value={blockForm.name} onChange={e => setBlockForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Standard Payment Terms" autoFocus />
                         </div>
-                        <div className="flex gap-1 flex-shrink-0">
-                          <button onClick={() => startEditBlock(b)} className="p-1.5 rounded text-ink-muted hover:bg-surface-200 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => setBlockDeleteId(b.id)} className="p-1.5 rounded text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <div>
+                          <label className="label">Category</label>
+                          <select className="input" value={blockForm.category} onChange={e => setBlockForm(f => ({ ...f, category: e.target.value }))}>
+                            {BLOCK_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                          </select>
                         </div>
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
-                          <div><label className="label">Name *</label><input className="input" value={blockForm.name} onChange={e => setBlockForm(f => ({ ...f, name: e.target.value }))} autoFocus /></div>
-                          <div><label className="label">Category</label><select className="input" value={blockForm.category} onChange={e => setBlockForm(f => ({ ...f, category: e.target.value }))}>{BLOCK_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
-                        </div>
-                        <div><label className="label">Block Title</label><input className="input" value={blockForm.blockTitle} onChange={e => setBlockForm(f => ({ ...f, blockTitle: e.target.value }))} /></div>
-                        <div><label className="label">Content</label><textarea className="input resize-none" rows={4} value={blockForm.blockContent} onChange={e => setBlockForm(f => ({ ...f, blockContent: e.target.value }))} /></div>
-                        <div className="flex gap-2">
-                          <button onClick={updateBlock} disabled={!blockForm.name.trim() || blockSaving} className="btn-primary text-sm"><Check className="w-3.5 h-3.5" /> Save</button>
-                          <button onClick={() => setBlockEditing(null)} className="btn-secondary text-sm"><X className="w-3.5 h-3.5" /> Cancel</button>
-                        </div>
+                      <div>
+                        <label className="label">Block Title (optional)</label>
+                        <input className="input" value={blockForm.blockTitle} onChange={e => setBlockForm(f => ({ ...f, blockTitle: e.target.value }))} placeholder="Title shown in the PDF" />
                       </div>
-                    )}
+                      <div>
+                        <label className="label">Content</label>
+                        <textarea className="input resize-none" rows={4} value={blockForm.blockContent}
+                          onChange={e => setBlockForm(f => ({ ...f, blockContent: e.target.value }))}
+                          placeholder="Block content text..." />
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={addBlock} disabled={!blockForm.name.trim() || blockSaving} className="btn-primary text-sm">
+                          <Check className="w-3.5 h-3.5" /> {blockSaving ? 'Saving...' : 'Add Block'}
+                        </button>
+                        <button onClick={() => setBlockAdding(false)} className="btn-secondary text-sm">
+                          <X className="w-3.5 h-3.5" /> Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Block list */}
+                  {blocks.length === 0 && !blockAdding && (
+                    <div className="text-center text-sm text-ink-faint py-8">
+                      No blocks yet. Create reusable text blocks for your quotations — scope of work, payment terms, exclusions, etc.
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    {blocks.map(b => {
+                      const isEd = blockEditing === b.id
+                      const catMeta = BLOCK_CATEGORIES.find(c => c.value === b.category)
+                      return (
+                        <div key={b.id} className={`card p-4 ${isEd ? 'ring-2 ring-primary' : ''}`}>
+                          {!isEd ? (
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-sm text-ink">{b.name}</span>
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-surface-100 text-ink-muted">{catMeta?.label ?? b.category}</span>
+                                </div>
+                                {b.blockTitle && <div className="text-xs text-ink-muted mt-0.5">{b.blockTitle}</div>}
+                                {b.blockContent && <div className="text-xs text-ink-faint mt-1 line-clamp-2">{b.blockContent}</div>}
+                              </div>
+                              <div className="flex gap-1 flex-shrink-0">
+                                <button onClick={() => startEditBlock(b)} className="p-1.5 rounded text-ink-muted hover:bg-surface-200 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => setBlockDeleteId(b.id)} className="p-1.5 rounded text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div><label className="label">Name *</label><input className="input" value={blockForm.name} onChange={e => setBlockForm(f => ({ ...f, name: e.target.value }))} autoFocus /></div>
+                                <div><label className="label">Category</label><select className="input" value={blockForm.category} onChange={e => setBlockForm(f => ({ ...f, category: e.target.value }))}>{BLOCK_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
+                              </div>
+                              <div><label className="label">Block Title</label><input className="input" value={blockForm.blockTitle} onChange={e => setBlockForm(f => ({ ...f, blockTitle: e.target.value }))} /></div>
+                              <div><label className="label">Content</label><textarea className="input resize-none" rows={4} value={blockForm.blockContent} onChange={e => setBlockForm(f => ({ ...f, blockContent: e.target.value }))} /></div>
+                              <div className="flex gap-2">
+                                <button onClick={updateBlock} disabled={!blockForm.name.trim() || blockSaving} className="btn-primary text-sm"><Check className="w-3.5 h-3.5" /> Save</button>
+                                <button onClick={() => setBlockEditing(null)} className="btn-secondary text-sm"><X className="w-3.5 h-3.5" /> Cancel</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
-                )
-              })}
+
+                  <ConfirmModal
+                    open={blockDeleteId !== null}
+                    title="Delete block?"
+                    message="This block will be permanently removed. Existing reports that used it will not be affected."
+                    onConfirm={() => { if (blockDeleteId) removeBlock(blockDeleteId) }}
+                    onCancel={() => setBlockDeleteId(null)}
+                  />
+                </div>
+              )}
             </div>
 
-            <ConfirmModal
-              open={blockDeleteId !== null}
-              title="Delete block?"
-              message="This block will be permanently removed. Existing reports that used it will not be affected."
-              onConfirm={() => { if (blockDeleteId) removeBlock(blockDeleteId) }}
-              onCancel={() => setBlockDeleteId(null)}
-            />
+            {/* 2. Report Defaults */}
+            <div className="card overflow-hidden">
+              <div className="cursor-pointer select-none px-4 py-3 flex items-center gap-2 border-b border-surface-200 bg-surface-50"
+                onClick={() => toggleSettings('reportDefaults')}>
+                {settingsCollapsed.has('reportDefaults') ? <ChevronRight className="w-4 h-4 text-ink-muted" /> : <ChevronDown className="w-4 h-4 text-ink-muted" />}
+                <FileText className="w-4 h-4 text-ink-muted" />
+                <span className="font-semibold text-sm text-ink">Report Defaults</span>
+              </div>
+
+              {!settingsCollapsed.has('reportDefaults') && (
+                <div className="p-4 space-y-3">
+                  <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wide">Report Defaults</h3>
+                  <div>
+                    <label className="label">Default Payment Terms</label>
+                    <textarea className="input resize-none" rows={2} value={reportDefaults.paymentTerms ?? ''}
+                      onChange={e => setReportDefaults((d: any) => ({ ...d, paymentTerms: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="label">Default Disclaimer</label>
+                    <textarea className="input resize-none" rows={2} value={reportDefaults.disclaimer ?? ''}
+                      onChange={e => setReportDefaults((d: any) => ({ ...d, disclaimer: e.target.value }))} />
+                  </div>
+                  <Input label="Default Validity Period" value={reportDefaults.validityPeriod ?? ''}
+                    onChange={e => setReportDefaults((d: any) => ({ ...d, validityPeriod: e.target.value }))} placeholder="e.g. 30 days" />
+                  <Button size="sm" variant="primary" onClick={saveReportDefaults} loading={savingDefaults}>Save Defaults</Button>
+                </div>
+              )}
+            </div>
+
+            {/* 3. Predefined Items Library */}
+            <div className="card overflow-hidden">
+              <div className="cursor-pointer select-none px-4 py-3 flex items-center justify-between border-b border-surface-200 bg-surface-50"
+                onClick={() => toggleSettings('libraryItems')}>
+                <div className="flex items-center gap-2">
+                  {settingsCollapsed.has('libraryItems') ? <ChevronRight className="w-4 h-4 text-ink-muted" /> : <ChevronDown className="w-4 h-4 text-ink-muted" />}
+                  <Layers className="w-4 h-4 text-ink-muted" />
+                  <span className="font-semibold text-sm text-ink">Predefined Items Library</span>
+                  {libraryItems.length > 0 && <span className="text-[10px] text-ink-faint">({libraryItems.length})</span>}
+                </div>
+                {!settingsCollapsed.has('libraryItems') && (
+                  <Button size="sm" onClick={(e) => { e.stopPropagation(); addLibraryItem() }}>Add Item</Button>
+                )}
+              </div>
+
+              {!settingsCollapsed.has('libraryItems') && (
+                <div className="p-4 space-y-3">
+                  <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wide">Predefined Items Library</h3>
+                  {libraryItems.map(item => (
+                    <div key={item.id} className="flex items-center gap-3 p-3 border border-surface-200 rounded-lg">
+                      <input className="input text-sm flex-1" value={item.description} placeholder="Description"
+                        onChange={e => updateLibraryItem(item.id, { description: e.target.value })} />
+                      <NumberInput value={item.amount} unit="$" min={0} className="w-28"
+                        onChange={e => updateLibraryItem(item.id, { amount: parseFloat(e.target.value) || 0 })} />
+                      <button onClick={() => removeLibraryItem(item.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  ))}
+                  <Button size="sm" variant="primary" onClick={saveLibraryItems} loading={savingLibrary}>Save Library</Button>
+                </div>
+              )}
+            </div>
+
           </div>
         )}
       </main>

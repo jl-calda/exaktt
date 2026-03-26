@@ -883,6 +883,21 @@ export interface WorkScheduleSummary {
   totalThirdPartyCost?:  number
 }
 
+// ─── Tender Settings ──────────────────────────────────────────────────────────
+
+export interface TenderReportDefaults {
+  paymentTerms?: string
+  disclaimer?: string
+  validityPeriod?: string
+}
+
+export interface PredefinedItemTemplate {
+  id: string
+  description: string
+  amount: number
+  category?: string
+}
+
 // ─── Tender Predefined Items ──────────────────────────────────────────────────
 
 export interface TenderPredefinedItem {

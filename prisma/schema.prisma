@@ -93,6 +93,8 @@ model Company {
   activityLibrary        ActivityLibraryItem[]
   tenderReports          TenderReport[]
   tenderTemplates        Json           @default("[]")
+  tenderReportDefaults   Json           @default("{}")
+  predefinedItemsLibrary Json           @default("[]")
   labourRates            LabourRate[]
   workCategories         WorkCategory[]
   workActivityRates      WorkActivityRate[]
