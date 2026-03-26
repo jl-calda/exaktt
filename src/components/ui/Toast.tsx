@@ -22,7 +22,7 @@ export function Toast({ children }: { children: React.ReactNode }) {
       {children}
       <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
-          <div key={t.id} className="flex items-center gap-2.5 bg-white border border-surface-300 rounded-xl px-4 py-3 shadow-float text-sm font-medium text-ink animate-fade-in pointer-events-auto max-w-xs">
+          <div key={t.id} className="flex items-center gap-2.5 bg-white/80 backdrop-blur-xl backdrop-saturate-150 border border-surface-200/60 rounded-2xl px-5 py-3.5 shadow-panel text-sm font-medium text-ink animate-slide-up pointer-events-auto max-w-xs">
             {icons[t.type]}
             {t.message}
           </div>
