@@ -52,10 +52,10 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
   return (
     <div>
       {/* Sub-tab navigation */}
-      <div className="flex items-center gap-1 mb-4 border-b border-surface-200 pb-px">
+      <div className="flex items-center gap-1 mb-4 border-b border-surface-200/50 pb-px">
         {SUB_TABS.map(({ id, label }) => (
           <button key={id} onClick={() => setActiveSubTab(id)}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-t-md border-b-2 transition-colors ${
+            className={`px-3 py-2 text-xs font-semibold rounded-t-lg border-b-2 transition-all duration-200 ${
               activeSubTab === id
                 ? 'border-primary text-primary bg-primary/5'
                 : 'border-transparent text-ink-muted hover:text-ink hover:bg-surface-100'
@@ -75,11 +75,7 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
             const active = tagFilter.includes(tag.id)
             return (
               <button key={tag.id} onClick={() => toggleTag(tag.id)}
-                className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border transition-all ${
-                  active
-                    ? 'text-white shadow-sm'
-                    : 'bg-white text-ink-muted border-surface-300 hover:border-surface-400 hover:text-ink'
-                }`}
+                className={`filter-pill ${active ? 'active !text-white shadow-sm' : ''}`}
                 style={active ? { background: tag.color ?? '#64748b', borderColor: 'transparent' } : {}}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0"
                   style={{ background: active ? 'rgba(255,255,255,0.6)' : (tag.color ?? '#94a3b8') }} />

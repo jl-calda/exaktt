@@ -123,7 +123,7 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
       <div className="flex gap-1.5 flex-wrap mb-5">
         {CATEGORIES.map(c => (
           <button key={c.id} onClick={() => setCatFilter(c.id)}
-            className={`badge border px-3 py-1 text-xs cursor-pointer transition-all ${catFilter === c.id ? 'bg-ink text-white border-ink' : 'border-surface-300 text-ink-muted hover:border-ink-muted'}`}>
+            className={`filter-pill ${catFilter === c.id ? 'active bg-ink !text-white !border-ink' : ''}`}>
             {c.icon} {c.label}
           </button>
         ))}
@@ -135,7 +135,7 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
           {globalTags.map(t => (
             <button key={t.id} onClick={() => setTagFilter(f => f === t.id ? null : t.id)}
               style={{ background: tagFilter === t.id ? t.color + '18' : undefined, color: tagFilter === t.id ? t.color : undefined, borderColor: tagFilter === t.id ? t.color + '60' : undefined }}
-              className="badge border border-surface-300 text-ink-muted px-3 py-1 text-xs cursor-pointer transition-all">
+              className={`filter-pill ${tagFilter === t.id ? 'active' : ''}`}>
               {t.name}
             </button>
           ))}
@@ -167,18 +167,18 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
       {loading && <div className="text-sm text-ink-faint text-center py-8">Loading library…</div>}
 
       {/* Items — table format matching Materials tab */}
-      <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
-        <table className="w-full text-sm border-collapse">
+      <div className="table-wrap">
+        <table>
           <thead>
-            <tr className="bg-surface-100 border-b border-surface-200 text-left">
-              <th className="px-3 py-2.5 w-14"></th>
-              <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide text-ink-faint min-w-52">Item</th>
-              <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide text-ink-faint w-20 text-center">Unit</th>
-              <th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide text-ink-faint">Category</th>
-              <th className="px-3 py-2.5 w-28"></th>
+            <tr>
+              <th className="w-14"></th>
+              <th className="min-w-52">Item</th>
+              <th className="w-20 text-center">Unit</th>
+              <th>Category</th>
+              <th className="w-28"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-100">
+          <tbody>
             {filtered.map(item => {
               const isEd = editingId === item.id
               const catInfo = CATEGORIES.find(c => c.id === item.category)
@@ -236,15 +236,15 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
                   <td className="px-3 py-2.5">
                     <div className="flex gap-1 justify-end">
                       <button onClick={() => onAddToSystem(item)} title="Add to system"
-                        className="p-1.5 rounded text-emerald-600 hover:bg-emerald-50 transition-colors">
+                        className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors">
                         <Plus className="w-3.5 h-3.5" />
                       </button>
                       <button onClick={() => startEdit(item)} title="Edit"
-                        className="p-1.5 rounded text-ink-muted hover:bg-surface-200 transition-colors">
+                        className="p-1.5 rounded-lg text-ink-muted hover:bg-surface-200 transition-colors">
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
                       <button onClick={() => setDeleteId(item.id)} title="Delete"
-                        className="p-1.5 rounded text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>

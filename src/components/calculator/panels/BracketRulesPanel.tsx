@@ -296,8 +296,8 @@ export default function BracketRulesPanel({ templates, setupBrackets, materials,
   }
 
   return (
-    <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
-      <div className="px-5 py-3 border-b flex items-center justify-between gap-3" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
+    <div className="card overflow-hidden">
+      <div className="card-header">
         <div>
           <h3 className="font-semibold text-sm text-ink">Sub-assembly Quantity Rules</h3>
           <p className="text-xs text-ink-muted mt-0.5">Select sub-assemblies, configure parameters, and set quantity rules.</p>
@@ -326,7 +326,7 @@ export default function BracketRulesPanel({ templates, setupBrackets, materials,
         </div>
       )}
 
-      <div className="divide-y divide-surface-200">
+      <div className="divide-y divide-surface-200/40">
         {active.map(({ template, setup }) => {
           const isExp = expandedId === template.id
           const hasRules = (setup.ruleSet ?? []).some(r => r.ruleType)

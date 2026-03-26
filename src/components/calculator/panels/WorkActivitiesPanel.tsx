@@ -564,9 +564,9 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
   const isLinked = !!draft.workActivityRateId
 
   return (
-    <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
+    <div className="card overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
+      <div className="card-header">
         <div>
           <h3 className="font-semibold text-sm text-ink">⚙️ Work Schedule</h3>
           <p className="text-xs text-ink-muted mt-0.5">Activities grouped by phase — time and cost per run.</p>

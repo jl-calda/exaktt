@@ -15,7 +15,7 @@ function Section({ title, icon, count, children, defaultOpen = true }: {
 }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="border-b border-surface-200 last:border-0">
+    <div className="border-b border-surface-200/40 last:border-0">
       <button onClick={() => setOpen(v => !v)}
         className="w-full flex items-center justify-between py-2.5 px-3 hover:bg-surface-100 transition-colors" style={{ borderRadius: 'var(--radius)' }}>
         <div className="flex items-center gap-1.5">

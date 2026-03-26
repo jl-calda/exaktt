@@ -263,7 +263,7 @@ export default function SystemShellSaaS({
         {NAV_TABS.map(({ id, label, Icon }) => (
           <button key={id}
             onClick={() => setTab(id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[11px] font-medium whitespace-nowrap transition-colors duration-200 shrink-0 ${
               tab === id ? 'bg-primary/10 text-primary font-semibold' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
             }`}>
             <Icon className="w-3.5 h-3.5" strokeWidth={tab === id ? 2.2 : 1.8} />
@@ -298,7 +298,7 @@ export default function SystemShellSaaS({
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-2 px-2 flex flex-col gap-px">
+        <nav className="flex-1 py-2 px-2 flex flex-col gap-0.5">
           {NAV_TABS.map(({ id, label, Icon }) => (
             <button key={id}
               onClick={() => setTab(id)}
@@ -312,7 +312,7 @@ export default function SystemShellSaaS({
         {/* Plan badge */}
         <div className="px-3 py-2 border-t border-surface-200">
           <button onClick={() => router.push('/billing')}
-            className="w-full text-[11px] font-semibold py-1 rounded-md text-center transition-all hover:opacity-80"
+            className="w-full text-[11px] font-semibold py-1 rounded-lg text-center transition-all hover:opacity-80"
             style={{ background: planMeta.color + '18', color: planMeta.color }}>
             {planMeta.name}
           </button>
@@ -365,15 +365,14 @@ export default function SystemShellSaaS({
         {tab === 'setup' && (
           <>
             {/* Sub-tab bar */}
-            <div className="flex items-center gap-1 px-3 md:px-6 py-2 border-b border-surface-200 bg-surface-50">
+            <div className="flex items-center gap-1 px-3 md:px-6 py-2 border-b border-surface-200/50 bg-surface-50">
               {SETUP_SUB_TABS.map(({ id, label, Icon }) => (
                 <button key={id} onClick={() => setSetupSubTab(id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors duration-200 rounded-[10px] ${
                     setupSubTab === id
                       ? 'bg-primary/10 text-primary font-semibold'
                       : 'text-ink-muted hover:text-ink hover:bg-surface-100'
-                  }`}
-                  style={{ borderRadius: 'var(--radius)' }}>
+                  }`}>
                   <Icon className="w-3.5 h-3.5" strokeWidth={setupSubTab === id ? 2.2 : 1.8} />
                   {label}
                 </button>
@@ -452,11 +451,11 @@ export default function SystemShellSaaS({
 
       {/* Add to Tender modal */}
       {showAddToTender && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-            <div className="px-6 py-4 border-b border-surface-200 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-md">
+          <div className="bg-surface-50 rounded-2xl shadow-float w-full max-w-md mx-4 overflow-hidden animate-scale-in">
+            <div className="card-header">
               <h3 className="font-display font-bold text-ink">Add to Tender</h3>
-              <button onClick={() => setShowAddToTender(false)} className="text-ink-muted hover:text-ink">
+              <button onClick={() => setShowAddToTender(false)} className="text-ink-muted hover:text-ink p-1 rounded-lg hover:bg-surface-100 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>

@@ -45,9 +45,9 @@ function StepHeader({ step, children }: { step: typeof STEPS[number]; children: 
         <span className="text-sm flex-shrink-0">{step.icon}</span>
         <span className="text-xs font-semibold text-ink">{step.label}</span>
         <span className="text-xs text-ink-faint">— {step.desc}</span>
-        <div className="flex-1 h-px bg-surface-200" />
+        <div className="flex-1 h-px bg-surface-200/60" />
       </div>
-      <div className="space-y-3 pl-3.5 border-l-2 border-surface-200">
+      <div className="space-y-3 pl-3.5 border-l-2 border-surface-200/50">
         {children}
       </div>
     </div>
@@ -130,8 +130,8 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, 
       <div className={`space-y-4 ${isLocked ? 'pointer-events-none opacity-60 select-none' : ''}`}>
 
       {/* ── System Identity ── */}
-      <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
-        <div className="px-4 py-2.5 border-b flex items-center gap-2" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
+      <div className="card overflow-hidden">
+        <div className="card-header">
           <div className="w-6 h-6 flex items-center justify-center text-base flex-shrink-0"
             style={{ background: sys.color + '18', border: `1.5px solid ${sys.color}30`, borderRadius: 'var(--radius)' }}>
             {sys.icon}
@@ -161,8 +161,8 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, 
 
       {/* ── Step 1: Input Model ── */}
       <StepHeader step={STEPS[0]}>
-        <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
-          <div className="px-5 py-4 border-b" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
+        <div className="card overflow-hidden">
+          <div className="card-header flex-col !items-start">
             <h3 className="font-semibold text-sm text-ink">📐 Input Model</h3>
             <p className="text-xs text-ink-muted mt-0.5">How dimensions are entered in the calculator.</p>
           </div>

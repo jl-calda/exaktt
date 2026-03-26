@@ -180,8 +180,8 @@ export default function CriteriaPanel({ customCriteria, customDims, inputModel, 
   )}
 
   return (
-    <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
-      <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
+    <div className="card overflow-hidden">
+      <div className="card-header">
         <div>
           <h3 className="font-semibold text-sm text-ink">🏷️ Custom Criteria</h3>
           <p className="text-xs text-ink-muted mt-0.5">Boolean conditions that gate materials. User-toggled or auto-derived from dimensions.</p>
@@ -200,7 +200,7 @@ export default function CriteriaPanel({ customCriteria, customDims, inputModel, 
         <div className="py-10 text-center text-sm text-ink-faint">No criteria defined yet.</div>
       )}
 
-      <div className="divide-y divide-surface-200">
+      <div className="divide-y divide-surface-200/40">
         {customCriteria.map(cr => {
           const isEd    = editingId === cr.id
           const dimInfo = allDims.find(d => d.key === cr.dimKey)

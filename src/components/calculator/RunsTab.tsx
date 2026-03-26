@@ -43,32 +43,32 @@ export default function RunsTab({ sys, jobs, onRefresh }: Props) {
       </div>
 
       {/* Table */}
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm border-collapse">
+      <div className="table-wrap">
+        <table>
           <thead>
-            <tr className="bg-surface-100 border-b border-surface-200 text-left">
-              <th className="px-4 py-2.5 text-[10px] font-bold text-ink-faint uppercase">Name</th>
-              <th className="px-4 py-2.5 text-[10px] font-bold text-ink-faint uppercase">Created by</th>
-              <th className="px-4 py-2.5 text-[10px] font-bold text-ink-faint uppercase">Date</th>
-              <th className="px-4 py-2.5 text-[10px] font-bold text-ink-faint uppercase">Notes</th>
-              <th className="px-4 py-2.5 w-20"></th>
+            <tr>
+              <th>Name</th>
+              <th>Created by</th>
+              <th>Date</th>
+              <th>Notes</th>
+              <th className="w-20"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-100">
-            {filtered.map((job, i) => (
-              <tr key={job.id} className={i % 2 === 0 ? 'bg-white' : 'bg-surface-50'}>
-                <td className="px-4 py-3">
+          <tbody>
+            {filtered.map((job) => (
+              <tr key={job.id}>
+                <td>
                   <span className="font-medium text-ink">{job.name}</span>
                 </td>
-                <td className="px-4 py-3 text-ink-muted">{job.createdBy?.name ?? '—'}</td>
-                <td className="px-4 py-3 text-ink-muted">
+                <td className="text-ink-muted">{job.createdBy?.name ?? '—'}</td>
+                <td className="text-ink-muted">
                   {job.calculatedAt ? format(new Date(job.calculatedAt), 'dd MMM yyyy HH:mm') : job.createdAt ? format(new Date(job.createdAt), 'dd MMM yyyy') : '—'}
                 </td>
-                <td className="px-4 py-3 text-ink-faint text-xs max-w-xs truncate">{job.notes ?? '—'}</td>
-                <td className="px-4 py-3">
+                <td className="text-ink-faint text-xs max-w-xs truncate">{job.notes ?? '—'}</td>
+                <td>
                   <div className="flex gap-1 justify-end">
                     <button onClick={() => setDeleteId(job.id)}
-                      className="p-1.5 rounded text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                      className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
