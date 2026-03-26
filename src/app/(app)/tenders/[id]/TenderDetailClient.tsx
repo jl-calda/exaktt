@@ -28,13 +28,14 @@ const STATUS_TRANSITIONS: Record<TenderStatus, TenderStatus[]> = {
 
 interface Props {
   tender:  any
-  allJobs: any[]  // all MtoJobs for the user
+  allJobs: any[]
   profile?: any
   tenderReports: any[]
   clients: any[]
+  templates?: any[]
 }
 
-export default function TenderDetailClient({ tender: initialTender, allJobs, profile, tenderReports, clients }: Props) {
+export default function TenderDetailClient({ tender: initialTender, allJobs, profile, tenderReports, clients, templates = [] }: Props) {
   const router = useRouter()
   const { canWrite } = usePermissions()
 
@@ -46,6 +47,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
   const [adding,      setAdding]      = useState(false)
   const [removing,    setRemoving]    = useState<string | null>(null)
   const [creating,    setCreating]    = useState(false)
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const [predefinedItems, setPredefinedItems] = useState<any[]>(initialTender.predefinedItems ?? [])
   const currency = 'SGD'
 
@@ -121,13 +123,24 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
     setRemoving(null)
   }
 
-  const handleGenerateQuotation = async () => {
+  const handleGenerateQuotation = async (template?: any) => {
     setCreating(true)
+    setShowTemplatePicker(false)
     try {
+      const payload: any = {}
+      if (template) {
+        payload.title = template.title || 'Quotation'
+        payload.preparedBy = template.preparedBy || null
+        payload.validityPeriod = template.validityPeriod || null
+        payload.paymentTerms = template.paymentTerms || null
+        payload.disclaimer = template.disclaimer || null
+        payload.notes = template.notes || null
+        payload.sections = template.defaultSections || []
+      }
       const res = await fetch(`/api/tenders/${tender.id}/report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify(payload),
       })
       const { data } = await res.json()
       if (data?.id) {
@@ -190,7 +203,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
               </button>
             )
           })}
-          {canWrite('tenders') && <button onClick={handleGenerateQuotation} disabled={creating} className="btn-primary text-xs flex items-center gap-1.5">
+          {canWrite('tenders') && <button onClick={() => templates.length > 0 ? setShowTemplatePicker(true) : handleGenerateQuotation()} disabled={creating} className="btn-primary text-xs flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5" />
             {creating ? 'Creating…' : 'Generate Quotation'}
           </button>}
@@ -365,6 +378,67 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
                 <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">Cancel</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Template Picker Modal */}
+      {showTemplatePicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-surface rounded-xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[80vh] flex flex-col">
+            <div className="px-5 py-4 border-b border-surface-200 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-sm text-ink">Start from Template</h3>
+                <p className="text-xs text-ink-muted mt-0.5">Choose a template or start blank</p>
+              </div>
+              <button onClick={() => setShowTemplatePicker(false)} className="text-ink-faint hover:text-ink">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {/* Blank option */}
+              <button onClick={() => handleGenerateQuotation()}
+                className="w-full text-left p-4 border-2 border-dashed border-surface-300 hover:border-primary hover:bg-primary/5 transition-all group"
+                style={{ borderRadius: 'var(--radius-card)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-surface-100 flex items-center justify-center text-xl">📄</div>
+                  <div>
+                    <div className="font-semibold text-sm text-ink group-hover:text-primary">Blank Quotation</div>
+                    <div className="text-xs text-ink-faint">Start with an empty report</div>
+                  </div>
+                </div>
+              </button>
+
+              {/* Template options */}
+              {templates.filter((t: any) => t.category === 'full').map((t: any) => {
+                const sectionCount = (t.defaultSections ?? []).length
+                const hasTerms = !!t.paymentTerms
+                const hasDisclaimer = !!t.disclaimer
+                return (
+                  <button key={t.id} onClick={() => handleGenerateQuotation(t)}
+                    className="w-full text-left p-4 border border-surface-200 hover:border-primary hover:bg-primary/5 transition-all group"
+                    style={{ borderRadius: 'var(--radius-card)' }}>
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-xl flex-shrink-0">📋</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm text-ink group-hover:text-primary">{t.name}</div>
+                        {t.title && <div className="text-xs text-ink-muted mt-0.5">Title: {t.title}</div>}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {sectionCount > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold">{sectionCount} sections</span>}
+                          {hasTerms && <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-700 font-semibold">Payment terms</span>}
+                          {hasDisclaimer && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-semibold">Disclaimer</span>}
+                          {t.preparedBy && <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-100 text-ink-muted">By: {t.preparedBy}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+
+              {templates.filter((t: any) => t.category === 'full').length === 0 && (
+                <p className="text-xs text-ink-faint text-center py-2">No full templates saved yet. Save one from a quotation builder.</p>
+              )}
+            </div>
           </div>
         </div>
       )}
