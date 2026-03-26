@@ -315,6 +315,7 @@ export interface SavedJob {
   id:              string
   systemId:        string
   name:            string
+  notes?:          string | null
   runs:            Run[]
   criteriaState?:  Record<string, boolean>   // legacy — now per-run
   variantState?:   Record<string, string>    // legacy — now per-run

@@ -260,6 +260,7 @@ model MtoJob {
   mtoSystem   MtoSystem @relation(fields: [mtoSystemId], references: [id], onDelete: Cascade)
 
   name        String
+  notes       String?
   isArchived  Boolean @default(false)
 
   runs           Json    @default("[]")
