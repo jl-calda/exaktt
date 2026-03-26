@@ -27,6 +27,8 @@ export default async function TenderDetailPage({ params }: PageProps) {
 
   if (!tender) notFound()
 
+  const templates = (company as any).tenderTemplates ?? []
+
   return (
     <TenderDetailClient
       tender={tender as any}
@@ -34,6 +36,7 @@ export default async function TenderDetailPage({ params }: PageProps) {
       profile={profile}
       tenderReports={tenderReports as any[]}
       clients={clients as any[]}
+      templates={templates}
     />
   )
 }
