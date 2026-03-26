@@ -1,10 +1,23 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from 'next'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Toast } from '@/components/ui/Toast'
 import ThemeProvider from '@/components/ThemeProvider'
 import TaskFAB from '@/components/tasks/TaskFAB'
 import TaskDrawer from '@/components/tasks/TaskDrawer'
 import './globals.css'
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-jetbrains',
+})
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -30,7 +43,7 @@ try {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
