@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, Trash2, CalendarDays, X, FileText, ChevronRight } from
 import { nanoid } from 'nanoid'
 import { NumberInput } from '@/components/ui/Input'
 import { format } from 'date-fns'
+import { usePermissions } from '@/lib/hooks/usePermissions'
 
 type TenderStatus = 'DRAFT' | 'SUBMITTED' | 'WON' | 'LOST' | 'CANCELLED'
 
@@ -35,6 +36,7 @@ interface Props {
 
 export default function TenderDetailClient({ tender: initialTender, allJobs, profile, tenderReports, clients }: Props) {
   const router = useRouter()
+  const { canWrite } = usePermissions()
 
   const [tender,      setTender]      = useState(initialTender)
   const [items,       setItems]       = useState<any[]>(initialTender.items ?? [])
@@ -178,7 +180,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
 
         {/* Status actions */}
         <div className="flex gap-2 mb-6 flex-wrap">
-          {transitions.map(s => {
+          {canWrite('tenders') && transitions.map(s => {
             const m = STATUS_META[s]
             return (
               <button key={s} onClick={() => handleStatusChange(s)}
@@ -188,10 +190,10 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
               </button>
             )
           })}
-          <button onClick={handleGenerateQuotation} disabled={creating} className="btn-primary text-xs flex items-center gap-1.5">
+          {canWrite('tenders') && <button onClick={handleGenerateQuotation} disabled={creating} className="btn-primary text-xs flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5" />
             {creating ? 'Creating…' : 'Generate Quotation'}
-          </button>
+          </button>}
         </div>
 
         {/* Items section */}
@@ -201,9 +203,9 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
               <h2 className="font-semibold text-ink">Estimates</h2>
               <p className="text-xs text-ink-muted mt-0.5">Saved estimates linked to this tender</p>
             </div>
-            <button onClick={() => setShowAddModal(true)} className="btn-primary text-sm">
+            {canWrite('tenders') && <button onClick={() => setShowAddModal(true)} className="btn-primary text-sm">
               <Plus className="w-4 h-4" /> Add Estimate
-            </button>
+            </button>}
           </div>
 
           {items.length === 0 ? (
@@ -251,11 +253,11 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
                     <td className="px-3 py-3 text-sm text-ink-muted">{item.job?.createdAt ? format(new Date(item.job.createdAt), 'dd MMM yyyy') : '—'}</td>
                     <td className="px-4 py-3 text-xs text-ink-muted">{item.notes ?? ''}</td>
                     <td className="px-4 py-3">
-                      <button onClick={() => handleRemoveItem(item.id)}
+                      {canWrite('tenders') && <button onClick={() => handleRemoveItem(item.id)}
                         disabled={removing === item.id}
                         className="p-1 rounded text-ink-faint hover:text-red-500 transition-colors disabled:opacity-40">
                         <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      </button>}
                     </td>
                   </tr>
                 ))}
@@ -297,7 +299,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-sm text-ink">Predefined Items</h2>
-            <button onClick={addPredefinedItem} className="btn-secondary text-xs"><Plus className="w-3.5 h-3.5" /> Add Item</button>
+            {canWrite('tenders') && <button onClick={addPredefinedItem} className="btn-secondary text-xs"><Plus className="w-3.5 h-3.5" /> Add Item</button>}
           </div>
           {predefinedItems.length === 0 ? (
             <div className="card p-8 text-center text-sm text-ink-faint">No predefined items. Add mobilisation, project management, or other fixed costs.</div>
