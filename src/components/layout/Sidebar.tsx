@@ -38,8 +38,27 @@ export default function Sidebar({ role }: Props) {
   const isActive = (item: NavItem) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href)
 
-  const navContent = (
+  const settingsLink = (
+    <Link href="/settings"
+      onClick={() => setMobileOpen(false)}
+      className={`sidebar-item${pathname.startsWith('/settings') ? ' active' : ''}`}>
+      <Settings className="w-[15px] h-[15px] shrink-0" strokeWidth={1.8} />
+      <span className="text-[13px] font-medium whitespace-nowrap
+        md:opacity-0 md:group-hover/sb:opacity-100 transition-opacity duration-150 delay-75">
+        Settings
+      </span>
+    </Link>
+  )
+
+  const navContent = (mobile: boolean) => (
     <>
+      {/* Settings at top on mobile */}
+      {mobile && (
+        <div className="py-2 px-2 shrink-0" style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
+          {settingsLink}
+        </div>
+      )}
+
       {/* Nav */}
       <nav className="flex-1 py-2 flex flex-col gap-px px-2 overflow-y-auto overflow-x-hidden">
         {visible.map(item => {
@@ -59,18 +78,12 @@ export default function Sidebar({ role }: Props) {
         })}
       </nav>
 
-      {/* Bottom */}
-      <div className="py-2 px-2 shrink-0" style={{ borderTop: '1px solid var(--sidebar-border)' }}>
-        <Link href="/settings"
-          onClick={() => setMobileOpen(false)}
-          className={`sidebar-item${pathname.startsWith('/settings') ? ' active' : ''}`}>
-          <Settings className="w-[15px] h-[15px] shrink-0" strokeWidth={1.8} />
-          <span className="text-[13px] font-medium whitespace-nowrap
-            md:opacity-0 md:group-hover/sb:opacity-100 transition-opacity duration-150 delay-75">
-            Settings
-          </span>
-        </Link>
-      </div>
+      {/* Settings at bottom on desktop */}
+      {!mobile && (
+        <div className="py-2 px-2 shrink-0" style={{ borderTop: '1px solid var(--sidebar-border)' }}>
+          {settingsLink}
+        </div>
+      )}
     </>
   )
 
@@ -106,7 +119,7 @@ export default function Sidebar({ role }: Props) {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            {navContent}
+            {navContent(true)}
           </aside>
         </div>
       )}
@@ -129,7 +142,7 @@ export default function Sidebar({ role }: Props) {
             Exakt
           </span>
         </div>
-        {navContent}
+        {navContent(false)}
       </aside>
     </>
   )

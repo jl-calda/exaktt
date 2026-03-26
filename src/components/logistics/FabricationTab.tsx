@@ -12,6 +12,7 @@ interface Props {
   labourRates:       any[]
   workCategories:    any[]
   workActivityRates: any[]
+  systems:           any[]
   userRole:          CompanyRole
   onRefreshRates:          () => void
   onRefreshCategories:     () => void
@@ -57,9 +58,9 @@ const LABOUR_ICONS: Record<string, string> = {
 
 const BLANK_RATE     = { name: '', category: 'Labour', unitType: 'per_hour', unitLabel: 'hr', rate: '', notes: '' }
 const BLANK_CATEGORY = { name: '', icon: '🔧', color: '#7c3aed', description: '' }
-const BLANK_WAR      = { name: '', workCategoryId: '', labourRateId: '', speedMode: 'time_per_unit', defaultTimePerUnit: '', defaultRatePerHr: '', crewSize: '1', notes: '' }
+const BLANK_WAR      = { name: '', workCategoryId: '', labourRateId: '', speedMode: 'time_per_unit', defaultTimePerUnit: '', defaultRatePerHr: '', crewSize: '1', notes: '', systemTags: [] as string[] }
 
-export default function FabricationTab({ labourRates, workCategories, workActivityRates, userRole, onRefreshRates, onRefreshCategories, onRefreshActivityRates }: Props) {
+export default function FabricationTab({ labourRates, workCategories, workActivityRates, systems, userRole, onRefreshRates, onRefreshCategories, onRefreshActivityRates }: Props) {
   const [section, setSection] = useState<Section>('labour')
   const [confirmItem, setConfirmItem] = useState<{ type: 'rate' | 'cat' | 'war'; item: any } | null>(null)
   const isOwner = userRole === 'OWNER'
@@ -159,6 +160,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
       speedMode: w.speedMode ?? 'time_per_unit',
       defaultTimePerUnit: String(w.defaultTimePerUnit ?? ''), defaultRatePerHr: String(w.defaultRatePerHr ?? ''),
       crewSize: String(w.crewSize ?? 1), notes: w.notes ?? '',
+      systemTags: Array.isArray(w.systemTags) ? w.systemTags : [],
     })
     setWarModal(true)
   }
@@ -177,6 +179,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
       categoryName: cat?.name ?? '', categoryIcon: cat?.icon ?? '🔧',
       rateName: rate?.name ?? '', rateValue: rate?.rate ?? 0,
       rateUnitType: rate?.unitType ?? 'per_hour', rateUnitLabel: rate?.unitLabel ?? 'hr',
+      systemTags: warForm.systemTags,
     }
     if (warEditing) {
       await fetch('/api/mto/work-activity-rates', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: warEditing.id, ...payload }) })
@@ -385,6 +388,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
                           <th className="py-2 pr-4 font-medium">Labour</th>
                           <th className="py-2 pr-4 font-medium">Speed</th>
                           <th className="py-2 pr-4 font-medium">Crew</th>
+                          <th className="py-2 pr-4 font-medium">Systems</th>
                           <th className="py-2 w-16" />
                         </tr>
                       </thead>
@@ -400,6 +404,22 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
                                 : `${w.defaultTimePerUnit ?? '—'} min/unit`}
                             </td>
                             <td className="py-2 pr-4 text-ink-muted">{w.crewSize}</td>
+                            <td className="py-2 pr-4">
+                              {Array.isArray(w.systemTags) && w.systemTags.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {w.systemTags.map((sId: string) => {
+                                    const sys = systems.find((s: any) => s.id === sId)
+                                    return sys ? (
+                                      <span key={sId} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-surface-100 text-ink-muted rounded-full">
+                                        <span className="text-xs">{sys.icon}</span> {sys.shortName || sys.name}
+                                      </span>
+                                    ) : null
+                                  })}
+                                </div>
+                              ) : (
+                                <span className="text-ink-faint">—</span>
+                              )}
+                            </td>
                             <td className="py-2">
                               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
                                 <Button size="xs" variant="ghost" onClick={() => openEditWar(w)} icon={<Edit3 className="w-3 h-3" />} />
@@ -557,6 +577,33 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
             <label className="label">Notes</label>
             <input className="input" value={warForm.notes} onChange={setWar('notes')} placeholder="Optional" />
           </div>
+          {systems.length > 0 && (
+            <div>
+              <label className="label">Linked Systems</label>
+              <div className="flex flex-wrap gap-1.5 p-2 border border-surface-200 rounded-md bg-surface-50 max-h-32 overflow-y-auto">
+                {systems.map((s: any) => {
+                  const selected = warForm.systemTags.includes(s.id)
+                  return (
+                    <button key={s.id} type="button"
+                      onClick={() => setWarForm(f => ({
+                        ...f,
+                        systemTags: selected
+                          ? f.systemTags.filter((t: string) => t !== s.id)
+                          : [...f.systemTags, s.id],
+                      }))}
+                      className={`flex items-center gap-1 px-2 py-1 text-[11px] font-medium border rounded-full transition-all ${
+                        selected
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-surface-200 text-ink-muted hover:border-surface-300'
+                      }`}>
+                      <span className="text-sm">{s.icon}</span> {s.shortName || s.name}
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="text-[10px] text-ink-faint mt-1">Select which systems use this activity</div>
+            </div>
+          )}
           <div className="flex gap-2 justify-end pt-1">
             <Button size="sm" variant="secondary" onClick={() => setWarModal(false)} icon={<X className="w-3.5 h-3.5" />}>Cancel</Button>
             <Button size="sm" variant="success" onClick={saveWar} disabled={!warForm.name.trim() || !warForm.workCategoryId || !warForm.labourRateId || warLoading}

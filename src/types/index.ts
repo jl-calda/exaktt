@@ -732,6 +732,7 @@ export interface WorkActivityRate {
   defaultCrewRoles?: CrewRole[]      // default crew composition (pre-fills when activity is created from this rate)
   notes?:         string | null
   isArchived:     boolean
+  systemTags?:    string[]
 }
 
 // Instance of a WorkActivityRate applied to a bracket

@@ -136,7 +136,7 @@ export async function getMtoSystems(companyId: string) {
     where:   { companyId, isArchived: false },
     orderBy: { updatedAt: 'desc' },
     select: {
-      id: true, name: true, description: true,
+      id: true, name: true, shortName: true, description: true,
       icon: true, color: true, inputModel: true,
       createdAt: true, updatedAt: true,
       _count: { select: { mtoJobs: true } },
@@ -943,7 +943,7 @@ export async function createWorkActivityRate(
     categoryName: string; categoryIcon: string
     rateName: string; rateValue: number; rateUnitType: string; rateUnitLabel: string
     speedMode: string; defaultTimePerUnit: number; defaultRatePerHr: number; crewSize: number
-    notes: string
+    notes: string; systemTags: unknown[]
   }>
 ) {
   return prisma.workActivityRate.create({
@@ -970,6 +970,9 @@ export async function createWorkActivityRate(
 
 export async function updateWorkActivityRate(id: string, companyId: string, data: any) {
   await verifyOwnership(prisma.workActivityRate, id, companyId, 'WorkActivityRate')
+  if (Array.isArray(data.systemTags)) {
+    data.systemTags = asJson(data.systemTags)
+  }
   return prisma.workActivityRate.update({ where: { id }, data })
 }
 
