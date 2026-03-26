@@ -105,7 +105,7 @@ export default function TenderReportBuilder({
 
   /* ── UI state ─────────────────────────────────────────────────────────── */
   const [saving, setSaving]             = useState(false)
-  const [downloading, setDownloading]   = useState(false)
+
   const [error, setError]               = useState<string | null>(null)
   const [jobDropdownOpen, setJobDropdownOpen] = useState(false)
   const [textDropdownOpen, setTextDropdownOpen] = useState(false)
@@ -301,16 +301,120 @@ export default function TenderReportBuilder({
     }
   }
 
-  const downloadPdf = async () => {
-    setDownloading(true); setError(null)
-    try {
-      await saveReport()
-      window.open(`/api/tenders/${tender.id}/report/pdf`, '_blank')
-    } catch (e: any) {
-      setError(e.message ?? 'Failed to download PDF')
-    } finally {
-      setDownloading(false)
-    }
+  const openQuotationPrintPreview = () => {
+    // Build cost table rows
+    let rowNum = 0
+    const costRows = lineItems.map(item => {
+      rowNum++
+      const finalPrice = computeFinalPrice(item.amount, item.marginPct)
+      return `<tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;color:#64748b;">${rowNum}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;">
+          <div style="font-weight:500;">${item.description || 'Untitled'}</div>
+          ${item.type === 'job_line' ? `<div style="font-size:10px;color:#94a3b8;">${(item as TenderReportJobLine).systemName} &middot; ${(item as TenderReportJobLine).jobName}</div>` : ''}
+        </td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;text-align:right;font-family:monospace;font-weight:600;">${fmtCurrency(finalPrice, currency)}</td>
+      </tr>`
+    }).join('')
+
+    // Text blocks
+    const textBlocks = sections
+      .filter((s): s is TenderReportTextBlock => s.type === 'text_block')
+      .map(block => `
+        <div style="margin-bottom:12px;">
+          ${block.title ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#64748b;margin-bottom:4px;">${block.title}</div>` : ''}
+          <div style="font-size:12px;white-space:pre-wrap;">${block.content || ''}</div>
+        </div>
+      `).join('')
+
+    // Footer sections
+    const footerParts: string[] = []
+    if (paymentTerms) footerParts.push(`<div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#64748b;margin-bottom:2px;">Payment Terms</div><div style="font-size:12px;white-space:pre-wrap;">${paymentTerms}</div></div>`)
+    if (validityPeriod) footerParts.push(`<div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#64748b;margin-bottom:2px;">Validity</div><div style="font-size:12px;">${validityPeriod}</div></div>`)
+    if (disclaimer) footerParts.push(`<div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#64748b;margin-bottom:2px;">Disclaimer</div><div style="font-size:12px;color:#94a3b8;white-space:pre-wrap;">${disclaimer}</div></div>`)
+    if (notes) footerParts.push(`<div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#64748b;margin-bottom:2px;">Notes</div><div style="font-size:12px;white-space:pre-wrap;">${notes}</div></div>`)
+
+    const html = `<!DOCTYPE html><html><head>
+      <title>${title || 'Quotation'}</title>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; color: #1e293b; padding: 32px; max-width: 800px; margin: 0 auto; }
+        table { width: 100%; border-collapse: collapse; }
+        @media print {
+          body { padding: 16px; }
+          @page { margin: 16mm; }
+        }
+      </style>
+    </head><body>
+
+      <!-- Header -->
+      <div style="border-bottom:2px solid #e2e8f0;padding-bottom:16px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            ${profile?.companyName ? `<div style="font-weight:700;font-size:14px;margin-bottom:2px;">${profile.companyName}</div>` : ''}
+            ${profile?.address ? `<div style="font-size:11px;color:#64748b;">${profile.address}</div>` : ''}
+            ${profile?.registrationNumber ? `<div style="font-size:11px;color:#64748b;">${profile.registrationLabel ?? 'Reg No'}: ${profile.registrationNumber}</div>` : ''}
+          </div>
+          ${profile?.companyLogo ? `<img src="${profile.companyLogo}" alt="logo" style="height:48px;object-fit:contain;" />` : ''}
+        </div>
+      </div>
+
+      <!-- Title & Meta -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:20px;font-weight:800;">${title || 'Quotation'}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:4px;">
+          ${reference ? `Ref: ${reference} &nbsp;&middot;&nbsp;` : ''}${revisionNo ? `Rev ${revisionNo} &nbsp;&middot;&nbsp;` : ''}${date ? format(new Date(date), 'dd MMM yyyy') : ''}
+        </div>
+        ${preparedBy ? `<div style="font-size:11px;color:#64748b;">Prepared by: ${preparedBy}</div>` : ''}
+        ${validUntil ? `<div style="font-size:11px;color:#64748b;">Valid until: ${format(new Date(validUntil), 'dd MMM yyyy')}</div>` : ''}
+      </div>
+
+      <!-- Client -->
+      ${clientName ? `
+      <div style="margin-bottom:16px;padding:10px;border:1px solid #e2e8f0;border-radius:4px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#64748b;margin-bottom:4px;">Client</div>
+        <div style="font-weight:600;">${clientName}</div>
+        ${clientContact ? `<div style="font-size:11px;color:#64748b;">${clientContact}</div>` : ''}
+        ${clientEmail ? `<div style="font-size:11px;color:#64748b;">${clientEmail}</div>` : ''}
+      </div>` : ''}
+
+      <!-- Cost Table -->
+      ${lineItems.length > 0 ? `
+      <table style="margin-bottom:16px;">
+        <thead>
+          <tr style="background:#f8fafc;">
+            <th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#64748b;border-bottom:2px solid #e2e8f0;width:30px;">#</th>
+            <th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#64748b;border-bottom:2px solid #e2e8f0;">Description</th>
+            <th style="text-align:right;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#64748b;border-bottom:2px solid #e2e8f0;width:120px;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>${costRows}</tbody>
+        <tfoot>
+          <tr style="border-top:2px solid #e2e8f0;">
+            <td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;font-size:11px;color:#64748b;">Subtotal</td>
+            <td style="padding:6px 10px;text-align:right;font-family:monospace;font-weight:700;">${fmtCurrency(subtotal, currency)}</td>
+          </tr>
+          ${overallMarginPct > 0 ? `<tr>
+            <td colspan="2" style="padding:4px 10px;text-align:right;font-size:11px;color:#64748b;">Overall Margin (${overallMarginPct}%)</td>
+            <td style="padding:4px 10px;text-align:right;font-family:monospace;color:#64748b;">${fmtCurrency(grandTotal - subtotal, currency)}</td>
+          </tr>` : ''}
+          <tr style="background:#1e293b;">
+            <td colspan="2" style="padding:8px 10px;text-align:right;font-weight:700;font-size:11px;color:#fff;">GRAND TOTAL</td>
+            <td style="padding:8px 10px;text-align:right;font-family:monospace;font-weight:800;color:#fff;">${fmtCurrency(grandTotal, currency)}</td>
+          </tr>
+        </tfoot>
+      </table>` : ''}
+
+      <!-- Text Blocks -->
+      ${textBlocks ? `<div style="margin-bottom:16px;">${textBlocks}</div>` : ''}
+
+      <!-- Footer -->
+      ${footerParts.length > 0 ? `<div style="border-top:1px solid #e2e8f0;padding-top:12px;margin-top:8px;">${footerParts.join('')}</div>` : ''}
+
+    </body></html>`
+
+    const w = window.open('', '_blank', 'width=900,height=700')
+    if (w) { w.document.write(html); w.document.close(); w.print() }
   }
 
   const saveAsTemplate = async () => {
@@ -435,8 +539,8 @@ export default function TenderReportBuilder({
         )}
         <Button size="xs" variant="primary" loading={saving} icon={<Save className="w-3 h-3" />}
           onClick={saveReport} disabled={isReadOnly}>Save</Button>
-        <Button size="xs" variant="secondary" loading={downloading} icon={<Download className="w-3 h-3" />}
-          onClick={downloadPdf}>PDF</Button>
+        <Button size="xs" variant="secondary" icon={<Download className="w-3 h-3" />}
+          onClick={openQuotationPrintPreview}>PDF</Button>
       </div>
 
       {/* ── Tab Bar ─────────────────────────────────────────────────────── */}
@@ -1023,8 +1127,8 @@ export default function TenderReportBuilder({
             onClick={saveReport}>
             Save
           </Button>
-          <Button variant="secondary" fullWidth loading={downloading} icon={<Download className="w-4 h-4" />}
-            onClick={downloadPdf}>
+          <Button variant="secondary" fullWidth icon={<Download className="w-4 h-4" />}
+            onClick={openQuotationPrintPreview}>
             Download PDF
           </Button>
           <Button variant="ghost" fullWidth icon={<BookTemplate className="w-4 h-4" />}

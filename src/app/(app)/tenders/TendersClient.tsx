@@ -222,7 +222,6 @@ export default function TendersClient({
         {/* Page-level tabs */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <h1 className="font-semibold text-base text-ink">Tenders</h1>
             <div className="flex gap-1">
               {([
                 { id: 'tenders' as PageTab, label: 'Tenders', Icon: FileText },

@@ -21,6 +21,8 @@ export default async function TenderReportPage({ params }: { params: Promise<{ i
     getClients(company.id),
   ])
 
+  const templates = (company as any).tenderTemplates ?? []
+
   if (!tender) redirect('/tenders')
   if (!report) redirect(`/tenders/${id}`)
 
@@ -31,6 +33,7 @@ export default async function TenderReportPage({ params }: { params: Promise<{ i
       profile={profile}
       existingReport={report}
       clients={clientsList as any[]}
+      templates={templates}
     />
   )
 }
