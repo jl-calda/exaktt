@@ -2,9 +2,11 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, ChevronRight, CalendarDays } from 'lucide-react'
+import { Plus, ChevronRight, CalendarDays, Trash2, Edit3, Check, X, FileText, Layers } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
+import { nanoid } from 'nanoid'
 import ClientCombobox from '@/components/ui/ClientCombobox'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 type TenderStatus = 'DRAFT' | 'SUBMITTED' | 'WON' | 'LOST' | 'CANCELLED'
 
@@ -28,13 +30,31 @@ interface ClientOption {
   id: string; name: string; contactPerson?: string | null; email?: string | null; phone?: string | null
 }
 
+const BLOCK_CATEGORIES = [
+  { value: 'scope',         label: 'Scope of Work' },
+  { value: 'exclusions',    label: 'Exclusions' },
+  { value: 'payment_terms', label: 'Payment Terms' },
+  { value: 'assumptions',   label: 'Assumptions' },
+  { value: 'header',        label: 'Header' },
+  { value: 'custom',        label: 'Custom' },
+]
+
+interface TenderBlock {
+  id: string; name: string; category: string; blockTitle?: string; blockContent?: string
+}
+
 interface Props {
   initialTenders: any[]
   initialClients: ClientOption[]
+  initialBlocks?: TenderBlock[]
 }
 
-export default function TendersClient({ initialTenders, initialClients }: Props) {
+export default function TendersClient({ initialTenders, initialClients, initialBlocks = [] }: Props) {
   const router = useRouter()
+
+  /* ── Page tab ─────────────────────────────────────────────── */
+  type PageTab = 'tenders' | 'blocks'
+  const [pageTab, setPageTab] = useState<PageTab>('tenders')
 
   const [tenders,     setTenders]     = useState(initialTenders)
   const [clients,     setClients]     = useState<ClientOption[]>(initialClients)
@@ -74,16 +94,90 @@ export default function TendersClient({ initialTenders, initialClients }: Props)
     setNewName(''); setNewClientName(''); setNewClientId(null); setNewRef(''); setNewDate('')
   }
 
+  /* ── Blocks state ─────────────────────────────────────────── */
+  const [blocks, setBlocks] = useState<TenderBlock[]>(initialBlocks)
+  const [blockEditing, setBlockEditing] = useState<string | null>(null)
+  const [blockForm, setBlockForm] = useState({ name: '', category: 'custom', blockTitle: '', blockContent: '' })
+  const [blockAdding, setBlockAdding] = useState(false)
+  const [blockSaving, setBlockSaving] = useState(false)
+  const [blockDeleteId, setBlockDeleteId] = useState<string | null>(null)
+
+  const saveBlocks = async (next: TenderBlock[]) => {
+    setBlockSaving(true)
+    await fetch('/api/tenders/blocks', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ blocks: next }),
+    })
+    setBlocks(next)
+    setBlockSaving(false)
+  }
+
+  const addBlock = () => {
+    if (!blockForm.name.trim()) return
+    const next = [...blocks, { id: nanoid(), ...blockForm }]
+    saveBlocks(next)
+    setBlockForm({ name: '', category: 'custom', blockTitle: '', blockContent: '' })
+    setBlockAdding(false)
+  }
+
+  const updateBlock = () => {
+    if (!blockEditing || !blockForm.name.trim()) return
+    const next = blocks.map(b => b.id === blockEditing ? { ...b, ...blockForm } : b)
+    saveBlocks(next)
+    setBlockEditing(null)
+  }
+
+  const removeBlock = (id: string) => {
+    saveBlocks(blocks.filter(b => b.id !== id))
+    setBlockDeleteId(null)
+  }
+
+  const startEditBlock = (b: TenderBlock) => {
+    setBlockEditing(b.id)
+    setBlockForm({ name: b.name, category: b.category, blockTitle: b.blockTitle ?? '', blockContent: b.blockContent ?? '' })
+    setBlockAdding(false)
+  }
+
   return (
     <div className="min-h-full">
       <main className="px-4 py-4 md:px-6 md:py-5">
 
+        {/* Page-level tabs */}
         <div className="flex items-center justify-between mb-4">
-          <h1 className="font-semibold text-base text-ink">Tenders</h1>
-          <button onClick={() => setCreating(v => !v)} className="btn-primary text-sm">
-            <Plus className="w-4 h-4" /> New Tender
-          </button>
+          <div className="flex items-center gap-4">
+            <h1 className="font-semibold text-base text-ink">Tenders</h1>
+            <div className="flex gap-1">
+              {([
+                { id: 'tenders' as PageTab, label: 'Tenders', Icon: FileText },
+                { id: 'blocks' as PageTab, label: 'Blocks', Icon: Layers },
+              ]).map(t => (
+                <button key={t.id} onClick={() => setPageTab(t.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                    pageTab === t.id ? 'bg-primary/10 text-primary font-semibold' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
+                  }`} style={{ borderRadius: 'var(--radius)' }}>
+                  <t.Icon className="w-3.5 h-3.5" />
+                  {t.label}
+                  {t.id === 'blocks' && blocks.length > 0 && (
+                    <span className="text-[10px] text-ink-faint ml-0.5">({blocks.length})</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+          {pageTab === 'tenders' && (
+            <button onClick={() => setCreating(v => !v)} className="btn-primary text-sm">
+              <Plus className="w-4 h-4" /> New Tender
+            </button>
+          )}
+          {pageTab === 'blocks' && (
+            <button onClick={() => { setBlockAdding(v => !v); setBlockEditing(null) }} className="btn-primary text-sm">
+              <Plus className="w-4 h-4" /> New Block
+            </button>
+          )}
         </div>
+
+        {pageTab === 'tenders' && (<>
+        {/* Tenders tab content */}
 
         {/* Create form */}
         {creating && (
@@ -200,6 +294,104 @@ export default function TendersClient({ initialTenders, initialClients }: Props)
                 </button>
               )
             })}
+          </div>
+        )}
+        </>)}
+
+        {/* ── Blocks Tab ────────────────────────────────────────── */}
+        {pageTab === 'blocks' && (
+          <div className="space-y-4">
+            {/* Add block form */}
+            {blockAdding && (
+              <div className="card p-4 border-primary/30 bg-primary/5 space-y-3">
+                <div className="text-xs font-bold text-primary uppercase tracking-wide">New Block</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Name *</label>
+                    <input className="input" value={blockForm.name} onChange={e => setBlockForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Standard Payment Terms" autoFocus />
+                  </div>
+                  <div>
+                    <label className="label">Category</label>
+                    <select className="input" value={blockForm.category} onChange={e => setBlockForm(f => ({ ...f, category: e.target.value }))}>
+                      {BLOCK_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="label">Block Title (optional)</label>
+                  <input className="input" value={blockForm.blockTitle} onChange={e => setBlockForm(f => ({ ...f, blockTitle: e.target.value }))} placeholder="Title shown in the PDF" />
+                </div>
+                <div>
+                  <label className="label">Content</label>
+                  <textarea className="input resize-none" rows={4} value={blockForm.blockContent}
+                    onChange={e => setBlockForm(f => ({ ...f, blockContent: e.target.value }))}
+                    placeholder="Block content text..." />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={addBlock} disabled={!blockForm.name.trim() || blockSaving} className="btn-primary text-sm">
+                    <Check className="w-3.5 h-3.5" /> {blockSaving ? 'Saving...' : 'Add Block'}
+                  </button>
+                  <button onClick={() => setBlockAdding(false)} className="btn-secondary text-sm">
+                    <X className="w-3.5 h-3.5" /> Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Block list */}
+            {blocks.length === 0 && !blockAdding && (
+              <div className="card p-12 text-center text-sm text-ink-faint">
+                No blocks yet. Create reusable text blocks for your quotations — scope of work, payment terms, exclusions, etc.
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {blocks.map(b => {
+                const isEd = blockEditing === b.id
+                const catMeta = BLOCK_CATEGORIES.find(c => c.value === b.category)
+                return (
+                  <div key={b.id} className={`card p-4 ${isEd ? 'ring-2 ring-primary' : ''}`}>
+                    {!isEd ? (
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm text-ink">{b.name}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-surface-100 text-ink-muted">{catMeta?.label ?? b.category}</span>
+                          </div>
+                          {b.blockTitle && <div className="text-xs text-ink-muted mt-0.5">{b.blockTitle}</div>}
+                          {b.blockContent && <div className="text-xs text-ink-faint mt-1 line-clamp-2">{b.blockContent}</div>}
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <button onClick={() => startEditBlock(b)} className="p-1.5 rounded text-ink-muted hover:bg-surface-200 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setBlockDeleteId(b.id)} className="p-1.5 rounded text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div><label className="label">Name *</label><input className="input" value={blockForm.name} onChange={e => setBlockForm(f => ({ ...f, name: e.target.value }))} autoFocus /></div>
+                          <div><label className="label">Category</label><select className="input" value={blockForm.category} onChange={e => setBlockForm(f => ({ ...f, category: e.target.value }))}>{BLOCK_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
+                        </div>
+                        <div><label className="label">Block Title</label><input className="input" value={blockForm.blockTitle} onChange={e => setBlockForm(f => ({ ...f, blockTitle: e.target.value }))} /></div>
+                        <div><label className="label">Content</label><textarea className="input resize-none" rows={4} value={blockForm.blockContent} onChange={e => setBlockForm(f => ({ ...f, blockContent: e.target.value }))} /></div>
+                        <div className="flex gap-2">
+                          <button onClick={updateBlock} disabled={!blockForm.name.trim() || blockSaving} className="btn-primary text-sm"><Check className="w-3.5 h-3.5" /> Save</button>
+                          <button onClick={() => setBlockEditing(null)} className="btn-secondary text-sm"><X className="w-3.5 h-3.5" /> Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <ConfirmModal
+              open={blockDeleteId !== null}
+              title="Delete block?"
+              message="This block will be permanently removed. Existing reports that used it will not be affected."
+              onConfirm={() => { if (blockDeleteId) removeBlock(blockDeleteId) }}
+              onCancel={() => setBlockDeleteId(null)}
+            />
           </div>
         )}
       </main>

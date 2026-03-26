@@ -1,7 +1,7 @@
 // src/app/api/tenders/[id]/report/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getTenderReport, createTenderReport, updateTenderReport, archiveTenderReport } from '@/lib/db/queries'
+import { getTenderReport, createTenderReport, updateTenderReport, archiveTenderReport, duplicateTenderReport } from '@/lib/db/queries'
 import { requireAccess, ForbiddenError, UnauthorizedError } from '@/lib/auth/access'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -28,6 +28,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const ctx = await requireAccess(user.id, 'tenders', 'write')
     const body = await req.json()
+    // Duplicate existing report
+    if (body._action === 'duplicate' && body.reportId) {
+      const dup = await duplicateTenderReport(body.reportId, ctx.companyId, user.id)
+      return NextResponse.json({ data: dup })
+    }
     const report = await createTenderReport(ctx.companyId, user.id, id, body)
     return NextResponse.json({ data: report })
   } catch (err) {
