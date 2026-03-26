@@ -1,6 +1,6 @@
 // src/components/tender/TenderReportBuilder.tsx
 'use client'
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { nanoid } from 'nanoid'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
@@ -8,11 +8,14 @@ import {
   Plus, Trash2, ChevronUp, ChevronDown, Download, Save,
   BookTemplate, FileText, GripVertical, DollarSign, Type,
   Briefcase, X, ArrowLeft, Lock, Unlock, Upload, ImageIcon,
-  ClipboardList, StickyNote,
+  ClipboardList, StickyNote, Calculator,
 } from 'lucide-react'
 import { Button, Input, Select } from '@/components/ui'
 import { NumberInput } from '@/components/ui/Input'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import CalculatorTab from '@/components/calculator/CalculatorTab'
+import { computeMultiRun } from '@/lib/engine/compute'
+import { useCalcStore } from '@/store'
 import type {
   TenderReport,
   TenderReportSection,
@@ -114,7 +117,7 @@ export default function TenderReportBuilder({
 
   /* ── New: Tabs, status, notes, submit ────────────────────────────────── */
   const router = useRouter()
-  type TabId = 'setup' | 'summary' | 'notes'
+  type TabId = 'setup' | 'summary' | 'notes' | 'calculator'
   const [tab, setTab] = useState<TabId>('setup')
   type SetupSubTab = 'runs' | 'blocks' | 'document'
   const [setupSubTab, setSetupSubTab] = useState<SetupSubTab>('runs')
@@ -123,6 +126,63 @@ export default function TenderReportBuilder({
   const [confirmAction, setConfirmAction] = useState<'submit' | 'revert' | null>(null)
   const isReadOnly = status === 'submitted'
   const reportId = existingReport?.id
+
+  /* ── Calculator tab state ────────────────────────────────────────────── */
+  const calc = useCalcStore()
+  const [calcSystems, setCalcSystems] = useState<any[]>([])
+  const [selectedSystemId, setSelectedSystemId] = useState<string | null>(null)
+  const [selectedSystem, setSelectedSystem] = useState<any>(null)
+  const [systemJobs, setSystemJobs] = useState<any[]>([])
+  const [loadingSystem, setLoadingSystem] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/mto/systems').then(r => r.json()).then(j => { if (j.data) setCalcSystems(j.data) }).catch(() => {})
+  }, [])
+
+  const selectSystem = async (sysId: string) => {
+    if (!sysId) return
+    setSelectedSystemId(sysId)
+    setLoadingSystem(true)
+    calc.resetCalc()
+    try {
+      const [sysRes, jobsRes] = await Promise.all([
+        fetch(`/api/mto/systems/${sysId}`).then(r => r.json()),
+        fetch(`/api/mto/jobs?systemId=${sysId}`).then(r => r.json()),
+      ])
+      setSelectedSystem(sysRes.data)
+      setSystemJobs(jobsRes.data ?? [])
+    } catch {} finally { setLoadingSystem(false) }
+  }
+
+  const handleRunCalc = useCallback(() => {
+    if (!selectedSystem) return
+    const result = computeMultiRun(calc.runs, selectedSystem, calc.stockOptimMode as any)
+    calc.setMultiResults(result)
+    calc.setLastCalc(Date.now(), {})
+  }, [calc, selectedSystem])
+
+  const handleSaveCalcJob = async (name: string, lastResults?: any, notes?: string): Promise<string | void> => {
+    if (!selectedSystemId) return
+    const res = await fetch('/api/mto/jobs', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemId: selectedSystemId, name, notes,
+        runs: calc.runs, stockOptimMode: calc.stockOptimMode,
+        calculatedAt: new Date().toISOString(),
+        lastResults,
+      }),
+    })
+    const { data: job } = await res.json()
+    if (!job?.id) return
+    // Auto-link to tender
+    await fetch(`/api/tenders/${tender.id}/items`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ systemId: selectedSystemId, jobId: job.id }),
+    }).catch(() => {})
+    // Refresh jobs
+    fetch(`/api/mto/jobs?systemId=${selectedSystemId}`).then(r => r.json()).then(j => { if (j.data) setSystemJobs(j.data) }).catch(() => {})
+    return job.id
+  }
 
   const handleSubmitStatus = async (newStatus: 'draft' | 'submitted') => {
     if (!reportId) return
@@ -564,6 +624,7 @@ export default function TenderReportBuilder({
           { id: 'setup' as TabId, label: 'Setup', Icon: FileText },
           { id: 'summary' as TabId, label: 'Job Summary', Icon: ClipboardList },
           { id: 'notes' as TabId, label: 'Notes', Icon: StickyNote },
+          { id: 'calculator' as TabId, label: 'Calculator', Icon: Calculator },
         ]).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -697,6 +758,64 @@ export default function TenderReportBuilder({
                 </table>
               </div>
             </>
+          )}
+        </div>
+      )}
+
+      {/* ── Calculator Tab ────────────────────────────────────────── */}
+      {tab === 'calculator' && (
+        <div className="p-4 md:p-6 space-y-4">
+          {/* System picker */}
+          <div className="card p-4">
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <span className="text-sm">🧮</span>
+              <span className="text-xs font-semibold text-ink">Select Product</span>
+              <span className="text-xs text-ink-faint">— choose a system to run calculations</span>
+              <div className="flex-1 h-px bg-surface-200" />
+            </div>
+            <Select label="Product / System" value={selectedSystemId ?? ''}
+              onChange={e => e.target.value ? selectSystem(e.target.value) : null}
+              options={[{ value: '', label: '— choose a system —' }, ...calcSystems.map((s: any) => ({ value: s.id, label: `${s.icon} ${s.name}` }))]} />
+          </div>
+
+          {loadingSystem && <div className="text-center py-8 text-sm text-ink-faint">Loading system...</div>}
+
+          {/* Existing runs for this system */}
+          {selectedSystem && systemJobs.length > 0 && (
+            <div className="card p-4">
+              <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wide mb-2">Saved Runs for {selectedSystem.name}</h3>
+              <div className="divide-y divide-surface-100">
+                {systemJobs.slice(0, 8).map((job: any) => (
+                  <div key={job.id} className="flex items-center justify-between py-2">
+                    <div>
+                      <span className="text-xs font-medium text-ink">{job.name}</span>
+                      {job.notes && <span className="text-[10px] text-ink-faint ml-2">{job.notes}</span>}
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-ink-faint">
+                      {job.createdBy?.name && <span>{job.createdBy.name}</span>}
+                      {job.calculatedAt && <span>{format(new Date(job.calculatedAt), 'dd MMM')}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Calculator */}
+          {selectedSystem && !loadingSystem && (
+            <CalculatorTab
+              sys={selectedSystem}
+              jobs={systemJobs}
+              onSaveJob={handleSaveCalcJob}
+              onRunCalc={handleRunCalc}
+              globalTags={[]}
+            />
+          )}
+
+          {!selectedSystem && !loadingSystem && (
+            <div className="card p-12 text-center text-sm text-ink-faint">
+              Select a product above to start calculating.
+            </div>
           )}
         </div>
       )}
