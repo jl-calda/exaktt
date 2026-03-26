@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getTenders, getUserCompany } from '@/lib/db/queries'
+import { getTenders, getUserCompany, getAllTenderReports } from '@/lib/db/queries'
 import { prisma } from '@/lib/db/prisma'
 import TendersClient from './TendersClient'
 
@@ -13,7 +13,7 @@ export default async function TendersPage() {
   if (!user) redirect('/auth/login')
   const company = await getUserCompany(user.id)
   if (!company) redirect('/auth/login')
-  const tenders = await getTenders(company.id)
+  const [tenders, allReports] = await Promise.all([getTenders(company.id), getAllTenderReports(company.id)])
   const blocks = (company as any).tenderTemplates ?? []
   const reportDefaults = (company as any).tenderReportDefaults ?? {}
   const predefinedItemsLibrary = (company as any).predefinedItemsLibrary ?? []
@@ -23,6 +23,7 @@ export default async function TendersPage() {
       initialBlocks={blocks}
       initialReportDefaults={reportDefaults}
       initialPredefinedItemsLibrary={predefinedItemsLibrary}
+      initialReports={allReports as any[]}
     />
   )
 }
