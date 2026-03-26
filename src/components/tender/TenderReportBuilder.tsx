@@ -29,11 +29,12 @@ import type {
 /* ────────────────────────────────────────────────────────────────────────── */
 
 interface Props {
-  tender: any                    // Tender with items, client
+  tender: any                    // Tender with items
   tenderItems: any[]             // TenderItem[] with system and job data
   profile?: any                  // CompanyProfile for branding defaults
   existingReport?: any           // Existing TenderReport to edit (or null for new)
   templates?: TenderTemplate[]   // Company templates
+  clients?: any[]                // Client[] for report-level client selection
   onClose?: () => void
 }
 
@@ -66,6 +67,7 @@ export default function TenderReportBuilder({
   profile,
   existingReport,
   templates = [],
+  clients = [],
   onClose,
 }: Props) {
 
@@ -81,6 +83,12 @@ export default function TenderReportBuilder({
   const [preparedBy, setPreparedBy] = useState(existingReport?.preparedBy ?? profile?.defaultPreparedBy ?? '')
   const [revisionNo, setRevisionNo] = useState(existingReport?.revisionNo ?? '1')
   const [currency, setCurrency]     = useState(existingReport?.currency ?? profile?.defaultCurrency ?? 'SGD')
+
+  /* ── Client state (report-level) ─────────────────────────────────────── */
+  const [clientName, setClientName]       = useState(existingReport?.clientName ?? '')
+  const [clientContact, setClientContact] = useState(existingReport?.clientContact ?? '')
+  const [clientEmail, setClientEmail]     = useState(existingReport?.clientEmail ?? '')
+  const [clientAddr, setClientAddr]       = useState(existingReport?.clientAddr ?? '')
 
   /* ── Sections state ───────────────────────────────────────────────────── */
   const [sections, setSections] = useState<TenderReportSection[]>(existingReport?.sections ?? [])
@@ -268,10 +276,10 @@ export default function TenderReportBuilder({
     registrationNo: profile?.registrationNumber ?? null,
     registrationLabel: profile?.registrationLabel ?? null,
     accentColor: profile?.reportAccentColor ?? null,
-    clientName: tender?.client?.name ?? null,
-    clientContact: tender?.client?.contactPerson ?? null,
-    clientEmail: tender?.client?.email ?? null,
-    clientAddr: tender?.client?.address ?? null,
+    clientName: clientName || null,
+    clientContact: clientContact || null,
+    clientEmail: clientEmail || null,
+    clientAddr: clientAddr || null,
   })
 
   /* ── API calls ────────────────────────────────────────────────────────── */
@@ -600,6 +608,28 @@ export default function TenderReportBuilder({
             onChange={e => setCurrency(e.target.value)}
             options={['SGD','USD','AUD','GBP','EUR','MYR'].map(c => ({ value: c, label: c }))}
           />
+        </div>
+
+        {/* ── Client (report-level) ───────────────────────────────── */}
+        <div className="card p-4 space-y-3">
+          <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wide">Client / Recipient</h3>
+          <Select label="Select Client" value={clientName}
+            onChange={e => {
+              const c = clients.find((cl: any) => cl.name === e.target.value)
+              setClientName(c?.name ?? e.target.value)
+              setClientContact(c?.contactPerson ?? '')
+              setClientEmail(c?.email ?? '')
+              setClientAddr(c?.address ?? '')
+            }}
+            options={[{ value: '', label: '— select client —' }, ...clients.map((c: any) => ({ value: c.name, label: c.name }))]}
+            disabled={isReadOnly}
+          />
+          {clientName && (
+            <div className="grid grid-cols-2 gap-3">
+              <Input label="Contact Person" value={clientContact} onChange={e => setClientContact(e.target.value)} disabled={isReadOnly} />
+              <Input label="Email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} disabled={isReadOnly} />
+            </div>
+          )}
         </div>
 
         {/* ── Setup Sub-Tabs ──────────────────────────────────────── */}
@@ -1024,7 +1054,6 @@ export default function TenderReportBuilder({
                   <span>{date ? format(new Date(date), 'dd MMM yyyy') : ''}</span>
                 </div>
                 {preparedBy && <div className="text-xs text-ink-muted mt-0.5">Prepared by: {preparedBy}</div>}
-                {tender?.client?.name && <div className="text-xs text-ink-muted">Client: {tender.client.name}</div>}
                 {validUntil && <div className="text-xs text-ink-muted">Valid until: {format(new Date(validUntil), 'dd MMM yyyy')}</div>}
               </div>
               {profile?.companyLogo && (

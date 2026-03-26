@@ -883,6 +883,14 @@ export interface WorkScheduleSummary {
   totalThirdPartyCost?:  number
 }
 
+// ─── Tender Predefined Items ──────────────────────────────────────────────────
+
+export interface TenderPredefinedItem {
+  id: string
+  description: string
+  amount: number
+}
+
 // ─── Tender Report (Quotation Builder) ────────────────────────────────────────
 
 export type TenderReportSectionType = 'job_line' | 'custom_line' | 'text_block'
