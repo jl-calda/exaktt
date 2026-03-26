@@ -31,7 +31,7 @@ interface Props {
 // Tag + FormulaCell: small JSX helpers kept inline
 function Tag({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-surface-100 text-ink-faint border border-surface-200 leading-none whitespace-nowrap">
+    <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-medium bg-surface-100 text-ink-faint border border-surface-200/60 leading-none whitespace-nowrap">
       {label}
     </span>
   )
@@ -73,7 +73,7 @@ function CalcBreakdownPanel({ sys, runs, multiResults, workSchedule }: {
   }
   return (
     <div className="card overflow-hidden">
-      <div className="px-4 py-3 bg-surface-50 border-b border-surface-200 flex items-center justify-between">
+      <div className="card-header">
         <div className="flex items-center gap-2">
           <TableProperties className="w-4 h-4 text-ink-muted" />
           <span className="font-semibold text-sm text-ink">Calculation Breakdown</span>
@@ -526,9 +526,9 @@ function CalcStep({ n, children }: { n: number; children: React.ReactNode }) {
         </div>
         <span className="text-xs font-semibold text-ink">{step.label}</span>
         <span className="text-xs text-ink-faint">— {step.desc}</span>
-        <div className="flex-1 h-px bg-surface-200" />
+        <div className="flex-1 h-px bg-surface-200/60" />
       </div>
-      <div className="space-y-3 pl-3.5 border-l-2 border-surface-200">
+      <div className="space-y-3 pl-3.5 border-l-2 border-surface-200/50">
         {children}
       </div>
     </div>
@@ -549,10 +549,12 @@ const CALC_GUIDE_ITEMS = [
 function CalcFieldGuide({ onClose }: { onClose: () => void }) {
   return (
     <div className="card overflow-hidden border-primary/20 border animate-fade-in">
-      <div className="px-4 py-3 bg-primary/5 border-b border-primary/10 flex items-center gap-2">
-        <BookOpen className="w-4 h-4 text-primary" />
-        <span className="text-xs font-bold text-ink flex-1">Calculator Field Guide</span>
-        <button onClick={onClose} className="text-ink-faint hover:text-ink"><X className="w-3.5 h-3.5" /></button>
+      <div className="card-header bg-primary/5 !border-primary/10">
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-4 h-4 text-primary" />
+          <span className="text-xs font-bold text-ink">Calculator Field Guide</span>
+        </div>
+        <button onClick={onClose} className="text-ink-faint hover:text-ink p-1 rounded-lg hover:bg-surface-100 transition-colors"><X className="w-3.5 h-3.5" /></button>
       </div>
       <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
         {CALC_GUIDE_ITEMS.map(item => (
@@ -1276,7 +1278,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                 style={{ borderRadius: 'var(--radius)' }}>3</div>
               <span className="text-xs font-semibold text-ink">Results</span>
               <span className="text-xs text-ink-faint">— Calculated material quantities and costs</span>
-              <div className="flex-1 h-px bg-surface-200" />
+              <div className="flex-1 h-px bg-surface-200/60" />
             </div>
             {deletedMats.length > 0 && (
               <div className="bg-red-50 border border-red-200 p-4 flex gap-3" style={{ borderRadius: 'var(--radius-card)' }}>
@@ -1412,7 +1414,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
             })()}
             {combinedWithBrackets.some((m: any) => m.allBlocked) && (
               <div className="card overflow-hidden">
-                <div className="px-4 py-3 bg-surface-100 border-b border-surface-200 text-xs font-semibold text-ink-muted">Gated Materials</div>
+                <div className="card-header text-xs font-semibold text-ink-muted">Gated Materials</div>
                 <div className="p-4 flex flex-wrap gap-2">
                   {combinedWithBrackets.filter((m: any) => m.allBlocked).map((mat: any) => (
                     <span key={mat.id} className="badge bg-surface-100 text-ink-muted">{mat.name}</span>
@@ -1439,9 +1441,11 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
               if (grandTotal === 0) return null
               return (
                 <div className="card overflow-hidden border-2 border-primary/30">
-                  <div className="px-4 py-2.5 bg-primary/5 border-b border-primary/20 flex items-center gap-2">
-                    <span className="text-base">💰</span>
-                    <span className="font-semibold text-sm text-ink">Overall Total</span>
+                  <div className="card-header bg-primary/5 !border-primary/20">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">💰</span>
+                      <span className="font-semibold text-sm text-ink">Overall Total</span>
+                    </div>
                   </div>
                   <div className="px-4 py-3 flex flex-wrap gap-4 items-end">
                     {matTotal > 0 && (

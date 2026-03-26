@@ -56,7 +56,7 @@ export default function SettingsTab({ tags, onTagsChange }: Props) {
         </div>
 
         {/* Add new tag */}
-        <div className="mt-5 flex flex-wrap gap-3 items-end p-4 bg-surface-100 rounded-xl border border-surface-300">
+        <div className="mt-5 flex flex-wrap gap-3 items-end p-4 bg-surface-100 rounded-2xl border border-surface-200/60">
           <div className="flex-1 min-w-36">
             <label className="label">New tag name</label>
             <input value={newName} onChange={e => setNewName(e.target.value)}
@@ -69,7 +69,7 @@ export default function SettingsTab({ tags, onTagsChange }: Props) {
               {TAG_COLORS.map(c => (
                 <button key={c} type="button" onClick={() => setNewColor(c)}
                   style={{ background: c, outline: newColor === c ? `3px solid ${c}` : 'none', outlineOffset: 2 }}
-                  className="w-6 h-6 rounded-md transition-all" />
+                  className="w-6 h-6 rounded-lg transition-all" />
               ))}
             </div>
           </div>
@@ -101,7 +101,7 @@ export default function SettingsTab({ tags, onTagsChange }: Props) {
               const isEd = editingId === t.id
               return (
                 <div key={t.id}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isEd ? 'border-primary bg-primary/5' : 'border-surface-300 bg-surface-50'}`}>
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isEd ? 'border-primary bg-primary/5' : 'border-surface-200/60 bg-surface-50'}`}>
                   <span style={{ background: isEd ? editDraft?.color : t.color }}
                     className="w-3 h-3 rounded-full flex-shrink-0" />
 
@@ -114,7 +114,7 @@ export default function SettingsTab({ tags, onTagsChange }: Props) {
                         {TAG_COLORS.map(c => (
                           <button key={c} onClick={() => setEditDraft(d => ({ ...d, color: c }))}
                             style={{ background: c, outline: editDraft.color === c ? `2px solid ${c}` : 'none', outlineOffset: 1 }}
-                            className="w-5 h-5 rounded" />
+                            className="w-5 h-5 rounded-lg" />
                         ))}
                       </div>
                       <button onClick={saveEdit} className="text-emerald-600 hover:text-emerald-700 p-1">

@@ -105,8 +105,8 @@ export default function SystemShell({ system: initialSystem, initialJobs, global
           <nav className="flex gap-1">
             {tabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  tab === t.id ? 'bg-primary text-white' : 'text-white/50 hover:text-white hover:bg-white/10'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${
+                  tab === t.id ? 'bg-primary text-white shadow-sm' : 'text-white/50 hover:text-white hover:bg-white/10'
                 }`}>
                 {t.icon} <span className="hidden sm:inline">{t.label}</span>
               </button>

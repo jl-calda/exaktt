@@ -459,8 +459,8 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
   }
 
   return (
-    <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
-      <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
+    <div className="card overflow-hidden">
+      <div className="card-header">
         <div>
           <h3 className="font-semibold text-sm text-ink">🔩 Sub-assemblies</h3>
           <p className="text-xs text-ink-muted mt-0.5">Composite assemblies with bill of materials and fabrication activities.</p>
@@ -483,7 +483,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
         </div>
       )}
 
-      <div className="divide-y divide-surface-200" key="list">
+      <div className="divide-y divide-surface-200/40" key="list">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-surface-100 border-b border-surface-200 text-left">
