@@ -993,6 +993,17 @@ export async function getTenderReports(tenderId: string, companyId: string) {
   })
 }
 
+export async function getAllTenderReports(companyId: string) {
+  return prisma.tenderReport.findMany({
+    where: { companyId, isArchived: false },
+    select: {
+      id: true, reference: true, clientName: true, status: true, date: true, validUntil: true, revisionNo: true,
+      tender: { select: { id: true, name: true, status: true } },
+    },
+    orderBy: { date: 'desc' },
+  })
+}
+
 export async function getTenderReportById(id: string, companyId: string) {
   return prisma.tenderReport.findFirst({
     where: { id, companyId, isArchived: false },

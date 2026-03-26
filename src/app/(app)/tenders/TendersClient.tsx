@@ -1,6 +1,6 @@
 // src/app/(app)/tenders/TendersClient.tsx
 'use client'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus, ChevronRight, ChevronDown, CalendarDays, Trash2, Edit3, Check, X,
@@ -43,6 +43,7 @@ interface Props {
   initialBlocks?: TenderBlock[]
   initialReportDefaults?: any
   initialPredefinedItemsLibrary?: any[]
+  initialReports?: any[]
 }
 
 export default function TendersClient({
@@ -50,6 +51,7 @@ export default function TendersClient({
   initialBlocks = [],
   initialReportDefaults,
   initialPredefinedItemsLibrary,
+  initialReports,
 }: Props) {
   const router = useRouter()
 
@@ -74,14 +76,39 @@ export default function TendersClient({
   const [newRef,   setNewRef]   = useState('')
   const [newDate,  setNewDate]  = useState('')
 
-  /* ── Collapsible groups ─────────────────────────────────────── */
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
-  const toggleSection = (status: string) =>
-    setCollapsed(prev => {
-      const next = new Set(prev)
-      next.has(status) ? next.delete(status) : next.add(status)
-      return next
-    })
+  /* ── Reports state ─────────────────────────────────────────── */
+  const [allReports] = useState(initialReports ?? [])
+  const [calMonth, setCalMonth] = useState(new Date())
+
+  // Calendar helpers
+  const calendarDays = useMemo(() => {
+    const year = calMonth.getFullYear(), month = calMonth.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const startOffset = (firstDay.getDay() + 6) % 7 // Monday start
+    const days: Date[] = []
+    for (let i = -startOffset; i <= lastDay.getDate() + (6 - (lastDay.getDay() + 6) % 7) - 1; i++) {
+      days.push(new Date(year, month, i + 1))
+    }
+    return days
+  }, [calMonth])
+
+  const isSameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+
+  const expiryDates = useMemo(() => {
+    const now = new Date()
+    return allReports
+      .filter(r => r.validUntil)
+      .map(r => {
+        const d = new Date(r.validUntil)
+        const daysLeft = Math.ceil((d.getTime() - now.getTime()) / 86400000)
+        return { ...r, date: d, daysLeft, color: daysLeft <= 0 ? 'bg-red-500' : daysLeft <= 7 ? 'bg-amber-500' : 'bg-emerald-500' }
+      })
+  }, [allReports])
+
+  const upcomingExpiry = useMemo(() => {
+    return expiryDates.filter(d => d.daysLeft > 0 && d.daysLeft <= 30).sort((a, b) => a.daysLeft - b.daysLeft)
+  }, [expiryDates])
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -284,45 +311,127 @@ export default function TendersClient({
             })}
           </div>
 
-          {/* Collapsible Status Groups */}
-          <div className="card overflow-hidden">
-            {ALL_STATUSES.map(status => {
-              const items = tenders.filter(t => t.status === status)
-              const meta = STATUS_META[status]
-              const isCollapsed = collapsed.has(status)
-              const Chevron = isCollapsed ? ChevronRight : ChevronDown
-              return (
-                <div key={status}>
-                  <div className="cursor-pointer select-none border-b border-t" onClick={() => toggleSection(status)}
-                    style={{ background: meta.bg + '40', borderColor: 'var(--color-surface-200)' }}>
-                    <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderLeft: `3px solid ${meta.color}` }}>
-                      <Chevron className="w-3.5 h-3.5" style={{ color: meta.color }} />
-                      <span className="font-semibold text-xs" style={{ color: meta.color }}>{meta.label}</span>
-                      <span className="text-[10px] text-ink-faint">({items.length})</span>
+          {/* Recent Items & Validity Calendar */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            {/* Recent Reports */}
+            <div className="card overflow-hidden">
+              <div className="px-4 py-3 border-b border-surface-200 flex items-center justify-between">
+                <span className="font-semibold text-xs text-ink">Recent Quotations</span>
+              </div>
+              <div className="divide-y divide-surface-200">
+                {allReports.slice(0, 5).map(r => (
+                  <button key={r.id} onClick={() => router.push(`/tenders/${r.tender?.id}/report/${r.id}`)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-50 transition-colors text-left group">
+                    <FileText className="w-3.5 h-3.5 text-ink-faint flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-ink group-hover:text-primary truncate">
+                        {r.reference || 'Untitled'} {r.clientName ? `— ${r.clientName}` : ''}
+                      </div>
+                      <div className="text-[10px] text-ink-faint">
+                        {r.tender?.name} · {r.date ? format(new Date(r.date), 'dd MMM yyyy') : ''}
+                      </div>
                     </div>
-                  </div>
-                  {!isCollapsed && (
-                    <div className="divide-y divide-surface-100">
-                      {items.length === 0 && <div className="px-4 py-4 text-center text-xs text-ink-faint">No {meta.label.toLowerCase()} tenders</div>}
-                      {items.map(t => (
-                        <button key={t.id} onClick={() => router.push(`/tenders/${t.id}`)}
-                          className="w-full flex items-center gap-4 px-5 py-3 hover:bg-surface-50 transition-colors text-left group">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-sm text-ink group-hover:text-primary transition-colors truncate">{t.name}</div>
-                            <div className="flex items-center gap-3 text-xs text-ink-faint mt-0.5">
-                              {t.reference && <span className="font-mono">{t.reference}</span>}
-                              {t.submissionDate && <span>{format(new Date(t.submissionDate), 'dd MMM yyyy')}</span>}
-                              <span>{t._count?.items ?? 0} estimates</span>
-                            </div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-ink-faint group-hover:text-primary flex-shrink-0" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${r.status === 'submitted' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{r.status}</span>
+                  </button>
+                ))}
+                {allReports.length === 0 && <div className="px-4 py-6 text-center text-xs text-ink-faint">No quotations yet</div>}
+              </div>
+            </div>
+
+            {/* Validity Calendar */}
+            <div className="card overflow-hidden">
+              <div className="px-4 py-3 border-b border-surface-200 flex items-center justify-between">
+                <span className="font-semibold text-xs text-ink">Quotation Validity</span>
+                <div className="flex gap-1">
+                  <button onClick={() => setCalMonth(m => { const d = new Date(m); d.setMonth(d.getMonth() - 1); return d })}
+                    className="p-1 rounded hover:bg-surface-100 text-ink-faint">&lt;</button>
+                  <span className="text-xs font-medium text-ink px-2">{format(calMonth, 'MMMM yyyy')}</span>
+                  <button onClick={() => setCalMonth(m => { const d = new Date(m); d.setMonth(d.getMonth() + 1); return d })}
+                    className="p-1 rounded hover:bg-surface-100 text-ink-faint">&gt;</button>
                 </div>
-              )
-            })}
+              </div>
+              <div className="p-3">
+                {/* Day headers */}
+                <div className="grid grid-cols-7 gap-0.5 mb-1">
+                  {['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => (
+                    <div key={d} className="text-[9px] text-ink-faint text-center font-medium">{d}</div>
+                  ))}
+                </div>
+                {/* Day cells */}
+                <div className="grid grid-cols-7 gap-0.5">
+                  {calendarDays.map((day, i) => {
+                    const isCurrentMonth = day.getMonth() === calMonth.getMonth()
+                    const dots = expiryDates.filter(d => isSameDay(d.date, day))
+                    const isToday = isSameDay(day, new Date())
+                    return (
+                      <div key={i} className={`relative h-8 flex flex-col items-center justify-center rounded text-[10px] ${
+                        isCurrentMonth ? 'text-ink' : 'text-ink-faint/30'
+                      } ${isToday ? 'bg-primary/10 font-bold' : ''}`}>
+                        {day.getDate()}
+                        {dots.length > 0 && (
+                          <div className="absolute bottom-0.5 flex gap-px">
+                            {dots.slice(0, 3).map((d, j) => (
+                              <div key={j} className={`w-1 h-1 rounded-full ${d.color}`} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+              {/* Upcoming expirations list */}
+              <div className="border-t border-surface-200 px-4 py-2">
+                <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wide mb-1">Expiring soon</div>
+                {upcomingExpiry.length === 0 && <div className="text-[10px] text-ink-faint">No quotations expiring within 30 days</div>}
+                {upcomingExpiry.slice(0, 3).map(r => (
+                  <div key={r.id} className="flex items-center justify-between py-1">
+                    <span className="text-[10px] text-ink truncate">{r.reference} — {r.clientName}</span>
+                    <span className={`text-[10px] font-semibold ${r.daysLeft <= 7 ? 'text-red-600' : r.daysLeft <= 14 ? 'text-amber-600' : 'text-ink-muted'}`}>
+                      {r.daysLeft <= 0 ? 'Expired' : `${r.daysLeft}d left`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Reports grouped by tender */}
+          <div className="card overflow-hidden">
+            <div className="px-4 py-3 border-b border-surface-200">
+              <span className="font-semibold text-xs text-ink">All Quotation Reports</span>
+            </div>
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-surface-100 border-b border-surface-200 text-left">
+                  <th className="px-4 py-2 text-[10px] font-bold text-ink-faint uppercase">Tender</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-ink-faint uppercase">Reference</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-ink-faint uppercase">Client</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-ink-faint uppercase">Status</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-ink-faint uppercase">Date</th>
+                  <th className="px-4 py-2 text-[10px] font-bold text-ink-faint uppercase">Valid Until</th>
+                  <th className="px-4 py-2 w-10"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-100">
+                {allReports.map(r => (
+                  <tr key={r.id} className="hover:bg-surface-50 transition-colors cursor-pointer" onClick={() => router.push(`/tenders/${r.tender?.id}/report/${r.id}`)}>
+                    <td className="px-4 py-2.5 text-xs text-ink font-medium">{r.tender?.name ?? '—'}</td>
+                    <td className="px-4 py-2.5 text-xs text-ink-muted font-mono">{r.reference ?? '—'}</td>
+                    <td className="px-4 py-2.5 text-xs text-ink">{r.clientName ?? '—'}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${r.status === 'submitted' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{r.status}</span>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-ink-muted">{r.date ? format(new Date(r.date), 'dd MMM yyyy') : '—'}</td>
+                    <td className="px-4 py-2.5 text-xs text-ink-muted">{r.validUntil ? format(new Date(r.validUntil), 'dd MMM yyyy') : '—'}</td>
+                    <td className="px-4 py-2.5"><ChevronRight className="w-3.5 h-3.5 text-ink-faint" /></td>
+                  </tr>
+                ))}
+                {allReports.length === 0 && (
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-xs text-ink-faint">No quotation reports yet. Generate one from a tender detail page.</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </>)}
 
