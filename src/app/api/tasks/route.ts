@@ -19,6 +19,11 @@ export async function GET(req: NextRequest) {
       status: url.searchParams.get('status') ?? undefined,
       linkedUrl: url.searchParams.get('linkedUrl') ?? undefined,
     }
+    // Count-only mode for badge display
+    if (url.searchParams.get('countOnly') === 'true') {
+      const tasks = await getTasks(ctx.companyId, filters)
+      return NextResponse.json({ count: tasks.length })
+    }
     const tasks = await getTasks(ctx.companyId, filters)
     return NextResponse.json({ data: tasks })
   } catch (e) {

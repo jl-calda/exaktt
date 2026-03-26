@@ -19,7 +19,7 @@ const STATUS_META: Record<TenderStatus, { label: string; bg: string; color: stri
 }
 
 const STATUS_TRANSITIONS: Record<TenderStatus, TenderStatus[]> = {
-  DRAFT:     ['SUBMITTED', 'CANCELLED'],
+  DRAFT:     ['WON', 'LOST', 'CANCELLED'],
   SUBMITTED: ['WON', 'LOST', 'DRAFT'],
   WON:       ['DRAFT'],
   LOST:      ['DRAFT'],

@@ -62,7 +62,14 @@ export default function TaskForm({ linkedUrl, onSave, onCancel }: Props) {
         <Input label="Target date" type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} />
       </div>
       {linkedUrl && (
-        <div className="text-[10px] text-ink-faint bg-surface-100 px-2 py-1 rounded">Linked to: {linkedUrl}</div>
+        <div className="text-[10px] text-ink-faint bg-primary/5 border border-primary/20 px-2.5 py-1.5 rounded flex items-center gap-1.5">
+          <span className="text-primary font-semibold">
+            {linkedUrl.includes('/report/') ? '📋 Linked to Report'
+            : linkedUrl.includes('/tenders/') ? '📑 Linked to Tender'
+            : linkedUrl.includes('/products/') ? '📦 Linked to Product'
+            : '🔗 Linked to Page'}
+          </span>
+        </div>
       )}
       {/* Checklist */}
       <div>
