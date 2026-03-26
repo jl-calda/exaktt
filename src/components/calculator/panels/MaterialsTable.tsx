@@ -133,9 +133,9 @@ export default function MaterialsTable({
   }
 
   return (
-    <div className="border border-surface-200 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
+    <div className="table-wrap">
       {/* Toolbar */}
-      <div className="px-5 py-4 border-b flex items-center justify-between flex-wrap gap-3" style={{ background: 'var(--color-surface-100)', borderColor: 'var(--color-surface-200)' }}>
+      <div className="card-header flex-wrap gap-3">
         <div>
           <div className="font-semibold text-sm text-ink">
             Materials ({materials.length})
@@ -156,14 +156,14 @@ export default function MaterialsTable({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
+        <table>
           <thead>
-            <tr className="bg-surface-100 border-b border-surface-200">
-              <th className="px-3 py-2.5 w-14"></th>
-              <th className="text-left px-4 py-2.5 font-semibold text-ink-muted text-xs uppercase tracking-wide min-w-52">Material</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-ink-muted text-xs uppercase tracking-wide w-20">Unit</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-ink-muted text-xs uppercase tracking-wide">Rule</th>
-              <th className="px-3 py-2.5 w-28"></th>
+            <tr>
+              <th className="w-14"></th>
+              <th className="min-w-52">Material</th>
+              <th className="w-20">Unit</th>
+              <th>Rule</th>
+              <th className="w-28"></th>
             </tr>
           </thead>
           {visible.length === 0 ? (

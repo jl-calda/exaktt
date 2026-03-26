@@ -131,9 +131,7 @@ export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }
         <div className="flex gap-1">
           {STATUS_TABS.map(t => (
             <button key={t.id} onClick={() => setFilter(t.id)}
-              className={`px-3 py-1.5 text-xs rounded-full border font-medium transition-all ${
-                filter === t.id ? 'bg-primary text-white border-primary' : 'bg-white text-ink-muted border-surface-300 hover:border-surface-400'
-              }`}>
+              className={`filter-pill ${filter === t.id ? 'active !bg-primary !text-white !border-primary' : ''}`}>
               {t.label}
               {t.id !== 'all' && <span className="ml-1 opacity-60">{pos.filter(p => p.status === t.id).length}</span>}
             </button>
@@ -156,7 +154,7 @@ export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }
               const isExp = expanded.has(po.id)
               return (
                 <div key={po.id}>
-                  <div className="px-5 py-3 flex items-center gap-3 hover:bg-surface-50 cursor-pointer"
+                  <div className="list-row cursor-pointer"
                     onClick={() => toggleExpand(po.id)}>
                     {isExp ? <ChevronDown className="w-3.5 h-3.5 text-ink-faint flex-shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-ink-faint flex-shrink-0" />}
                     <div className="flex-1 min-w-0">

@@ -90,7 +90,7 @@ export default function DashboardClient({
 
           {/* Recent Products */}
           <div className="card overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-surface-200">
+            <div className="card-header">
               <span className="text-xs font-semibold text-ink">Recent Products</span>
               <button onClick={() => router.push('/products')}
                 className="text-[11px] text-primary hover:underline flex items-center gap-0.5">
@@ -104,10 +104,10 @@ export default function DashboardClient({
                   className="text-xs text-primary hover:underline">Create one →</button>
               </div>
             ) : (
-              <div className="divide-y divide-surface-200">
+              <div className="divide-y divide-surface-200/40">
                 {systems.map(sys => (
                   <button key={sys.id} onClick={() => router.push('/products/' + sys.id)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-50 transition-colors group text-left">
+                    className="w-full list-row group text-left">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0"
                       style={{ background: sys.color + '18', border: `1.5px solid ${sys.color}30` }}>
                       {sys.icon}
@@ -132,7 +132,7 @@ export default function DashboardClient({
 
           {/* Active Tenders */}
           <div className="card overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-surface-200">
+            <div className="card-header">
               <span className="text-xs font-semibold text-ink">Active Tenders</span>
               <button onClick={() => router.push('/tenders')}
                 className="text-[11px] text-primary hover:underline flex items-center gap-0.5">
@@ -146,13 +146,13 @@ export default function DashboardClient({
                   className="text-xs text-primary hover:underline">Create one →</button>
               </div>
             ) : (
-              <div className="divide-y divide-surface-200">
+              <div className="divide-y divide-surface-200/40">
                 {tenders.map(t => {
                   const meta        = STATUS_META[t.status] ?? STATUS_META.DRAFT
                   const displayName = t.client?.name ?? t.clientName
                   return (
                     <button key={t.id} onClick={() => router.push('/tenders/' + t.id)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-50 transition-colors group text-left">
+                      className="w-full list-row group text-left">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-xs font-semibold text-ink group-hover:text-primary transition-colors truncate">
@@ -199,16 +199,16 @@ export default function DashboardClient({
           </div>
 
           <div className="card overflow-hidden">
-            <div className="px-4 py-3 border-b border-surface-200">
-              <span className="font-semibold text-xs text-ink">My Tasks</span>
+            <div className="card-header">
+              <span className="text-xs font-semibold text-ink">My Tasks</span>
             </div>
             {myTasks.length === 0 ? (
               <div className="px-4 py-6 text-center text-xs text-ink-faint">No tasks assigned to you.</div>
             ) : (
-              <div className="divide-y divide-surface-200">
+              <div className="divide-y divide-surface-200/40">
                 {myTasks.map(t => (
                   <button key={t.id} onClick={() => openDrawer()}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-50 transition-colors text-left group">
+                    className="w-full list-row text-left group">
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${t.status === 'open' ? 'bg-surface-100 text-ink-muted' : t.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{t.status.replace('_', ' ')}</span>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium text-ink truncate group-hover:text-primary">{t.title}</div>

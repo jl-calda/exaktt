@@ -230,9 +230,7 @@ export default function TendersClient({
                 { id: 'settings' as PageTab, label: 'Settings', Icon: SettingsIcon },
               ]).map(t => (
                 <button key={t.id} onClick={() => setPageTab(t.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
-                    pageTab === t.id ? 'bg-primary/10 text-primary font-semibold' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
-                  }`} style={{ borderRadius: 'var(--radius)' }}>
+                  className={`tab-pill ${pageTab === t.id ? 'active' : ''}`}>
                   <t.Icon className="w-3.5 h-3.5" />
                   {t.label}
                 </button>
@@ -316,13 +314,13 @@ export default function TendersClient({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             {/* Recent Reports */}
             <div className="card overflow-hidden">
-              <div className="px-4 py-3 border-b border-surface-200 flex items-center justify-between">
-                <span className="font-semibold text-xs text-ink">Recent Quotations</span>
+              <div className="card-header">
+                <span className="text-xs font-semibold text-ink">Recent Quotations</span>
               </div>
-              <div className="divide-y divide-surface-200">
+              <div className="divide-y divide-surface-200/40">
                 {allReports.slice(0, 5).map(r => (
                   <button key={r.id} onClick={() => router.push(`/tenders/${r.tender?.id}/report/${r.id}`)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-50 transition-colors text-left group">
+                    className="w-full list-row text-left group">
                     <FileText className="w-3.5 h-3.5 text-ink-faint flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium text-ink group-hover:text-primary truncate">
@@ -341,8 +339,8 @@ export default function TendersClient({
 
             {/* Validity Calendar */}
             <div className="card overflow-hidden">
-              <div className="px-4 py-3 border-b border-surface-200 flex items-center justify-between">
-                <span className="font-semibold text-xs text-ink">Quotation Validity</span>
+              <div className="card-header">
+                <span className="text-xs font-semibold text-ink">Quotation Validity</span>
                 <div className="flex gap-1">
                   <button onClick={() => setCalMonth(m => { const d = new Date(m); d.setMonth(d.getMonth() - 1); return d })}
                     className="p-1 rounded hover:bg-surface-100 text-ink-faint">&lt;</button>
@@ -398,34 +396,34 @@ export default function TendersClient({
           </div>
 
           {/* Reports grouped by tender */}
-          <div className="card overflow-hidden">
-            <div className="px-4 py-3 border-b border-surface-200">
-              <span className="font-semibold text-xs text-ink">All Quotation Reports</span>
+          <div className="table-wrap">
+            <div className="card-header">
+              <span className="text-xs font-semibold text-ink">All Quotation Reports</span>
             </div>
-            <table className="w-full text-sm border-collapse">
+            <table>
               <thead>
-                <tr className="bg-surface-100 border-b border-surface-200 text-left">
-                  <th className="px-4 py-2 text-[10px] font-bold text-ink-faint uppercase">Tender</th>
-                  <th className="px-4 py-2 text-[10px] font-bold text-ink-faint uppercase">Reference</th>
-                  <th className="px-4 py-2 text-[10px] font-bold text-ink-faint uppercase">Client</th>
-                  <th className="px-4 py-2 text-[10px] font-bold text-ink-faint uppercase">Status</th>
-                  <th className="px-4 py-2 text-[10px] font-bold text-ink-faint uppercase">Date</th>
-                  <th className="px-4 py-2 text-[10px] font-bold text-ink-faint uppercase">Valid Until</th>
-                  <th className="px-4 py-2 w-10"></th>
+                <tr>
+                  <th>Tender</th>
+                  <th>Reference</th>
+                  <th>Client</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Valid Until</th>
+                  <th className="w-10"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-100">
+              <tbody>
                 {allReports.map(r => (
-                  <tr key={r.id} className="hover:bg-surface-50 transition-colors cursor-pointer" onClick={() => router.push(`/tenders/${r.tender?.id}/report/${r.id}`)}>
-                    <td className="px-4 py-2.5 text-xs text-ink font-medium">{r.tender?.name ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-xs text-ink-muted font-mono">{r.reference ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-xs text-ink">{r.clientName ?? '—'}</td>
-                    <td className="px-4 py-2.5">
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${r.status === 'submitted' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{r.status}</span>
+                  <tr key={r.id} className="cursor-pointer" onClick={() => router.push(`/tenders/${r.tender?.id}/report/${r.id}`)}>
+                    <td className="text-xs text-ink font-medium">{r.tender?.name ?? '—'}</td>
+                    <td className="text-xs text-ink-muted font-mono">{r.reference ?? '—'}</td>
+                    <td className="text-xs text-ink">{r.clientName ?? '—'}</td>
+                    <td>
+                      <span className={`badge text-[10px] font-bold ${r.status === 'submitted' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{r.status}</span>
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-ink-muted">{r.date ? format(new Date(r.date), 'dd MMM yyyy') : '—'}</td>
-                    <td className="px-4 py-2.5 text-xs text-ink-muted">{r.validUntil ? format(new Date(r.validUntil), 'dd MMM yyyy') : '—'}</td>
-                    <td className="px-4 py-2.5"><ChevronRight className="w-3.5 h-3.5 text-ink-faint" /></td>
+                    <td className="text-xs text-ink-muted">{r.date ? format(new Date(r.date), 'dd MMM yyyy') : '—'}</td>
+                    <td className="text-xs text-ink-muted">{r.validUntil ? format(new Date(r.validUntil), 'dd MMM yyyy') : '—'}</td>
+                    <td><ChevronRight className="w-3.5 h-3.5 text-ink-faint" /></td>
                   </tr>
                 ))}
                 {allReports.length === 0 && (
@@ -442,7 +440,7 @@ export default function TendersClient({
 
             {/* 1. Blocks */}
             <div className="card overflow-hidden">
-              <div className="cursor-pointer select-none px-4 py-3 flex items-center justify-between border-b border-surface-200 bg-surface-50"
+              <div className="cursor-pointer select-none card-header bg-surface-50"
                 onClick={() => toggleSettings('blocks')}>
                 <div className="flex items-center gap-2">
                   {settingsCollapsed.has('blocks') ? <ChevronRight className="w-4 h-4 text-ink-muted" /> : <ChevronDown className="w-4 h-4 text-ink-muted" />}
@@ -556,7 +554,7 @@ export default function TendersClient({
 
             {/* 2. Report Defaults */}
             <div className="card overflow-hidden">
-              <div className="cursor-pointer select-none px-4 py-3 flex items-center gap-2 border-b border-surface-200 bg-surface-50"
+              <div className="cursor-pointer select-none card-header !justify-start gap-2 bg-surface-50"
                 onClick={() => toggleSettings('reportDefaults')}>
                 {settingsCollapsed.has('reportDefaults') ? <ChevronRight className="w-4 h-4 text-ink-muted" /> : <ChevronDown className="w-4 h-4 text-ink-muted" />}
                 <FileText className="w-4 h-4 text-ink-muted" />
@@ -585,7 +583,7 @@ export default function TendersClient({
 
             {/* 3. Predefined Items Library */}
             <div className="card overflow-hidden">
-              <div className="cursor-pointer select-none px-4 py-3 flex items-center justify-between border-b border-surface-200 bg-surface-50"
+              <div className="cursor-pointer select-none card-header bg-surface-50"
                 onClick={() => toggleSettings('libraryItems')}>
                 <div className="flex items-center gap-2">
                   {settingsCollapsed.has('libraryItems') ? <ChevronRight className="w-4 h-4 text-ink-muted" /> : <ChevronDown className="w-4 h-4 text-ink-muted" />}
