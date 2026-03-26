@@ -87,6 +87,26 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // Send invite email via Supabase Auth (if service role key configured)
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+        const adminSupabase = createAdminClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY,
+          { auth: { autoRefreshToken: false, persistSession: false } }
+        )
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+        await adminSupabase.auth.admin.inviteUserByEmail(email, {
+          redirectTo: `${appUrl}/invite/${invite.token}`,
+          data: { invited_to: ctx.companyId, role: inviteRole },
+        })
+      } catch (emailErr) {
+        // Email sending is best-effort — invite record still created
+        console.error('Failed to send invite email:', emailErr)
+      }
+    }
+
     return NextResponse.json({ data: invite }, { status: 201 })
   } catch (err) {
     if (err instanceof ForbiddenError) return NextResponse.json({ error: err.message }, { status: 403 })
