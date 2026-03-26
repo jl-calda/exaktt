@@ -3,8 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, Trash2, CalendarDays, X, FileText } from 'lucide-react'
-import { Modal } from '@/components/ui/Modal'
-import TenderReportBuilder from '@/components/tender/TenderReportBuilder'
 import { format } from 'date-fns'
 
 type TenderStatus = 'DRAFT' | 'SUBMITTED' | 'WON' | 'LOST' | 'CANCELLED'
@@ -41,7 +39,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
   const [addNotes,    setAddNotes]    = useState('')
   const [adding,      setAdding]      = useState(false)
   const [removing,    setRemoving]    = useState<string | null>(null)
-  const [showReport,  setShowReport]  = useState(false)
+  const [creating,    setCreating]    = useState(false)
 
   const meta = STATUS_META[tender.status as TenderStatus] ?? STATUS_META.DRAFT
 
@@ -92,6 +90,23 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
     await fetch(`/api/tenders/${tender.id}/items/${itemId}`, { method: 'DELETE' })
     setItems(i => i.filter(x => x.id !== itemId))
     setRemoving(null)
+  }
+
+  const handleGenerateQuotation = async () => {
+    setCreating(true)
+    try {
+      const res = await fetch(`/api/tenders/${tender.id}/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const { data } = await res.json()
+      if (data?.id) {
+        router.push(`/tenders/${tender.id}/report/${data.id}`)
+      }
+    } finally {
+      setCreating(false)
+    }
   }
 
   const transitions = STATUS_TRANSITIONS[tender.status as TenderStatus] ?? []
@@ -152,8 +167,9 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
               </button>
             )
           })}
-          <button onClick={() => setShowReport(true)} className="btn-primary text-xs">
-            <FileText className="w-3.5 h-3.5" /> Generate Quotation
+          <button onClick={handleGenerateQuotation} disabled={creating} className="btn-primary text-xs flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5" />
+            {creating ? 'Creating…' : 'Generate Quotation'}
           </button>
         </div>
 
@@ -223,16 +239,6 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
           )}
         </div>
       </main>
-
-      {/* Quotation report modal */}
-      <Modal open={showReport} onClose={() => setShowReport(false)} title="Tender Quotation" maxWidth="max-w-7xl">
-        <TenderReportBuilder
-          tender={tender}
-          tenderItems={tender.items ?? []}
-          profile={profile}
-          onClose={() => setShowReport(false)}
-        />
-      </Modal>
 
       {/* Add item modal */}
       {showAddModal && (

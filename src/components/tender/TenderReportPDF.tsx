@@ -3,7 +3,7 @@
 
 import React from 'react'
 import {
-  Document, Page, View, Text, StyleSheet, Font,
+  Document, Page, View, Text, Image, StyleSheet, Font,
 } from '@react-pdf/renderer'
 import type {
   TenderReport,
@@ -11,6 +11,7 @@ import type {
   TenderReportJobLine,
   TenderReportCustomLine,
   TenderReportTextBlock,
+  TenderReportImageBlock,
 } from '@/types'
 
 // ─── Colours ──────────────────────────────────────────────────────────────────
@@ -154,6 +155,7 @@ type CostLine = {
 type TableSegment =
   | { kind: 'text'; block: TenderReportTextBlock }
   | { kind: 'lines'; lines: CostLine[] }
+  | { kind: 'image'; block: TenderReportImageBlock }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -172,6 +174,12 @@ export function TenderReportPDF({ report }: Props) {
         currentLines = []
       }
       segments.push({ kind: 'text', block: sec })
+    } else if (sec.type === 'image_block') {
+      if (currentLines.length > 0) {
+        segments.push({ kind: 'lines', lines: currentLines })
+        currentLines = []
+      }
+      segments.push({ kind: 'image', block: sec })
     } else {
       currentLines.push({
         description: sec.description,
@@ -254,6 +262,25 @@ export function TenderReportPDF({ report }: Props) {
               <View key={`text-${si}`} style={S.textBlockWrap}>
                 {seg.block.title && <Text style={S.textBlockTitle}>{seg.block.title}</Text>}
                 <Text style={S.textBlockContent}>{seg.block.content}</Text>
+              </View>
+            )
+          }
+
+          if (seg.kind === 'image') {
+            const cols = Math.min(4, Math.max(1, seg.block.columns || 1))
+            const imgWidth = `${Math.floor(100 / cols)}%` as any
+            return (
+              <View key={`img-${si}`} style={{ flexDirection: 'row', gap: 8, marginVertical: 6 }}>
+                {seg.block.images.map((img, ii) => (
+                  <View key={ii} style={{ width: imgWidth }}>
+                    <Image src={img.url} style={{ objectFit: 'contain', maxHeight: 200 }} />
+                    {img.caption && (
+                      <Text style={{ fontSize: 7, color: C.muted, textAlign: 'center', marginTop: 2 }}>
+                        {img.caption}
+                      </Text>
+                    )}
+                  </View>
+                ))}
               </View>
             )
           }
