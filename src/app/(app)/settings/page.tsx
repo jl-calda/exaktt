@@ -13,11 +13,20 @@ export default async function SettingsPage() {
   if (!company) redirect('/auth/login')
   const member = await prisma.companyMember.findFirst({ where: { userId: user.id, companyId: company.id }, select: { role: true } })
   const userRole = (member?.role ?? 'MEMBER') as string
-  const [dbUser, profile, tags, labourRates] = await Promise.all([
+  const [dbUser, profile, tags, labourRates, members, invites] = await Promise.all([
     getUserWithPlan(user.id),
     getProfile(user.id),
     getGlobalTags(company.id),
     getLabourRates(company.id),
+    prisma.companyMember.findMany({
+      where: { companyId: company.id },
+      include: { user: { select: { id: true, email: true, name: true, avatarUrl: true } } },
+      orderBy: { joinedAt: 'asc' },
+    }),
+    prisma.companyInvite.findMany({
+      where: { companyId: company.id, acceptedAt: null },
+      orderBy: { expiresAt: 'desc' },
+    }),
   ])
   const plan = dbUser?.companyMembers?.[0]?.company?.plan ?? 'FREE'
   return (
@@ -27,6 +36,8 @@ export default async function SettingsPage() {
       initialTags={tags as any[]}
       initialLabourRates={labourRates as any[]}
       userRole={userRole as any}
+      members={members as any[]}
+      invites={invites as any[]}
     />
   )
 }

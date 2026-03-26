@@ -2,7 +2,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Building2, Tag, User2, Save, Crown, Palette, Sun, Moon, Monitor, DollarSign, Edit3, Check, X } from 'lucide-react'
+import { Building2, Tag, User2, Save, Crown, Palette, Sun, Moon, Monitor, DollarSign, Edit3, Check, X, Users2, Trash2 } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import type { CompanyProfile, GlobalTag, CompanyRole } from '@/types'
 import type { Plan } from '@prisma/client'
@@ -10,9 +10,10 @@ import { getLimits, PLAN_META } from '@/lib/limits'
 import { createClient } from '@/lib/supabase/client'
 import { useTheme } from '@/components/ThemeProvider'
 import { Select } from '@/components/ui/Select'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { THEME_PRESETS } from '@/lib/theme'
 
-type Tab = 'company' | 'labour' | 'appearance' | 'account'
+type Tab = 'company' | 'team' | 'labour' | 'appearance' | 'account'
 
 const COUNTRIES = [
   'Australia', 'Canada', 'China', 'India', 'Indonesia', 'Japan', 'Malaysia',
@@ -39,10 +40,13 @@ interface Props {
   initialTags:    GlobalTag[]
   initialLabourRates: any[]
   userRole:       CompanyRole
+  members?:       any[]
+  invites?:       any[]
 }
 
-export default function SettingsClient({ user, initialProfile, initialTags, initialLabourRates, userRole }: Props) {
+export default function SettingsClient({ user, initialProfile, initialTags, initialLabourRates, userRole, members, invites }: Props) {
   const isOwner = userRole === 'OWNER'
+  const isAdmin = userRole === 'ADMIN'
   const router   = useRouter()
   const supabase = createClient()
   const plan     = user.subscription?.plan ?? 'FREE'
@@ -61,6 +65,15 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
   const [labourRates, setLabourRates] = useState<any[]>(initialLabourRates)
   const [editingRateId, setEditingRateId] = useState<string | null>(null)
   const [editRateValue, setEditRateValue] = useState('')
+  // ─── Team state ────────────────────────────────────────────────────────
+  const [teamMembers, setTeamMembers] = useState<any[]>(members ?? [])
+  const [teamInvites, setTeamInvites] = useState<any[]>(invites ?? [])
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<string>('MEMBER')
+  const [inviteLoading, setInviteLoading] = useState(false)
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
+  const [editPerms, setEditPerms] = useState<Record<string, string>>({})
+  const [memberDeleteId, setMemberDeleteId] = useState<string | null>(null)
 
   const refreshLabourRates = () =>
     fetch('/api/mto/labour-rates').then(r => r.json()).then(j => { if (j.data) setLabourRates(j.data) })
@@ -77,6 +90,56 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
 
   const showSaved = (msg = 'Saved') => { setSaveMsg(msg); setTimeout(() => setSaveMsg(null), 2500) }
 
+  // ─── Team handlers ─────────────────────────────────────────────────────
+  const refreshTeam = async () => {
+    const [mRes, iRes] = await Promise.all([
+      fetch('/api/team').then(r => r.json()),
+      fetch('/api/team/invites').then(r => r.json()),
+    ])
+    if (mRes.data) setTeamMembers(mRes.data)
+    if (iRes.data) setTeamInvites(iRes.data)
+  }
+
+  const sendInvite = async () => {
+    if (!inviteEmail.trim()) return
+    setInviteLoading(true)
+    await fetch('/api/team', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
+    })
+    setInviteEmail(''); setInviteLoading(false)
+    refreshTeam()
+  }
+
+  const removeMember = async (userId: string) => {
+    await fetch(`/api/team/${userId}`, { method: 'DELETE' })
+    refreshTeam()
+    setMemberDeleteId(null)
+  }
+
+  const revokeInvite = async (id: string) => {
+    await fetch('/api/team/invites', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    refreshTeam()
+  }
+
+  const startEditPerms = (m: any) => {
+    setEditingMemberId(m.userId)
+    setEditPerms(m.permissions ?? {})
+  }
+
+  const savePerms = async () => {
+    if (!editingMemberId) return
+    await fetch(`/api/team/${editingMemberId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ permissions: editPerms }),
+    })
+    setEditingMemberId(null)
+    refreshTeam()
+  }
+
   const saveProfile = async () => {
     setSaving(true)
     await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) })
@@ -90,29 +153,67 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
   const set = (k: keyof CompanyProfile) => (v: any) => setProfile(p => ({ ...p, [k]: v }))
 
   const TABS = [
-    { id: 'company'    as Tab, label: 'Company Profile', icon: <Building2 className="w-3.5 h-3.5" /> },
-    ...(isOwner ? [{ id: 'labour' as Tab, label: 'Labour Rates', icon: <DollarSign className="w-3.5 h-3.5" /> }] : []),
-    { id: 'appearance' as Tab, label: 'Appearance',      icon: <Palette   className="w-3.5 h-3.5" /> },
-    { id: 'account'    as Tab, label: 'Account',         icon: <User2     className="w-3.5 h-3.5" /> },
+    { id: 'company' as Tab, label: 'Company Profile', icon: <Building2 className="w-[15px] h-[15px] shrink-0" /> },
+    ...((isOwner || isAdmin) ? [{ id: 'team' as Tab, label: 'Team', icon: <Users2 className="w-[15px] h-[15px] shrink-0" /> }] : []),
+    ...(isOwner ? [{ id: 'labour' as Tab, label: 'Labour Rates', icon: <DollarSign className="w-[15px] h-[15px] shrink-0" /> }] : []),
+    { id: 'appearance' as Tab, label: 'Appearance', icon: <Palette className="w-[15px] h-[15px] shrink-0" /> },
+    { id: 'account' as Tab, label: 'Account', icon: <User2 className="w-[15px] h-[15px] shrink-0" /> },
   ]
 
   return (
-    <div className="min-h-full">
-      <main className="px-4 py-4 md:px-6 md:py-5 flex flex-col md:flex-row gap-4 md:gap-6">
+    <div className="min-h-full flex">
+      {/* Desktop sidebar */}
+      <aside
+        className="hidden md:flex w-48 shrink-0 border-r border-surface-200 bg-surface-50 flex-col sticky top-0 self-start overflow-y-auto"
+        style={{ height: 'calc(100vh - 52px)', borderRight: '1px solid var(--sidebar-border)' }}>
+
+        {/* Header */}
+        <div className="px-3 py-3 border-b border-surface-200">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-base flex-shrink-0">&#x2699;&#xFE0F;</span>
+            <span className="font-semibold text-xs text-ink leading-tight truncate">Settings</span>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 py-2 px-2 flex flex-col gap-px">
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`sidebar-item text-[11px] ${tab === t.id ? 'active' : ''}`}>
+              {t.icon}
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* Footer */}
+        <div className="px-3 py-3 border-t border-surface-200 space-y-1">
+          <div className="flex justify-between text-[10px] text-ink-faint">
+            <span>Members</span>
+            <span className="font-semibold text-ink">{teamMembers.length}</span>
+          </div>
+          <div className="flex justify-between text-[10px] text-ink-faint">
+            <span>Plan</span>
+            <span className="font-semibold text-ink">{plan}</span>
+          </div>
+        </div>
+      </aside>
+
+      <main className="flex-1 min-w-0 px-4 py-4 md:px-6 md:py-5 flex flex-col gap-4">
         {saveMsg && (
           <div className="fixed top-[5.5rem] right-4 z-50 text-xs text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg shadow-card">
             {saveMsg}
           </div>
         )}
-        {/* Sidebar */}
-        <nav className="w-44 flex-shrink-0 space-y-1">
+        {/* Mobile tab bar */}
+        <div className="flex md:hidden overflow-x-auto gap-1 pb-2 -mx-1 px-1">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${tab === t.id ? 'bg-primary text-white' : 'text-ink-muted hover:bg-surface-200 hover:text-ink'}`}>
-              {t.icon}{t.label}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${tab === t.id ? 'bg-primary text-white' : 'text-ink-muted hover:bg-surface-200 hover:text-ink'}`}>
+              {t.icon}<span>{t.label}</span>
             </button>
           ))}
-        </nav>
+        </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
@@ -263,6 +364,119 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* ── Team ─────────────────────────────────────────────── */}
+          {tab === 'team' && (
+            <div className="space-y-6">
+              {/* Invite form */}
+              <div className="card p-5 space-y-3">
+                <h2 className="font-semibold text-[13px] text-ink mb-1">Invite Team Member</h2>
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1">
+                    <label className="label">Email</label>
+                    <input className="input" type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="colleague@company.com" />
+                  </div>
+                  <div className="w-32">
+                    <label className="label">Role</label>
+                    <select className="input" value={inviteRole} onChange={e => setInviteRole(e.target.value)}>
+                      <option value="ADMIN">Admin</option>
+                      <option value="MEMBER">Member</option>
+                      <option value="VIEWER">Viewer</option>
+                    </select>
+                  </div>
+                  <button onClick={sendInvite} disabled={!inviteEmail.trim() || inviteLoading} className="btn-primary text-sm">
+                    {inviteLoading ? 'Sending...' : 'Send Invite'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Pending invites */}
+              {teamInvites.length > 0 && (
+                <div className="card p-5 space-y-3">
+                  <h2 className="font-semibold text-[13px] text-ink mb-1">Pending Invites</h2>
+                  {teamInvites.map(inv => (
+                    <div key={inv.id} className="flex items-center justify-between py-2 border-b border-surface-100 last:border-0">
+                      <div>
+                        <span className="text-sm text-ink">{inv.email}</span>
+                        <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-surface-100 text-ink-muted">{inv.role}</span>
+                      </div>
+                      <button onClick={() => revokeInvite(inv.id)} className="text-xs text-red-500 hover:text-red-700">Revoke</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Members list */}
+              <div className="card p-5 space-y-3">
+                <h2 className="font-semibold text-[13px] text-ink mb-1">Team Members ({teamMembers.length})</h2>
+                <div className="space-y-2">
+                  {teamMembers.map(m => {
+                    const isEditing = editingMemberId === m.userId
+                    const ROLE_COLORS: Record<string, string> = { OWNER: 'bg-purple-100 text-purple-700', ADMIN: 'bg-blue-100 text-blue-700', MEMBER: 'bg-green-100 text-green-700', VIEWER: 'bg-surface-100 text-ink-muted' }
+                    const initials = (m.user?.name || m.user?.email || '?').split(' ').map((s: string) => s[0]).join('').toUpperCase().slice(0, 2)
+                    return (
+                      <div key={m.userId} className={`p-3 border border-surface-200 ${isEditing ? 'ring-2 ring-primary bg-primary/5' : ''}`} style={{ borderRadius: 'var(--radius)' }}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">{initials}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-ink">{m.user?.name || m.user?.email}</div>
+                            <div className="text-xs text-ink-faint">{m.user?.email}</div>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ROLE_COLORS[m.role] ?? ''}`}>{m.role}</span>
+                          {m.role !== 'OWNER' && (isOwner || isAdmin) && (
+                            <div className="flex gap-1">
+                              <button onClick={() => isEditing ? setEditingMemberId(null) : startEditPerms(m)} className="p-1.5 rounded text-ink-muted hover:bg-surface-200"><Edit3 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => setMemberDeleteId(m.userId)} className="p-1.5 rounded text-red-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                            </div>
+                          )}
+                        </div>
+                        {/* Permission grid (editing) */}
+                        {isEditing && (m.role === 'MEMBER' || m.role === 'VIEWER') && (
+                          <div className="mt-3 pt-3 border-t border-surface-200">
+                            <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wide mb-2">Module Permissions</div>
+                            <table className="w-full text-xs">
+                              <thead><tr className="text-left">
+                                <th className="py-1 font-medium text-ink-faint">Module</th>
+                                <th className="py-1 font-medium text-ink-faint text-center">Write</th>
+                                <th className="py-1 font-medium text-ink-faint text-center">Read</th>
+                                <th className="py-1 font-medium text-ink-faint text-center">None</th>
+                              </tr></thead>
+                              <tbody>
+                                {(['systems', 'library', 'tenders', 'logistics', 'reports'] as const).map(mod => (
+                                  <tr key={mod} className="border-t border-surface-100">
+                                    <td className="py-2 capitalize font-medium text-ink">{mod}</td>
+                                    {(['write', 'read', 'none'] as const).map(perm => (
+                                      <td key={perm} className="py-2 text-center">
+                                        <input type="radio" name={`perm-${mod}`} checked={(editPerms[mod] ?? 'write') === perm}
+                                          onChange={() => setEditPerms(p => ({ ...p, [mod]: perm }))}
+                                          className="w-3.5 h-3.5 text-primary" />
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            <div className="flex gap-2 mt-3">
+                              <button onClick={savePerms} className="btn-primary text-xs">Save Permissions</button>
+                              <button onClick={() => setEditingMemberId(null)} className="btn-secondary text-xs">Cancel</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <ConfirmModal
+                open={memberDeleteId !== null}
+                title="Remove member?"
+                message="This person will lose access to all company data."
+                onConfirm={() => { if (memberDeleteId) removeMember(memberDeleteId) }}
+                onCancel={() => setMemberDeleteId(null)}
+              />
             </div>
           )}
 

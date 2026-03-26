@@ -6,6 +6,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import TopNav from '@/components/layout/TopNav'
 import type { CompanyRole } from '@/types'
 import type { Plan } from '@prisma/client'
+import { PermissionProvider, createPermissionValue } from '@/lib/hooks/usePermissions'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -13,20 +14,28 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect('/auth/login')
 
   const userData = await getUserWithPlan(user.id)
-  const role  = (userData?.companyMembers?.[0]?.role          ?? 'MEMBER') as CompanyRole
-  const plan  = (userData?.companyMembers?.[0]?.company?.plan ?? 'FREE')   as Plan
+  const member = userData?.companyMembers?.[0]
+  const role  = (member?.role          ?? 'MEMBER') as CompanyRole
+  const plan  = (member?.company?.plan ?? 'FREE')   as Plan
   const name  = userData?.name  ?? null
   const email = userData?.email ?? null
 
+  const permValue = createPermissionValue(
+    role as any,
+    (member?.permissions as Record<string, string>) ?? {}
+  )
+
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-surface)' }}>
-      <Sidebar role={role} plan={plan} />
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <TopNav userName={name} userEmail={email} plan={plan} />
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+    <PermissionProvider value={permValue}>
+      <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-surface)' }}>
+        <Sidebar role={role} plan={plan} />
+        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+          <TopNav userName={name} userEmail={email} plan={plan} />
+          <main className="flex-1 overflow-y-auto">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </PermissionProvider>
   )
 }

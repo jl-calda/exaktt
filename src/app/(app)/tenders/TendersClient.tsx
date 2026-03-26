@@ -9,6 +9,7 @@ import {
 import { format, formatDistanceToNow } from 'date-fns'
 import { nanoid } from 'nanoid'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { usePermissions } from '@/lib/hooks/usePermissions'
 import { Button, Input } from '@/components/ui'
 import { NumberInput } from '@/components/ui/Input'
 
@@ -54,6 +55,7 @@ export default function TendersClient({
   initialReports,
 }: Props) {
   const router = useRouter()
+  const { canWrite } = usePermissions()
 
   /* ── Page tab ─────────────────────────────────────────────── */
   type PageTab = 'tenders' | 'settings'
@@ -237,7 +239,7 @@ export default function TendersClient({
               ))}
             </div>
           </div>
-          {pageTab === 'tenders' && (
+          {pageTab === 'tenders' && canWrite('tenders') && (
             <button onClick={() => setCreating(v => !v)} className="btn-primary text-sm">
               <Plus className="w-4 h-4" /> New Tender
             </button>

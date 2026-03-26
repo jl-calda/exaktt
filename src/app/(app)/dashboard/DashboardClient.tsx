@@ -1,9 +1,11 @@
 // src/app/(app)/dashboard/DashboardClient.tsx
 'use client'
 import { useRouter } from 'next/navigation'
-import { Layers, ChevronRight, CalendarDays, Package, FileText, Users, FolderKanban, CheckSquare } from 'lucide-react'
+import { Layers, ChevronRight, CalendarDays, Package, FileText, Users, FolderKanban } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { getLimits } from '@/lib/limits'
 import { formatDistanceToNow, format } from 'date-fns'
+import { useTaskStore } from '@/store'
 import type { Plan } from '@prisma/client'
 
 const STATUS_META: Record<string, { label: string; bg: string; color: string }> = {
@@ -32,6 +34,11 @@ export default function DashboardClient({
   const limits  = getLimits(plan)
   const firstName = userName?.split(' ')[0] ?? 'there'
   const dateStr   = format(new Date(), 'EEE, d MMM yyyy')
+  const openDrawer = useTaskStore(s => s.openDrawer)
+  const [myTasks, setMyTasks] = useState<any[]>([])
+  useEffect(() => {
+    fetch('/api/tasks').then(r => r.json()).then(j => { if (j.data) setMyTasks(j.data.filter((t: any) => t.status !== 'approved').slice(0, 5)) })
+  }, [])
 
   const stats = [
     {
@@ -191,17 +198,25 @@ export default function DashboardClient({
             </p>
           </div>
 
-          <div className="card p-5 opacity-60 border-dashed">
-            <div className="flex items-center gap-2 mb-2">
-              <CheckSquare className="w-4 h-4 text-ink-faint" />
-              <span className="text-xs font-semibold text-ink">My Tasks</span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface-100 text-ink-faint">
-                Coming soon
-              </span>
+          <div className="card overflow-hidden">
+            <div className="px-4 py-3 border-b border-surface-200">
+              <span className="font-semibold text-xs text-ink">My Tasks</span>
             </div>
-            <p className="text-xs text-ink-faint leading-relaxed">
-              Tasks assigned to you across all active projects will appear here, with notifications when new work is assigned.
-            </p>
+            {myTasks.length === 0 ? (
+              <div className="px-4 py-6 text-center text-xs text-ink-faint">No tasks assigned to you.</div>
+            ) : (
+              <div className="divide-y divide-surface-200">
+                {myTasks.map(t => (
+                  <button key={t.id} onClick={() => openDrawer()}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-50 transition-colors text-left group">
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${t.status === 'open' ? 'bg-surface-100 text-ink-muted' : t.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{t.status.replace('_', ' ')}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-ink truncate group-hover:text-primary">{t.title}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>

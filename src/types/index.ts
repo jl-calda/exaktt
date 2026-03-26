@@ -1006,6 +1006,60 @@ export interface TenderTemplate {
   defaultSections?: TenderReportSection[]
 }
 
+// ─── Tasks ────────────────────────────────────────────────────────────────────
+
+export type TaskStatus = 'open' | 'in_progress' | 'submitted' | 'approved' | 'rejected'
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
+
+export interface TaskChecklistItem { id: string; text: string; checked: boolean }
+export interface TaskOutput { id: string; type: 'text' | 'file' | 'link' | 'checklist'; content?: string; fileUrl?: string; fileName?: string; linkedUrl?: string }
+
+export interface Task {
+  id: string
+  companyId: string
+  createdById: string
+  assigneeId: string
+  title: string
+  description?: string | null
+  priority: TaskPriority
+  status: TaskStatus
+  startDate?: Date | null
+  targetDate?: Date | null
+  linkedUrl?: string | null
+  linkedType?: string | null
+  linkedLabel?: string | null
+  checklist: TaskChecklistItem[]
+  output: TaskOutput[]
+  ccUserIds: string[]
+  isArchived: boolean
+  createdAt: Date
+  updatedAt: Date
+  createdBy?: { id: string; name: string | null }
+  assignee?: { id: string; name: string | null }
+  comments?: TaskComment[]
+}
+
+export interface TaskComment {
+  id: string
+  taskId: string
+  userId: string
+  content: string
+  attachments: { url: string; name: string }[]
+  createdAt: Date
+  user?: { id: string; name: string | null }
+}
+
+export interface AppNotification {
+  id: string
+  userId: string
+  type: string
+  title: string
+  body?: string | null
+  taskId?: string | null
+  isRead: boolean
+  createdAt: Date
+}
+
 // ─── Engine: Cut list ─────────────────────────────────────────────────────────
 
 export interface CutItem {

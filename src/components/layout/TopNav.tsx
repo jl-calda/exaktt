@@ -1,7 +1,8 @@
 // src/components/layout/TopNav.tsx
 'use client'
 import { usePathname } from 'next/navigation'
-import { Bell, Sun, Moon } from 'lucide-react'
+import { Sun, Moon } from 'lucide-react'
+import NotificationBell from '@/components/tasks/NotificationBell'
 import { useTheme } from '@/components/ThemeProvider'
 
 const TITLES: Record<string, string> = {
@@ -47,9 +48,7 @@ export default function TopNav({ userName, userEmail, plan }: Props) {
           title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
           {isDark ? <Sun className="w-[15px] h-[15px]" /> : <Moon className="w-[15px] h-[15px]" />}
         </button>
-        <button className="p-1.5 rounded-md text-ink-faint hover:text-ink hover:bg-surface-100 transition-colors" title="Notifications">
-          <Bell className="w-[15px] h-[15px]" />
-        </button>
+        <NotificationBell />
 
         <div className="flex items-center gap-2 pl-1.5 ml-0.5 border-l border-surface-200">
           <div

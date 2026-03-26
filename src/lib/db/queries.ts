@@ -1162,6 +1162,113 @@ export async function duplicateTenderReport(id: string, companyId: string, creat
   })
 }
 
+// ─── Tasks ───────────────────────────────────────────────────────────────────
+
+export async function getTasks(companyId: string, filters?: { assigneeId?: string; createdById?: string; status?: string; linkedUrl?: string }) {
+  return prisma.task.findMany({
+    where: {
+      companyId, isArchived: false,
+      ...(filters?.assigneeId && { assigneeId: filters.assigneeId }),
+      ...(filters?.createdById && { createdById: filters.createdById }),
+      ...(filters?.status && { status: filters.status }),
+      ...(filters?.linkedUrl && { linkedUrl: filters.linkedUrl }),
+    },
+    include: {
+      createdBy: { select: { id: true, name: true } },
+      assignee: { select: { id: true, name: true } },
+    },
+    orderBy: { updatedAt: 'desc' },
+  })
+}
+
+export async function getTask(id: string, companyId: string) {
+  return prisma.task.findFirst({
+    where: { id, companyId, isArchived: false },
+    include: {
+      createdBy: { select: { id: true, name: true } },
+      assignee: { select: { id: true, name: true } },
+      comments: { include: { user: { select: { id: true, name: true } } }, orderBy: { createdAt: 'asc' } },
+    },
+  })
+}
+
+export async function createTask(companyId: string, createdById: string, data: any) {
+  const task = await prisma.task.create({
+    data: {
+      companyId, createdById,
+      assigneeId: data.assigneeId,
+      title: data.title,
+      description: data.description ?? null,
+      priority: data.priority ?? 'medium',
+      status: 'open',
+      startDate: data.startDate ? new Date(data.startDate) : null,
+      targetDate: data.targetDate ? new Date(data.targetDate) : null,
+      linkedUrl: data.linkedUrl ?? null,
+      linkedType: data.linkedType ?? null,
+      linkedLabel: data.linkedLabel ?? null,
+      checklist: data.checklist ?? [],
+      ccUserIds: data.ccUserIds ?? [],
+    },
+  })
+  // Create notification for assignee
+  if (data.assigneeId !== createdById) {
+    await prisma.notification.create({
+      data: {
+        companyId, userId: data.assigneeId,
+        type: 'task_assigned', title: 'New task assigned',
+        body: data.title, taskId: task.id,
+      },
+    })
+  }
+  return task
+}
+
+export async function updateTask(id: string, companyId: string, data: any) {
+  await verifyOwnership(prisma.task, id, companyId, 'Task')
+  return prisma.task.update({ where: { id }, data: data as any })
+}
+
+export async function archiveTask(id: string, companyId: string) {
+  await verifyOwnership(prisma.task, id, companyId, 'Task')
+  return prisma.task.update({ where: { id }, data: { isArchived: true } })
+}
+
+export async function addTaskComment(taskId: string, companyId: string, userId: string, content: string, attachments: any[] = []) {
+  await verifyOwnership(prisma.task, taskId, companyId, 'Task')
+  const task = await prisma.task.findUnique({ where: { id: taskId }, select: { createdById: true, assigneeId: true, title: true } })
+  const comment = await prisma.taskComment.create({
+    data: { taskId, userId, content, attachments },
+    include: { user: { select: { id: true, name: true } } },
+  })
+  // Notify the other party
+  if (task) {
+    const recipientId = userId === task.createdById ? task.assigneeId : task.createdById
+    await prisma.notification.create({
+      data: { companyId, userId: recipientId, type: 'task_comment', title: 'New comment on task', body: task.title, taskId },
+    })
+  }
+  return comment
+}
+
+export async function getNotifications(userId: string, companyId: string) {
+  return prisma.notification.findMany({
+    where: { userId, companyId },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  })
+}
+
+export async function markNotificationsRead(userId: string, ids: string[]) {
+  return prisma.notification.updateMany({
+    where: { userId, id: { in: ids } },
+    data: { isRead: true },
+  })
+}
+
+export async function getUnreadNotificationCount(userId: string) {
+  return prisma.notification.count({ where: { userId, isRead: false } })
+}
+
 // ─── LimitError ───────────────────────────────────────────────────────────────
 
 export class LimitError extends Error {

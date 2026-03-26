@@ -17,6 +17,7 @@ import RunsTab         from './RunsTab'
 import ReportBuilder from '@/components/report/ReportBuilder'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft'
+import { usePermissions } from '@/lib/hooks/usePermissions'
 
 type Tab = 'setup' | 'calculator' | 'runs'
 type SetupSubTab = 'setup' | 'materials' | 'dependency'
@@ -35,6 +36,7 @@ export default function SystemShellSaaS({
   system: initialSystem, initialJobs, globalTags: initialTags, plan, profile, initialDraft,
 }: Props) {
   const router   = useRouter()
+  const { canWrite } = usePermissions()
   const limits   = getLimits(plan)
   const planMeta = PLAN_META[plan]
   const calc     = useCalcStore()
@@ -251,9 +253,9 @@ export default function SystemShellSaaS({
         <span className="text-base shrink-0">{sys.icon}</span>
         <span className="font-semibold text-xs text-ink truncate flex-1">{sys.name}</span>
         {saving && <span className="text-[10px] text-ink-faint flex items-center gap-1 shrink-0"><Save className="w-2.5 h-2.5" /></span>}
-        <button onClick={() => setShowReport(true)} className="btn-primary text-[11px] px-2.5 py-1 shrink-0">
+        {canWrite('systems') && <button onClick={() => setShowReport(true)} className="btn-primary text-[11px] px-2.5 py-1 shrink-0">
           <FileText className="w-3 h-3" />
-        </button>
+        </button>}
       </div>
 
       {/* Mobile tab bar */}
@@ -318,14 +320,14 @@ export default function SystemShellSaaS({
 
         {/* Actions */}
         <div className="px-3 pb-3 flex flex-col gap-2">
-          {jobs.length > 0 && (
+          {canWrite('systems') && jobs.length > 0 && (
             <button onClick={openAddToTender} className="btn-secondary text-xs w-full justify-center">
               <LinkIcon className="w-3.5 h-3.5" /> Tender
             </button>
           )}
-          <button onClick={() => setShowReport(true)} className="btn-primary text-xs w-full justify-center">
+          {canWrite('systems') && <button onClick={() => setShowReport(true)} className="btn-primary text-xs w-full justify-center">
             <FileText className="w-3.5 h-3.5" /> Report
-          </button>
+          </button>}
         </div>
       </aside>
 
@@ -386,7 +388,7 @@ export default function SystemShellSaaS({
               <div className="px-3 pt-3 pb-4 md:px-6 md:pt-4 md:pb-6">
                 {setupSubTab === 'setup' && (
                   <SetupTab sys={sys} onUpdate={updateSystemGated} globalTags={tags} onViewGraph={() => setSetupSubTab('dependency')}
-                    isLocked={!!sys.isLocked} onLock={lockSystem} onUnlock={unlockSystem} />
+                    isLocked={!!sys.isLocked} onLock={canWrite('systems') ? lockSystem : undefined} onUnlock={canWrite('systems') ? unlockSystem : undefined} />
                 )}
                 {setupSubTab === 'materials' && (
                   <MaterialsTab
