@@ -47,6 +47,7 @@ export default function DashboardClient({
       icon:  Package,
       href:  '/products',
       well:  'bg-emerald-100 text-emerald-600',
+      hero:  true,
       sub:   plan === 'FREE' && limits.maxSystems !== -1
                ? `${systemsCount} / ${limits.maxSystems} used`
                : null,
@@ -74,15 +75,19 @@ export default function DashboardClient({
             const Icon = s.icon
             return (
               <button key={s.label} onClick={() => router.push(s.href)}
-                className="card p-4 text-left hover:shadow-panel hover:-translate-y-0.5 transition-all group">
+                className={s.hero
+                  ? 'card p-4 text-left hover:shadow-panel hover:-translate-y-0.5 transition-all group bg-primary border-transparent'
+                  : 'card p-4 text-left hover:shadow-panel hover:-translate-y-0.5 transition-all group'}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-ink-faint font-medium">{s.label}</span>
-                  <span className={`w-6 h-6 rounded-lg flex items-center justify-center ${s.well}`}>
+                  <span className={s.hero ? 'text-xs text-white/70 font-medium' : 'text-xs text-ink-faint font-medium'}>{s.label}</span>
+                  <span className={s.hero
+                    ? 'w-6 h-6 rounded-lg flex items-center justify-center bg-white/20 text-white'
+                    : `w-6 h-6 rounded-lg flex items-center justify-center ${s.well}`}>
                     <Icon className="w-3.5 h-3.5" />
                   </span>
                 </div>
-                <div className="text-2xl font-bold text-ink">{s.value}</div>
-                {s.sub && <div className="text-[11px] text-ink-faint mt-0.5">{s.sub}</div>}
+                <div className={s.hero ? 'text-2xl font-bold text-white' : 'text-2xl font-bold text-ink'}>{s.value}</div>
+                {s.sub && <div className={s.hero ? 'text-[11px] text-white/60 mt-0.5' : 'text-[11px] text-ink-faint mt-0.5'}>{s.sub}</div>}
               </button>
             )
           })}
