@@ -13,6 +13,7 @@ import GanttToolbar from '@/components/projects/GanttToolbar'
 import MilestoneModal from '@/components/projects/MilestoneModal'
 import ActivityModal from '@/components/projects/ActivityModal'
 import ProjectFormModal from '@/components/projects/ProjectFormModal'
+import { MILESTONE_COLORS, getColor } from '@/components/projects/colors'
 
 /* ── Types ── */
 type Activity = {
@@ -60,6 +61,14 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
   const [milestoneModal, setMilestoneModal] = useState<{ open: boolean; milestone?: Milestone }>({ open: false })
   const [activityModal, setActivityModal] = useState<{ open: boolean; milestoneId?: string; activity?: Activity }>({ open: false })
   const [showStatusMenu, setShowStatusMenu] = useState(false)
+
+  // Inline milestone form
+  const [showInlineForm, setShowInlineForm] = useState(false)
+  const [inlineName, setInlineName] = useState('')
+  const [inlineColor, setInlineColor] = useState(() => getColor(MILESTONE_COLORS, project.milestones.length))
+  const [inlineStartDate, setInlineStartDate] = useState('')
+  const [inlineEndDate, setInlineEndDate] = useState('')
+  const [inlineSaving, setInlineSaving] = useState(false)
 
   /* ── PM Indicators ── */
   const allActivities = useMemo(() => project.milestones.flatMap(m => m.activities), [project])
@@ -193,6 +202,40 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
     }))
   }, [project.id])
 
+  const resetInlineForm = useCallback(() => {
+    setShowInlineForm(false)
+    setInlineName('')
+    setInlineStartDate('')
+    setInlineEndDate('')
+  }, [])
+
+  const handleInlineSave = useCallback(async () => {
+    if (!inlineName.trim()) return
+    setInlineSaving(true)
+    const res = await fetch(`/api/projects/${project.id}/milestones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: inlineName.trim(),
+        description: null,
+        color: inlineColor,
+        startDate: inlineStartDate || null,
+        endDate: inlineEndDate || null,
+      }),
+    })
+    if (res.ok) {
+      const created = await res.json()
+      setProject(prev => ({
+        ...prev,
+        milestones: [...prev.milestones, { ...created, activities: created.activities ?? [] }],
+      }))
+      resetInlineForm()
+      // Pre-select next color for the next milestone
+      setInlineColor(getColor(MILESTONE_COLORS, project.milestones.length + 1))
+    }
+    setInlineSaving(false)
+  }, [project.id, project.milestones.length, inlineName, inlineColor, inlineStartDate, inlineEndDate, resetInlineForm])
+
   const sm = STATUS_META[project.status] ?? STATUS_META.PLANNING
 
   return (
@@ -284,7 +327,10 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
         <GanttToolbar
           viewMode={viewMode}
           onViewModeChange={setViewMode}
-          onAddMilestone={() => setMilestoneModal({ open: true })}
+          onAddMilestone={() => {
+            setInlineColor(getColor(MILESTONE_COLORS, project.milestones.length))
+            setShowInlineForm(true)
+          }}
           onCollapseAll={collapseAll}
           onExpandAll={expandAll}
         />
