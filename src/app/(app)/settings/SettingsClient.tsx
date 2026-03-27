@@ -180,7 +180,7 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`sidebar-item text-[11px] ${tab === t.id ? 'active' : ''}`}>
-              <span className="icon-well">{t.icon}</span>
+              <span className={`icon-well ${tab === t.id ? 'text-primary' : ''}`}>{t.icon}</span>
               <span>{t.label}</span>
             </button>
           ))}

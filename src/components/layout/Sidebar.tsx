@@ -42,7 +42,7 @@ export default function Sidebar({ role }: Props) {
     <Link href="/settings"
       onClick={() => setMobileOpen(false)}
       className={`sidebar-item${pathname.startsWith('/settings') ? ' active' : ''}`}>
-      <span className="icon-well">
+      <span className={`icon-well ${pathname.startsWith('/settings') ? 'text-primary' : ''}`}>
         <Settings className="w-[15px] h-[15px]" strokeWidth={pathname.startsWith('/settings') ? 2.2 : 1.8} />
       </span>
       <span className="text-[13px] font-medium whitespace-nowrap
@@ -70,7 +70,7 @@ export default function Sidebar({ role }: Props) {
             <Link key={item.href} href={item.href}
               onClick={() => setMobileOpen(false)}
               className={`sidebar-item${active ? ' active' : ''}`}>
-              <span className="icon-well">
+              <span className={`icon-well ${active ? 'text-primary' : ''}`}>
                 <Icon className="w-[15px] h-[15px]" strokeWidth={active ? 2.2 : 1.8} />
               </span>
               <span className="text-[13px] font-medium whitespace-nowrap

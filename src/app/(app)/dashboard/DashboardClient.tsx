@@ -46,13 +46,14 @@ export default function DashboardClient({
       value: systemsCount,
       icon:  Package,
       href:  '/products',
+      well:  'bg-emerald-100 text-emerald-600',
       sub:   plan === 'FREE' && limits.maxSystems !== -1
                ? `${systemsCount} / ${limits.maxSystems} used`
                : null,
     },
-    { label: 'Tenders', value: tendersCount, icon: FileText, href: '/tenders', sub: null },
-    { label: 'Reports', value: reportsCount, icon: FileText, href: '/products', sub: null },
-    { label: 'Clients', value: clientsCount, icon: Users,    href: '/clients',  sub: null },
+    { label: 'Tenders', value: tendersCount, icon: FileText, href: '/tenders', well: 'bg-blue-100 text-blue-600', sub: null },
+    { label: 'Reports', value: reportsCount, icon: FileText, href: '/products', well: 'bg-amber-100 text-amber-600', sub: null },
+    { label: 'Clients', value: clientsCount, icon: Users,    href: '/clients',  well: 'bg-violet-100 text-violet-600', sub: null },
   ]
 
   return (
@@ -76,8 +77,8 @@ export default function DashboardClient({
                 className="card p-4 text-left hover:shadow-panel hover:-translate-y-0.5 transition-all group">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-ink-faint font-medium">{s.label}</span>
-                  <span className="w-6 h-6 rounded-lg bg-surface-200/40 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
-                    <Icon className="w-3.5 h-3.5 text-ink-faint group-hover:text-primary transition-colors" />
+                  <span className={`w-6 h-6 rounded-lg flex items-center justify-center ${s.well}`}>
+                    <Icon className="w-3.5 h-3.5" />
                   </span>
                 </div>
                 <div className="text-2xl font-bold text-ink">{s.value}</div>
