@@ -105,14 +105,13 @@ export default function MaterialsTable({
     return (
       <tbody key={groupId}>
         <tr
-          className="cursor-pointer select-none"
+          className="group-header"
           onClick={() => toggleSection(groupId)}
-          style={{ background: meta.bg }}
         >
-          <td colSpan={5} className="px-4 py-2 border-b border-t" style={{ borderColor: 'var(--color-surface-200)', borderLeft: `3px solid ${meta.color}` }}>
+          <td colSpan={5} style={{ borderLeft: `3px solid ${meta.color}` }}>
             <div className="flex items-center gap-2">
-              <Chevron className="w-3.5 h-3.5" style={{ color: meta.color }} />
-              <span className="font-semibold text-xs" style={{ color: meta.color }}>{meta.label}</span>
+              <Chevron className="w-3.5 h-3.5 text-ink-muted" />
+              <span className="font-semibold text-xs text-ink">{meta.label}</span>
               <span className="text-[10px] text-ink-faint">({items.length})</span>
               <span className="text-[10px] text-ink-faint ml-1">{meta.desc}</span>
             </div>
