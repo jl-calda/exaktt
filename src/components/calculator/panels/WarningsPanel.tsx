@@ -211,7 +211,7 @@ export default function WarningsPanel({ warnings, customDims, onChange, inputMod
                     icon={<Edit3 className="w-3 h-3" />}>
                     {isEd ? 'Cancel' : 'Edit'}
                   </Button>
-                  <Button size="xs" variant="danger" onClick={() => setDeleteId(w.id!)} icon={<Trash2 className="w-3 h-3" />} />
+                  <Button size="xs" variant="danger-ghost" onClick={() => setDeleteId(w.id!)} icon={<Trash2 className="w-3 h-3" />} />
                 </div>
               </div>
               {isEd && editDraft && (

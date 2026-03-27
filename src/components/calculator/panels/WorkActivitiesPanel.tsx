@@ -651,7 +651,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
                           <Button size="xs" variant={isEd ? 'primary' : 'ghost'} onClick={() => isEd ? resetMode() : startEdit(act)} icon={<Edit3 className="w-3 h-3" />}>
                             {isEd ? 'Cancel' : 'Edit'}
                           </Button>
-                          <Button size="xs" variant="danger" onClick={() => setDeleteId(act.id)} icon={<Trash2 className="w-3 h-3" />} />
+                          <Button size="xs" variant="danger-ghost" onClick={() => setDeleteId(act.id)} icon={<Trash2 className="w-3 h-3" />} />
                         </div>
                       </div>
 

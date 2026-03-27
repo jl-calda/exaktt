@@ -933,7 +933,7 @@ export default function MaterialsTab({ library, suppliers, categories, grades, m
                 const { price, lead, sup } = fmt(item)
                 const catIcon = categories.find((c: any) => c.name === item.category)?.icon ?? '📦'
                 return (
-                  <tr key={item.id} className={`cursor-pointer hover:bg-surface-100 transition-colors ${i % 2 === 0 ? 'bg-surface-50' : 'bg-surface-100/50'}`} onClick={() => openEdit(item)}>
+                  <tr key={item.id} className={`group/row cursor-pointer hover:bg-surface-100 transition-colors ${i % 2 === 0 ? 'bg-surface-50' : 'bg-surface-100/50'}`} onClick={() => openEdit(item)}>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-3">
                         {item.photo
@@ -980,9 +980,9 @@ export default function MaterialsTab({ library, suppliers, categories, grades, m
                     <td className="px-3 py-2.5 text-xs text-ink-muted">{price}</td>
                     <td className="px-3 py-2.5 text-xs text-ink-muted">{lead}</td>
                     <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
-                      <div className="flex gap-1">
-                        <Button size="xs" variant="ghost" onClick={() => openEdit(item)} icon={<Edit3 className="w-3 h-3" />}>Edit</Button>
-                        <Button size="xs" variant="danger" onClick={() => setDeleteId(item.id)} icon={<Trash2 className="w-3 h-3" />} />
+                      <div className="flex gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                        <Button size="xs" variant="ghost" onClick={() => openEdit(item)} icon={<Edit3 className="w-3 h-3" />} />
+                        <Button size="xs" variant="danger-ghost" onClick={() => setDeleteId(item.id)} icon={<Trash2 className="w-3 h-3" />} />
                       </div>
                     </td>
                   </tr>

@@ -169,7 +169,7 @@ export default function ManufacturersTab({ manufacturers, library, onRefresh }: 
                 </div>
                 <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button size="xs" variant="ghost" onClick={() => openEdit(m)} icon={<Edit3 className="w-3 h-3" />} />
-                  <Button size="xs" variant="danger" onClick={() => setDeleteId(m.id)} icon={<Trash2 className="w-3 h-3" />} />
+                  <Button size="xs" variant="danger-ghost" onClick={() => setDeleteId(m.id)} icon={<Trash2 className="w-3 h-3" />} />
                 </div>
               </div>
             )

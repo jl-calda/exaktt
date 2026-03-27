@@ -247,7 +247,7 @@ function BOMItemRow({
         options={QTY_UNITS.map(u => ({ value: u, label: u }))} className="w-20" />
       <Input label="Notes" value={item.notes ?? ''} onChange={e => onChange({ ...item, notes: e.target.value })}
         placeholder="Optional" className="w-40" />
-      <Button size="xs" variant="danger" onClick={onRemove} icon={<Trash2 className="w-3 h-3" />} className="mb-1 flex-shrink-0" />
+      <Button size="xs" variant="danger-ghost" onClick={onRemove} icon={<Trash2 className="w-3 h-3" />} className="mb-1 flex-shrink-0" />
     </div>
   )
 }
@@ -310,7 +310,7 @@ function WorkActivityRefRow({
           {item._categoryIcon} {item._categoryName} — {item._rateValue}/{item._rateUnitLabel}
         </div>
       )}
-      <Button size="xs" variant="danger" onClick={onRemove} icon={<Trash2 className="w-3 h-3" />} className="mb-1 flex-shrink-0" />
+      <Button size="xs" variant="danger-ghost" onClick={onRemove} icon={<Trash2 className="w-3 h-3" />} className="mb-1 flex-shrink-0" />
     </div>
   )
 }
@@ -386,7 +386,7 @@ function BracketForm({
                     placeholder="Length" className="w-36" />
                   <Select label="Unit" value={p.unit} onChange={e => updateParam(i, { ...p, unit: e.target.value })}
                     options={PARAM_UNITS} className="w-20" />
-                  <Button size="xs" variant="danger" onClick={() => removeParam(i)} icon={<Trash2 className="w-3 h-3" />} className="mb-1" />
+                  <Button size="xs" variant="danger-ghost" onClick={() => removeParam(i)} icon={<Trash2 className="w-3 h-3" />} className="mb-1" />
                 </div>
               </div>
           ))}
@@ -534,7 +534,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
                   <Button size="xs" variant={isEd ? 'primary' : 'ghost'} onClick={() => isEd ? cancelEdit() : startEdit(bracket)} icon={<Edit3 className="w-3 h-3" />}>
                     {isEd ? 'Cancel' : 'Edit'}
                   </Button>
-                  <Button size="xs" variant="danger" onClick={() => setDeleteId(bracket.id)} icon={<Trash2 className="w-3 h-3" />} />
+                  <Button size="xs" variant="danger-ghost" onClick={() => setDeleteId(bracket.id)} icon={<Trash2 className="w-3 h-3" />} />
                 </div>
               </div>
 

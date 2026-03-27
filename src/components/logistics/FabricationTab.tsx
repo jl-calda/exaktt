@@ -250,9 +250,9 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
     {
       key: 'actions', label: '', width: 'w-16', align: 'right' as const,
       render: (w: any) => (
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
+        <div className="flex gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity justify-end">
           <Button size="xs" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); openEditWar(w) }} icon={<Edit3 className="w-3 h-3" />} />
-          <Button size="xs" variant="danger" onClick={(e: React.MouseEvent) => { e.stopPropagation(); removeWar(w) }} icon={<Trash2 className="w-3 h-3" />} />
+          <Button size="xs" variant="danger-ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); removeWar(w) }} icon={<Trash2 className="w-3 h-3" />} />
         </div>
       ),
     },
