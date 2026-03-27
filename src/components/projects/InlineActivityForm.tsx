@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { X, CheckCircle2, FileText, Clock, AlertTriangle, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { ACTIVITY_COLORS } from '@/components/projects/colors'
+import InlineEmojiPicker from './InlineEmojiPicker'
 
 const STATUS_OPTIONS = [
   { value: 'NOT_STARTED', label: 'Not Started' },
@@ -28,8 +28,10 @@ interface InlineActivityFormProps {
     isWithinDay?: boolean; startTime?: string | null; endTime?: string | null
     assetIds: string[]; skills?: string[]; requiredOutput: string[]
     estimatedHours?: number | null
+    icon?: string | null
   }
   defaultColor: string
+  defaultIcon: string
   teams: any[]
   assets: any[]
   onSave: (data: any) => Promise<void>
@@ -37,13 +39,13 @@ interface InlineActivityFormProps {
 }
 
 export default function InlineActivityForm({
-  activity, defaultColor, teams, assets, onSave, onCancel,
+  activity, defaultColor, defaultIcon, teams, assets, onSave, onCancel,
 }: InlineActivityFormProps) {
   const [name, setName] = useState(activity?.name ?? '')
   const [description, setDescription] = useState(activity?.description ?? '')
   const [status, setStatus] = useState(activity?.status ?? 'NOT_STARTED')
   const [progress, setProgress] = useState(activity?.progress ?? 0)
-  const [color, setColor] = useState(activity?.color ?? defaultColor)
+  const [icon, setIcon] = useState(activity?.icon ?? defaultIcon)
   const [teamId, setTeamId] = useState(activity?.teamId ?? '')
   const [assigneeName, setAssigneeName] = useState(activity?.assigneeName ?? '')
   const [startDate, setStartDate] = useState(
@@ -66,6 +68,9 @@ export default function InlineActivityForm({
   const [outputInput, setOutputInput] = useState('')
   const [showAssetDropdown, setShowAssetDropdown] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // Color is auto-assigned, not user-selectable
+  const color = activity?.color ?? defaultColor
 
   const skillRef = useRef<HTMLDivElement>(null)
   const assetRef = useRef<HTMLDivElement>(null)
@@ -137,6 +142,7 @@ export default function InlineActivityForm({
     try {
       await onSave({
         name: name.trim(), description: description || null, status, progress, color,
+        icon,
         teamId: teamId || null, assigneeName: assigneeName || null,
         startDate: startDate || null, endDate: endDate || null,
         isWithinDay, startTime: isWithinDay ? startTime || null : null,
@@ -174,8 +180,10 @@ export default function InlineActivityForm({
 
   return (
     <div className="animate-fade-in flex flex-col gap-1.5 py-1.5 px-2" onKeyDown={handleKeyDown}>
-      {/* Row 1: Name + color dots + Save/Cancel */}
+      {/* Row 1: Icon + Name + color dot + Save/Cancel */}
       <div className="flex items-center gap-1.5">
+        <InlineEmojiPicker value={icon} onChange={setIcon} />
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} title={`Auto color: ${color}`} />
         <input
           autoFocus
           className="input flex-1 h-7 text-xs px-2 min-w-0"
@@ -184,17 +192,6 @@ export default function InlineActivityForm({
           onChange={e => setName(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleSave() }}
         />
-        <div className="flex items-center gap-0.5 shrink-0">
-          {ACTIVITY_COLORS.map(c => (
-            <button
-              key={c}
-              className={`w-3.5 h-3.5 rounded-full transition-all shrink-0 ${color === c ? 'ring-2 ring-primary ring-offset-1' : 'opacity-60 hover:opacity-100'}`}
-              style={{ background: c }}
-              onClick={() => setColor(c)}
-              type="button"
-            />
-          ))}
-        </div>
         <Button variant="primary" size="xs" onClick={handleSave} disabled={!name.trim() || saving} loading={saving}>
           <CheckCircle2 size={12} /> Save
         </Button>

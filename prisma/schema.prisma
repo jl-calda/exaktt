@@ -1070,6 +1070,7 @@ model ProjectMilestone {
   name        String
   description String?
   color       String   @default("#3b82f6")
+  icon        String?
   startDate   DateTime?
   endDate     DateTime?
   sortOrder   Int      @default(0)
@@ -1094,6 +1095,7 @@ model ProjectActivity {
   requiredOutput String[]       @default([])
   skills         String[]       @default([])
   estimatedHours Float?
+  icon           String?
   startDate      DateTime?
   endDate        DateTime?
   isWithinDay    Boolean        @default(false)

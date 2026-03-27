@@ -10,6 +10,7 @@ import { ChevronDown, ChevronRight, Plus, Trash2, Pencil } from 'lucide-react'
 import TeamPill from './TeamPill'
 import InlineMilestoneForm from './InlineMilestoneForm'
 import InlineActivityForm from './InlineActivityForm'
+import { getMilestoneColor, getActivityColor, getDefaultMilestoneIcon, getDefaultActivityIcon } from './colors'
 
 const ROW_H = 32
 const LABEL_W = 220
@@ -23,11 +24,13 @@ type Activity = {
   team?: any; assignee?: any; assigneeName?: string | null
   teamId?: string | null; assetIds?: string[]; skills?: string[]; requiredOutput?: string[]
   estimatedHours?: number | null
+  icon?: string | null
 }
 type Milestone = {
   id: string; name: string; color: string; description?: string | null
   startDate?: string | null; endDate?: string | null
   activities: Activity[]
+  icon?: string | null
 }
 type Project = {
   id: string; name: string
@@ -122,13 +125,16 @@ export default function GanttChart({
     return pos
   })()
 
-  // Build rows
+  // Build rows with auto-assigned colors
   type Row = {
     type: 'milestone' | 'activity' | 'new-milestone' | 'new-activity'
     id: string
     milestoneId?: string
+    milestoneIndex?: number
+    activityIndex?: number
     label: string
     color: string
+    icon: string
     bar: { left: number; width: number } | null
     progress?: number
     team?: any
@@ -143,18 +149,24 @@ export default function GanttChart({
   }
 
   const rows: Row[] = []
-  project.milestones.forEach(m => {
+  project.milestones.forEach((m, mi) => {
+    const mColor = getMilestoneColor(mi)
     const mBar = getBarPos(m.startDate, m.endDate)
+    const mIcon = m.icon || getDefaultMilestoneIcon(mi)
     rows.push({
-      type: 'milestone', id: m.id, label: m.name, color: m.color,
+      type: 'milestone', id: m.id, milestoneIndex: mi,
+      label: m.name, color: mColor, icon: mIcon,
       bar: mBar, isCollapsed: collapsed.has(m.id), isEditing: editingId === m.id, data: m,
     })
     if (!collapsed.has(m.id)) {
-      m.activities.forEach(a => {
+      m.activities.forEach((a, ai) => {
+        const aColor = getActivityColor(mColor, ai)
         const aBar = getBarPos(a.startDate, a.endDate)
+        const aIcon = a.icon || getDefaultActivityIcon(ai)
         rows.push({
           type: 'activity', id: a.id, milestoneId: m.id,
-          label: a.name, color: a.color, bar: aBar,
+          milestoneIndex: mi, activityIndex: ai,
+          label: a.name, color: aColor, icon: aIcon, bar: aBar,
           progress: a.progress, team: a.team,
           assignee: a.assignee, assigneeName: a.assigneeName,
           isWithinDay: a.isWithinDay, startTime: a.startTime, endTime: a.endTime,
@@ -162,17 +174,25 @@ export default function GanttChart({
         })
       })
       if (newRow?.type === 'activity' && newRow.milestoneId === m.id) {
+        const newAi = m.activities.length
         rows.push({
           type: 'new-activity', id: `new-activity-${m.id}`, milestoneId: m.id,
-          label: '', color: '', bar: null, data: null,
+          milestoneIndex: mi, activityIndex: newAi,
+          label: '', color: getActivityColor(mColor, newAi),
+          icon: getDefaultActivityIcon(newAi),
+          bar: null, data: null,
         })
       }
     }
   })
   if (newRow?.type === 'milestone') {
+    const newMi = project.milestones.length
     rows.push({
       type: 'new-milestone', id: 'new-milestone',
-      label: '', color: '', bar: null, data: null,
+      milestoneIndex: newMi,
+      label: '', color: getMilestoneColor(newMi),
+      icon: getDefaultMilestoneIcon(newMi),
+      bar: null, data: null,
     })
   }
 
@@ -215,14 +235,16 @@ export default function GanttChart({
                   {(row.type === 'milestone' || row.type === 'new-milestone') ? (
                     <InlineMilestoneForm
                       milestone={row.data}
-                      defaultColor={row.data?.color ?? '#3b82f6'}
+                      defaultColor={row.color}
+                      defaultIcon={row.icon}
                       onSave={async (data) => { await onSaveMilestone(data, row.data?.id) }}
                       onCancel={onCancelEdit}
                     />
                   ) : (
                     <InlineActivityForm
                       activity={row.data}
-                      defaultColor={row.data?.color ?? '#10b981'}
+                      defaultColor={row.color}
+                      defaultIcon={row.icon}
                       teams={teams}
                       assets={assets}
                       onSave={async (data) => { await onSaveActivity(row.milestoneId!, data, row.data?.id) }}
@@ -242,6 +264,7 @@ export default function GanttChart({
                         : <ChevronDown className="w-3 h-3" />}
                     </button>
                   )}
+                  <span className="text-xs shrink-0 leading-none" title={row.icon}>{row.icon}</span>
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ background: row.color }} />
                   <span
                     className={`text-[11px] truncate flex-1 cursor-pointer hover:text-primary ${

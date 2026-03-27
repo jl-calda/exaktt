@@ -25,11 +25,13 @@ type Project = {
   milestones: {
     id: string; name: string; color: string
     startDate?: string | null; endDate?: string | null
+    icon?: string | null
     activities: {
       id: string; name: string; startDate?: string | null; endDate?: string | null
       status: string; progress: number; color: string
       isWithinDay?: boolean; startTime?: string | null; endTime?: string | null
       team?: any; assignee?: any; assigneeName?: string | null
+      icon?: string | null
     }[]
   }[]
 }
