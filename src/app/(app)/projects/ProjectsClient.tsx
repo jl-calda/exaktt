@@ -4,11 +4,12 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import {
-  FolderKanban, Plus, Search, Activity, CheckCircle2, Clock, DollarSign,
+  FolderKanban, Plus, Search, Activity, CheckCircle2, Clock, DollarSign, MapPin,
 } from 'lucide-react'
 import DataTable, { useTableSort, type Column, type GroupDef } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
 import ProjectFormModal from '@/components/projects/ProjectFormModal'
+import Link from 'next/link'
 
 /* ── Status meta ── */
 const STATUS_META: Record<string, { label: string; bg: string; color: string }> = {
@@ -164,10 +165,17 @@ export default function ProjectsClient({ initialProjects, teams }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-semibold text-base text-ink">Projects</h1>
-          <Button variant="primary" size="sm" icon={<Plus className="w-3.5 h-3.5" />}
-            onClick={() => setShowCreate(true)}>
-            New Project
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/projects/map">
+              <Button variant="secondary" size="sm" icon={<MapPin className="w-3.5 h-3.5" />}>
+                Map
+              </Button>
+            </Link>
+            <Button variant="primary" size="sm" icon={<Plus className="w-3.5 h-3.5" />}
+              onClick={() => setShowCreate(true)}>
+              New Project
+            </Button>
+          </div>
         </div>
 
         {/* Stat cards */}
