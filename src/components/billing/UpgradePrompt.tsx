@@ -79,7 +79,7 @@ export default function UpgradePrompt({ feature, message, description, plan = 'F
         <div className="p-5 space-y-3">
           {[proPlan, annualPlan].map(p => (
             <button key={p.id} onClick={() => handleUpgrade(p.priceId!)} disabled={loading}
-              className={`w-full text-left rounded-xl border-2 p-4 transition-all hover:border-primary/40 ${p.highlighted ? 'border-primary bg-primary/5' : 'border-surface-300'}`}>
+              className={`w-full text-left rounded-xl border-2 p-4 transition-all duration-200 ${p.highlighted ? 'bg-surface-50 border-primary shadow-sm ring-1 ring-primary/20' : 'bg-surface-100/60 border-surface-200 hover:bg-surface-100'}`}>
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-semibold text-sm text-ink">{p.name}</div>

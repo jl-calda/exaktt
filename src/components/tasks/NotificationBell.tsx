@@ -46,7 +46,7 @@ export default function NotificationBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-80 bg-surface border border-surface-200 shadow-xl overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
+        <div className="absolute right-0 top-full mt-2 z-50 w-80 bg-surface border border-surface-200 shadow-xl overflow-hidden animate-fade-in" style={{ borderRadius: 'var(--radius-card)' }}>
           <div className="px-3 py-2 border-b border-surface-200 flex items-center justify-between">
             <span className="text-xs font-semibold text-ink">Notifications</span>
             {unreadCount > 0 && <button onClick={markAllRead} className="text-[10px] text-primary hover:underline">Mark all read</button>}
@@ -56,7 +56,7 @@ export default function NotificationBell() {
               <div key={n.id} className={`px-3 py-2.5 ${n.isRead ? '' : 'bg-primary/5'}`}>
                 <div className="text-xs font-medium text-ink">{n.title}</div>
                 {n.body && <div className="text-[10px] text-ink-muted mt-0.5">{n.body}</div>}
-                <div className="text-[9px] text-ink-faint mt-1">{format(new Date(n.createdAt), 'dd MMM HH:mm')}</div>
+                <div className="text-[10px] text-ink-faint mt-1">{format(new Date(n.createdAt), 'dd MMM HH:mm')}</div>
               </div>
             ))}
             {notifications.length === 0 && <div className="px-3 py-6 text-center text-xs text-ink-faint">No notifications</div>}

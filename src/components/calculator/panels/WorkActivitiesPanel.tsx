@@ -184,7 +184,7 @@ function AddActivityDropdown({ rates, phase, onSelectRate, onManual }: {
             <div className="max-h-60 overflow-y-auto">
               {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([cat, wars]) => (
                 <div key={cat}>
-                  <div className="px-3 pt-2 pb-1 text-[9px] font-bold text-ink-faint uppercase tracking-wider">
+                  <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-ink-faint uppercase tracking-wider">
                     {wars[0]?.categoryIcon ?? '🔧'} {cat}
                   </div>
                   {wars.map(w => (

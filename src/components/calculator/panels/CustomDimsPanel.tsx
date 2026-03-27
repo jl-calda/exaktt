@@ -501,7 +501,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
                   const checked = (d.sumKeys ?? []).includes(o.value)
                   return (
                     <label key={o.value}
-                      className={`flex items-center gap-1.5 cursor-pointer border px-3 py-1.5 text-xs font-semibold transition-all ${checked ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-surface-50 border-surface-300 text-ink-muted hover:bg-surface-100'}`}
+                      className={`flex items-center gap-1.5 cursor-pointer border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${checked ? 'bg-surface-50 border-primary shadow-sm text-primary' : 'bg-surface-100/60 border-surface-200 text-ink-muted hover:bg-surface-100'}`}
                       style={{ borderRadius: 'var(--radius)' }}>
                       <input type="checkbox" checked={checked} className="sr-only"
                         onChange={e => set('sumKeys')(e.target.checked ? [...(d.sumKeys ?? []), o.value] : (d.sumKeys ?? []).filter(k => k !== o.value))} />

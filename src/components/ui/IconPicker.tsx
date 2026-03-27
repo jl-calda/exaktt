@@ -83,7 +83,7 @@ export function IconPicker({ value, onChange, label }: Props) {
 
       {open && typeof document !== 'undefined' && createPortal(
         <div ref={popoverRef}
-          className="fixed z-[9999] bg-surface-50 border border-surface-200 rounded-xl w-72 overflow-hidden"
+          className="fixed z-[9999] bg-surface-50 border border-surface-200 rounded-xl w-72 overflow-hidden animate-fade-in"
           style={{ top: pos.top, right: pos.right, boxShadow: 'var(--shadow-float)' }}>
           <div className="px-3 pt-3 pb-2">
             <input
@@ -108,7 +108,7 @@ export function IconPicker({ value, onChange, label }: Props) {
             ) : (
               GROUPS.map(g => (
                 <div key={g.label}>
-                  <div className="text-[9px] font-bold uppercase tracking-wide text-ink-faint mb-1.5">{g.label}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wide text-ink-faint mb-1.5">{g.label}</div>
                   <div className="flex flex-wrap gap-1">
                     {g.icons.map(ic => (
                       <EmojiBtn key={ic} icon={ic} selected={value === ic}

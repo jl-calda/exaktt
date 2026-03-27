@@ -553,7 +553,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
                           return (
                             <span key={p.key} className="text-xs border px-2 py-0.5 font-mono text-ink border-surface-200" style={{ borderRadius: 'var(--radius)', background: 'var(--color-surface-100)' }}>
                               {p.key} = {displayVal}{p.unit}
-                              {isStock && <span className="text-[9px] ml-1 text-primary font-sans font-semibold">(stock)</span>}
+                              {isStock && <span className="text-[10px] ml-1 text-primary font-sans font-semibold">(stock)</span>}
                             </span>
                           )
                         })}
@@ -595,7 +595,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
                             <div key={item.id} className="flex items-center gap-2 text-xs text-ink">
                               <span className="text-ink-faint w-3">└</span>
                               <span className="font-medium">{matName}</span>
-                              {item.customName && <span className="text-[9px] text-ink-faint border border-surface-300 px-1 rounded">custom</span>}
+                              {item.customName && <span className="text-[10px] text-ink-faint border border-surface-300 px-1 rounded">custom</span>}
                               <span className="text-ink-muted font-mono">{qty} {item.qtyUnit}</span>
                               {wasteHint && <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded font-medium">{wasteHint}</span>}
                               {item.notes && <span className="text-ink-faint">{item.notes}</span>}

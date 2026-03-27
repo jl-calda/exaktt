@@ -57,7 +57,7 @@ export function ColorPicker({ value, onChange, label }: Props) {
 
       {open && typeof document !== 'undefined' && createPortal(
         <div ref={popoverRef}
-          className="fixed z-[9999] bg-surface-50 border border-surface-200 rounded-xl p-3 w-52"
+          className="fixed z-[9999] bg-surface-50 border border-surface-200 rounded-xl p-3 w-52 animate-fade-in"
           style={{ top: pos.top, right: pos.right, boxShadow: 'var(--shadow-float)' }}>
           <div className="flex flex-wrap gap-1.5">
             {SWATCHES.map(c => (

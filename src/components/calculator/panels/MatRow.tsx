@@ -220,7 +220,7 @@ function DependencyChain({ mat, ruleSet, criteriaKeys, customDims, customCriteri
                 <div key={key} className="flex items-center gap-1.5 text-[11px]">
                   <span className="leading-none">{(dim as any)?.icon ?? '🔗'}</span>
                   <span className="text-ink">{(dim as any)?.label ?? (dim as any)?.name ?? key}</span>
-                  {isCustom && <span className="badge bg-violet-50 text-violet-600 text-[9px] px-1 py-0">custom</span>}
+                  {isCustom && <span className="badge bg-violet-50 text-violet-600 text-[10px] px-1 py-0">custom</span>}
                 </div>
               )
             })}
@@ -242,19 +242,19 @@ function DependencyChain({ mat, ruleSet, criteriaKeys, customDims, customCriteri
                 <div key={row.id} className="rounded border border-surface-200 bg-surface-50 px-2.5 py-2"
                   style={{ borderRadius: 'var(--radius)' }}>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    {idx > 0 && <span className="text-[9px] text-ink font-bold">ELSE IF</span>}
+                    {idx > 0 && <span className="text-[10px] text-ink font-bold">ELSE IF</span>}
                     {condCr && (
-                      <span className="text-[9px] font-semibold rounded px-1 py-0.5"
+                      <span className="text-[10px] font-semibold rounded px-1 py-0.5"
                         style={ChipStyle(condCr.color ?? '#0891b2')}>
                         {condCr.icon} {condCr.name} = {row.condition?.whenValue ? 'ON' : 'OFF'}
                       </span>
                     )}
-                    {!condCr && idx > 0 && <span className="text-[9px] text-ink-faint">always</span>}
+                    {!condCr && idx > 0 && <span className="text-[10px] text-ink-faint">always</span>}
                   </div>
                   {grp && (
                     <div className="mt-1 font-semibold text-[10px]" style={{ color: grp.color }}>{grp.icon} {rt.label}</div>
                   )}
-                  {row.waste > 0 && <div className="text-[9px] text-ink-faint mt-0.5">+{row.waste}% waste</div>}
+                  {row.waste > 0 && <div className="text-[10px] text-ink-faint mt-0.5">+{row.waste}% waste</div>}
                 </div>
               )
             })}
