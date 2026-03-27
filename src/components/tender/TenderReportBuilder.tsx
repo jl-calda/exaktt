@@ -8,7 +8,7 @@ import {
   Plus, Trash2, ChevronUp, ChevronDown, Download, Save,
   BookTemplate, FileText, GripVertical, DollarSign, Type,
   Briefcase, X, ArrowLeft, Lock, Unlock, Upload, ImageIcon,
-  ClipboardList, StickyNote, Calculator,
+  ClipboardList, StickyNote, Calculator, Flag,
 } from 'lucide-react'
 import { Button, Input, Select } from '@/components/ui'
 import { NumberInput } from '@/components/ui/Input'
@@ -126,6 +126,38 @@ export default function TenderReportBuilder({
   const [confirmAction, setConfirmAction] = useState<'submit' | 'revert' | null>(null)
   const isReadOnly = status === 'submitted'
   const reportId = existingReport?.id
+
+  /* ── Tender-level status (Won / Lost / Cancelled) ──────────────────── */
+  type TenderStatus = 'DRAFT' | 'SUBMITTED' | 'WON' | 'LOST' | 'CANCELLED'
+  const TENDER_STATUS_META: Record<TenderStatus, { label: string; bg: string; color: string }> = {
+    DRAFT:     { label: 'Draft',     bg: '#f1f5f9', color: '#64748b' },
+    SUBMITTED: { label: 'Submitted', bg: '#eff6ff', color: '#1d4ed8' },
+    WON:       { label: 'Won',       bg: '#f0fdf4', color: '#16a34a' },
+    LOST:      { label: 'Lost',      bg: '#fef2f2', color: '#dc2626' },
+    CANCELLED: { label: 'Cancelled', bg: '#f9fafb', color: '#9ca3af' },
+  }
+  const TENDER_TRANSITIONS: Record<TenderStatus, TenderStatus[]> = {
+    DRAFT:     ['WON', 'LOST', 'CANCELLED'],
+    SUBMITTED: ['WON', 'LOST', 'DRAFT'],
+    WON:       ['DRAFT'],
+    LOST:      ['DRAFT'],
+    CANCELLED: ['DRAFT'],
+  }
+  const [tenderStatus, setTenderStatus] = useState<TenderStatus>((tender.status as TenderStatus) ?? 'DRAFT')
+  const [showTenderStatusMenu, setShowTenderStatusMenu] = useState(false)
+  const tenderMeta = TENDER_STATUS_META[tenderStatus] ?? TENDER_STATUS_META.DRAFT
+  const tenderTransitions = TENDER_TRANSITIONS[tenderStatus] ?? []
+
+  const handleTenderStatusChange = async (newStatus: TenderStatus) => {
+    setShowTenderStatusMenu(false)
+    const res = await fetch(`/api/tenders/${tender.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    })
+    const { data } = await res.json()
+    if (data) setTenderStatus(newStatus)
+  }
 
   /* ── Calculator tab state ────────────────────────────────────────────── */
   const calc = useCalcStore()
@@ -587,6 +619,39 @@ export default function TenderReportBuilder({
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${status === 'submitted' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
           {status}
         </span>
+
+        {/* Tender status dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setShowTenderStatusMenu(prev => !prev)}
+            className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border border-surface-200 hover:bg-surface-100 transition-colors"
+            style={{ background: tenderMeta.bg, color: tenderMeta.color }}
+          >
+            <Flag className="w-2.5 h-2.5" />
+            Tender: {tenderMeta.label}
+          </button>
+          {showTenderStatusMenu && tenderTransitions.length > 0 && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setShowTenderStatusMenu(false)} />
+              <div className="absolute top-full left-0 mt-1 z-30 bg-surface-50 border border-surface-200 rounded-lg shadow-[var(--shadow-panel)] py-1 min-w-[140px] animate-fade-in">
+                {tenderTransitions.map(s => {
+                  const m = TENDER_STATUS_META[s]
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => handleTenderStatusChange(s)}
+                      className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-surface-100 transition-colors flex items-center gap-2"
+                    >
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: m.color }} />
+                      Mark as {m.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
         <div className="flex-1" />
         {error && <span className="text-xs text-red-500">{error}</span>}
         {status === 'draft' && reportId && (

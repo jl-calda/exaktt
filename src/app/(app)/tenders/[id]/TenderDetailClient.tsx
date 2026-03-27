@@ -1,12 +1,13 @@
 // src/app/(app)/tenders/[id]/TenderDetailClient.tsx
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, Trash2, CalendarDays, X, FileText, ChevronRight } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import { NumberInput } from '@/components/ui/Input'
 import { format } from 'date-fns'
 import { usePermissions } from '@/lib/hooks/usePermissions'
+import DataTable, { useTableSort, type Column, type GroupDef } from '@/components/ui/DataTable'
 
 type TenderStatus = 'DRAFT' | 'SUBMITTED' | 'WON' | 'LOST' | 'CANCELLED'
 
@@ -18,14 +19,6 @@ const STATUS_META: Record<TenderStatus, { label: string; bg: string; color: stri
   CANCELLED: { label: 'Cancelled', bg: '#f9fafb', color: '#9ca3af' },
 }
 
-const STATUS_TRANSITIONS: Record<TenderStatus, TenderStatus[]> = {
-  DRAFT:     ['WON', 'LOST', 'CANCELLED'],
-  SUBMITTED: ['WON', 'LOST', 'DRAFT'],
-  WON:       ['DRAFT'],
-  LOST:      ['DRAFT'],
-  CANCELLED: ['DRAFT'],
-}
-
 interface Props {
   tender:  any
   allJobs: any[]
@@ -33,6 +26,19 @@ interface Props {
   tenderReports: any[]
   clients: any[]
   templates?: any[]
+}
+
+/* ── Unified row type for Estimates + Quotations table ───────────────── */
+type RowKind = 'estimate' | 'quotation'
+interface TableRow {
+  id:       string
+  kind:     RowKind
+  // Estimate fields
+  system?:  any
+  job?:     any
+  notes?:   string
+  // Quotation fields
+  report?:  any
 }
 
 export default function TenderDetailClient({ tender: initialTender, allJobs, profile, tenderReports, clients, templates = [] }: Props) {
@@ -49,6 +55,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
   const [creating,    setCreating]    = useState(false)
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const [predefinedItems, setPredefinedItems] = useState<any[]>(initialTender.predefinedItems ?? [])
+  const [groupBy, setGroupBy] = useState<string>('none')
   const currency = 'SGD'
 
   const addPredefinedItem = () => {
@@ -74,16 +81,6 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
 
   const meta = STATUS_META[tender.status as TenderStatus] ?? STATUS_META.DRAFT
 
-  const handleStatusChange = async (newStatus: TenderStatus) => {
-    const res = await fetch('/api/tenders/' + tender.id, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
-    })
-    const { data } = await res.json()
-    if (data) setTender((t: any) => ({ ...t, status: newStatus }))
-  }
-
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedJob) return
@@ -101,7 +98,6 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
     })
     const { data, error } = await res.json()
     if (data) {
-      // Enrich the item with job/system info for display
       const enriched = {
         ...data,
         job:    allJobs.find(j => j.id === selectedJob),
@@ -151,8 +147,6 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
     }
   }
 
-  const transitions = STATUS_TRANSITIONS[tender.status as TenderStatus] ?? []
-
   // Group jobs by system for the add modal
   const jobsBySystem: Record<string, { system: any; jobs: any[] }> = {}
   allJobs.forEach(job => {
@@ -160,6 +154,178 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
     if (!jobsBySystem[sysId]) jobsBySystem[sysId] = { system: job.mtoSystem, jobs: [] }
     jobsBySystem[sysId].jobs.push(job)
   })
+
+  /* ── Unified table: estimates + quotations ─────────────────────────── */
+  const tableRows = useMemo<TableRow[]>(() => {
+    const estimateRows: TableRow[] = items.map(item => ({
+      id: item.id,
+      kind: 'estimate' as const,
+      system: item.system,
+      job: item.job,
+      notes: item.notes,
+    }))
+    const quotationRows: TableRow[] = tenderReports.map(r => ({
+      id: r.id,
+      kind: 'quotation' as const,
+      report: r,
+    }))
+    return [...estimateRows, ...quotationRows]
+  }, [items, tenderReports])
+
+  const columns = useMemo<Column<TableRow>[]>(() => [
+    {
+      key: 'type',
+      label: 'Type',
+      sortable: true,
+      sortKey: (row) => row.kind,
+      width: 'w-24',
+      render: (row) => (
+        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${
+          row.kind === 'estimate' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+        }`}>
+          {row.kind === 'estimate' ? 'Estimate' : 'Quotation'}
+        </span>
+      ),
+    },
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      sortKey: (row) => row.kind === 'estimate'
+        ? (row.system?.name ?? '')
+        : (row.report?.reference || row.report?.title || ''),
+      render: (row) => {
+        if (row.kind === 'estimate') {
+          return (
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-md flex items-center justify-center text-sm flex-shrink-0 bg-surface-200/40">
+                {row.system?.icon ?? '📦'}
+              </span>
+              <div className="min-w-0">
+                <div className="font-medium text-xs text-ink truncate">{row.system?.name ?? '—'}</div>
+                <div className="text-[10px] text-ink-faint truncate">{row.job?.name ?? '—'}</div>
+              </div>
+            </div>
+          )
+        }
+        return (
+          <div className="flex items-center gap-2">
+            <span className="icon-well bg-surface-200/40 w-6 h-6 flex items-center justify-center rounded-md">
+              <FileText className="w-3 h-3 text-ink-muted" />
+            </span>
+            <div className="min-w-0">
+              <div className="font-medium text-xs text-ink truncate">{row.report?.reference || row.report?.title}</div>
+              {row.report?.clientName && <div className="text-[10px] text-ink-faint truncate">To: {row.report.clientName}</div>}
+            </div>
+          </div>
+        )
+      },
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      sortKey: (row) => row.kind === 'quotation' ? (row.report?.status ?? '') : '',
+      width: 'w-24',
+      render: (row) => {
+        if (row.kind === 'quotation') {
+          const s = row.report?.status
+          return (
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${
+              s === 'submitted' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+            }`}>
+              {s}
+            </span>
+          )
+        }
+        return <span className="text-[10px] text-ink-faint">—</span>
+      },
+    },
+    {
+      key: 'date',
+      label: 'Date',
+      sortable: true,
+      sortKey: (row) => {
+        if (row.kind === 'estimate') return row.job?.calculatedAt ? new Date(row.job.calculatedAt).getTime() : 0
+        return row.report?.date ? new Date(row.report.date).getTime() : 0
+      },
+      render: (row) => {
+        const d = row.kind === 'estimate' ? row.job?.calculatedAt : row.report?.date
+        return <span className="text-xs text-ink-muted">{d ? format(new Date(d), 'dd MMM yyyy') : '—'}</span>
+      },
+    },
+    {
+      key: 'detail',
+      label: 'Detail',
+      render: (row) => {
+        if (row.kind === 'estimate') {
+          return <span className="text-xs text-ink-faint truncate">{row.notes || row.job?.createdBy?.name || '—'}</span>
+        }
+        return (
+          <span className="text-xs text-ink-faint">
+            {row.report?.revisionNo ? `Rev ${row.report.revisionNo}` : ''}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: 'w-16',
+      align: 'right' as const,
+      render: (row) => {
+        if (row.kind === 'estimate' && canWrite('tenders')) {
+          return (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleRemoveItem(row.id) }}
+              disabled={removing === row.id}
+              className="p-1.5 rounded-lg text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )
+        }
+        if (row.kind === 'quotation') {
+          return <ChevronRight className="w-3.5 h-3.5 text-ink-faint" />
+        }
+        return null
+      },
+    },
+  ], [canWrite, removing])
+
+  const { sorted, sortKey, sortDir, onSort } = useTableSort(tableRows, columns)
+
+  // Group definitions
+  const groups = useMemo<GroupDef<TableRow>[] | undefined>(() => {
+    if (groupBy === 'type') {
+      return [
+        { key: 'estimates', label: 'Estimates', color: '#10b981', filter: (r) => r.kind === 'estimate' },
+        { key: 'quotations', label: 'Quotations', color: '#3b82f6', filter: (r) => r.kind === 'quotation' },
+      ]
+    }
+    if (groupBy === 'product') {
+      const systems = new Map<string, string>()
+      items.forEach(item => {
+        const name = item.system?.name ?? 'Unknown'
+        const id = item.system?.id ?? 'unknown'
+        systems.set(id, name)
+      })
+      const g: GroupDef<TableRow>[] = []
+      systems.forEach((name, id) => {
+        g.push({ key: `sys-${id}`, label: name, filter: (r) => r.kind === 'estimate' && r.system?.id === id })
+      })
+      if (tenderReports.length > 0) {
+        g.push({ key: 'quotations', label: 'Quotations', color: '#3b82f6', filter: (r) => r.kind === 'quotation' })
+      }
+      return g
+    }
+    return undefined
+  }, [groupBy, items, tenderReports])
+
+  const handleRowClick = (row: TableRow) => {
+    if (row.kind === 'quotation') {
+      router.push(`/tenders/${tender.id}/report/${row.id}`)
+    }
+  }
 
   return (
     <div className="min-h-full">
@@ -174,13 +340,13 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="font-semibold text-base text-ink truncate">{tender.name}</h1>
-              <span className="text-sm font-bold px-2.5 py-1 rounded-full flex-shrink-0"
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full flex-shrink-0"
                 style={{ background: meta.bg, color: meta.color }}>
                 {meta.label}
               </span>
             </div>
-            <div className="text-sm text-ink-muted flex items-center gap-3 mt-1 flex-wrap">
-              {tender.reference && <span className="font-mono text-xs bg-surface-200 px-2 py-0.5 rounded">{tender.reference}</span>}
+            <div className="text-xs text-ink-muted flex items-center gap-3 mt-1 flex-wrap">
+              {tender.reference && <span className="font-mono text-[10px] bg-surface-200 px-2 py-0.5 rounded">{tender.reference}</span>}
               {tender.submissionDate && (
                 <span className="flex items-center gap-1">
                   <CalendarDays className="w-3.5 h-3.5" />
@@ -191,142 +357,75 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
           </div>
         </div>
 
-        {/* Status actions */}
-        <div className="flex gap-2 mb-6 flex-wrap">
-          {canWrite('tenders') && transitions.map(s => {
-            const m = STATUS_META[s]
-            return (
-              <button key={s} onClick={() => handleStatusChange(s)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
-                style={{ color: m.color, background: m.bg, borderColor: 'var(--color-surface-200)' }}>
-                Mark as {m.label}
-              </button>
-            )
-          })}
-          {canWrite('tenders') && <button onClick={() => templates.length > 0 ? setShowTemplatePicker(true) : handleGenerateQuotation()} disabled={creating} className="btn-primary text-xs flex items-center gap-1.5">
-            <FileText className="w-3.5 h-3.5" />
-            {creating ? 'Creating…' : 'Generate Quotation'}
-          </button>}
-        </div>
-
-        {/* Items section */}
-        <div className="card overflow-hidden">
-          <div className="px-5 py-4 border-b border-surface-200 flex items-center justify-between">
-            <div>
-              <h2 className="font-semibold text-ink">Estimates</h2>
-              <p className="text-xs text-ink-muted mt-0.5">Saved estimates linked to this tender</p>
-            </div>
-            {canWrite('tenders') && <button onClick={() => setShowAddModal(true)} className="btn-primary text-sm">
-              <Plus className="w-4 h-4" /> Add Estimate
-            </button>}
-          </div>
-
-          {items.length === 0 ? (
-            <div className="p-16 text-center">
-              <div className="text-4xl mb-3">📐</div>
-              <p className="text-sm text-ink-muted max-w-xs mx-auto">
-                No estimates linked yet. Open a product, run and save a calculation, then add it here.
-              </p>
-              <button onClick={() => router.push('/products')} className="btn-secondary text-sm mt-4">
-                Go to Products →
-              </button>
-            </div>
-          ) : (
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr className="bg-surface-50 border-b border-surface-200">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-ink-muted">Product</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-ink-muted">Estimate</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-ink-muted">Calculated</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-ink-muted">Created by</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-ink-muted">Created</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-ink-muted">Notes</th>
-                  <th className="px-4 py-3 w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, i) => (
-                  <tr key={item.id} className={i % 2 === 0 ? 'bg-surface-50' : 'bg-surface-100/40'}>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2">
-                        {item.system && (
-                          <span className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0 bg-surface-200/40">
-                            {item.system.icon ?? '📦'}
-                          </span>
-                        )}
-                        <span className="font-medium text-ink truncate">{item.system?.name ?? '—'}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-ink-muted">{item.job?.name ?? '—'}</td>
-                    <td className="px-4 py-3 text-xs text-ink-faint">
-                      {item.job?.calculatedAt ? format(new Date(item.job.calculatedAt), 'dd MMM yyyy') : '—'}
-                    </td>
-                    <td className="px-3 py-3 text-sm text-ink-muted">{item.job?.createdBy?.name ?? '—'}</td>
-                    <td className="px-3 py-3 text-sm text-ink-muted">{item.job?.createdAt ? format(new Date(item.job.createdAt), 'dd MMM yyyy') : '—'}</td>
-                    <td className="px-4 py-3 text-xs text-ink-muted">{item.notes ?? ''}</td>
-                    <td className="px-4 py-3">
-                      {canWrite('tenders') && <button onClick={() => handleRemoveItem(item.id)}
-                        disabled={removing === item.id}
-                        className="p-1.5 rounded-lg text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {/* Reports */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-sm text-ink">Quotation Reports</h2>
-          </div>
-          {tenderReports.length === 0 ? (
-            <div className="card p-8 text-center text-sm text-ink-faint">No quotations generated yet.</div>
-          ) : (
-            <div className="space-y-2">
-              {tenderReports.map(r => (
-                <button key={r.id} onClick={() => router.push(`/tenders/${tender.id}/report/${r.id}`)}
-                  className="card w-full text-left p-4 flex items-center gap-3 hover:ring-1 hover:ring-primary transition-all group">
-                  <span className="icon-well bg-surface-200/40"><FileText className="w-3.5 h-3.5 text-ink-muted" /></span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm text-ink">{r.reference || r.title}</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${r.status === 'submitted' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{r.status}</span>
-                    </div>
-                    <div className="text-xs text-ink-muted mt-0.5">
-                      {r.clientName ? `To: ${r.clientName} · ` : ''}{r.date ? format(new Date(r.date), 'dd MMM yyyy') : ''}{r.revisionNo ? ` · Rev ${r.revisionNo}` : ''}
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-ink-faint group-hover:text-primary" />
+        {/* Unified Estimates + Quotations table */}
+        <DataTable<TableRow>
+          items={sorted}
+          getRowId={(row) => `${row.kind}-${row.id}`}
+          columns={columns}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSort={onSort}
+          groups={groups}
+          onRowClick={handleRowClick}
+          emptyIcon="📋"
+          emptyTitle="No estimates or quotations yet"
+          emptyMessage="Add estimates from your products, then generate a quotation."
+          toolbar={
+            <>
+              {/* Group by dropdown */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Group</span>
+                <select
+                  value={groupBy}
+                  onChange={(e) => setGroupBy(e.target.value)}
+                  className="input text-xs py-1 px-2 w-28"
+                >
+                  <option value="none">None</option>
+                  <option value="type">By Type</option>
+                  <option value="product">By Product</option>
+                </select>
+              </div>
+              <div className="flex-1" />
+              {/* Action buttons */}
+              {canWrite('tenders') && (
+                <button onClick={() => setShowAddModal(true)} className="btn-secondary text-xs flex items-center gap-1">
+                  <Plus className="w-3.5 h-3.5" /> Add Estimate
                 </button>
-              ))}
-            </div>
-          )}
-        </div>
+              )}
+              {canWrite('tenders') && (
+                <button
+                  onClick={() => templates.length > 0 ? setShowTemplatePicker(true) : handleGenerateQuotation()}
+                  disabled={creating}
+                  className="btn-primary text-xs flex items-center gap-1.5"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  {creating ? 'Creating…' : 'Generate Quotation'}
+                </button>
+              )}
+            </>
+          }
+        />
 
         {/* Predefined Items */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-sm text-ink">Predefined Items</h2>
+            <h2 className="font-semibold text-xs text-ink">Predefined Items</h2>
             {canWrite('tenders') && <button onClick={addPredefinedItem} className="btn-secondary text-xs"><Plus className="w-3.5 h-3.5" /> Add Item</button>}
           </div>
           {predefinedItems.length === 0 ? (
-            <div className="card p-8 text-center text-sm text-ink-faint">No predefined items. Add mobilisation, project management, or other fixed costs.</div>
+            <div className="card p-8 text-center text-xs text-ink-faint">No predefined items. Add mobilisation, project management, or other fixed costs.</div>
           ) : (
             <div className="space-y-2">
-              {predefinedItems.map((item, i) => (
+              {predefinedItems.map((item) => (
                 <div key={item.id} className="card p-3 flex items-center gap-3">
-                  <input className="input text-sm flex-1" value={item.description} placeholder="Description"
+                  <input className="input text-xs flex-1" value={item.description} placeholder="Description"
                     onChange={e => updatePredefinedItem(item.id, { description: e.target.value })} />
                   <NumberInput value={item.amount} unit={currency} min={0} step="any" className="w-32"
                     onChange={e => updatePredefinedItem(item.id, { amount: parseFloat(e.target.value) || 0 })} />
                   <button onClick={() => removePredefinedItem(item.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               ))}
-              <div className="text-xs text-ink-muted text-right">
+              <div className="text-[10px] text-ink-muted text-right">
                 Total: <span className="font-mono font-semibold">{currency} {predefinedItems.reduce((s, i) => s + i.amount, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
@@ -337,9 +436,9 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
       {/* Add item modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
+          <div className="bg-surface-50 rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
             <div className="px-6 py-4 border-b border-surface-200 flex items-center justify-between">
-              <h3 className="font-display font-bold text-ink">Add Estimate</h3>
+              <h3 className="font-semibold text-sm text-ink">Add Estimate</h3>
               <button onClick={() => setShowAddModal(false)} className="text-ink-muted hover:text-ink">
                 <X className="w-5 h-5" />
               </button>
@@ -348,7 +447,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
               <div>
                 <label className="label">Select estimate</label>
                 {Object.keys(jobsBySystem).length === 0 ? (
-                  <p className="text-sm text-ink-muted py-3">
+                  <p className="text-xs text-ink-muted py-3">
                     No saved estimates yet. Open a product, run a calculation, and save it first.
                   </p>
                 ) : (
@@ -384,44 +483,42 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
       {/* Template Picker Modal */}
       {showTemplatePicker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-surface rounded-xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[80vh] flex flex-col">
+          <div className="bg-surface-50 rounded-xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[80vh] flex flex-col">
             <div className="px-5 py-4 border-b border-surface-200 flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-sm text-ink">Start from Template</h3>
-                <p className="text-xs text-ink-muted mt-0.5">Choose a template or start blank</p>
+                <h3 className="font-semibold text-xs text-ink">Start from Template</h3>
+                <p className="text-[10px] text-ink-muted mt-0.5">Choose a template or start blank</p>
               </div>
               <button onClick={() => setShowTemplatePicker(false)} className="text-ink-faint hover:text-ink">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {/* Blank option */}
               <button onClick={() => handleGenerateQuotation()}
-                className="w-full text-left p-4 border-2 border-dashed border-surface-300 hover:border-primary hover:bg-primary/5 transition-all group"
+                className="w-full text-left p-4 border-2 border-dashed border-surface-300 hover:border-primary hover:bg-surface-100 transition-all group"
                 style={{ borderRadius: 'var(--radius-card)' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-surface-100 flex items-center justify-center text-xl">📄</div>
                   <div>
-                    <div className="font-semibold text-sm text-ink group-hover:text-primary">Blank Quotation</div>
-                    <div className="text-xs text-ink-faint">Start with an empty report</div>
+                    <div className="font-semibold text-xs text-ink">Blank Quotation</div>
+                    <div className="text-[10px] text-ink-faint">Start with an empty report</div>
                   </div>
                 </div>
               </button>
 
-              {/* Template options */}
               {templates.filter((t: any) => t.category === 'full').map((t: any) => {
                 const sectionCount = (t.defaultSections ?? []).length
                 const hasTerms = !!t.paymentTerms
                 const hasDisclaimer = !!t.disclaimer
                 return (
                   <button key={t.id} onClick={() => handleGenerateQuotation(t)}
-                    className="w-full text-left p-4 border border-surface-200 hover:border-primary hover:bg-primary/5 transition-all group"
+                    className="w-full text-left p-4 border border-surface-200 hover:border-primary hover:bg-surface-100 transition-all group"
                     style={{ borderRadius: 'var(--radius-card)' }}>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-lg bg-surface-200/40 flex items-center justify-center text-xl flex-shrink-0">📋</div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm text-ink group-hover:text-primary">{t.name}</div>
-                        {t.title && <div className="text-xs text-ink-muted mt-0.5">Title: {t.title}</div>}
+                        <div className="font-semibold text-xs text-ink">{t.name}</div>
+                        {t.title && <div className="text-[10px] text-ink-muted mt-0.5">Title: {t.title}</div>}
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {sectionCount > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold">{sectionCount} sections</span>}
                           {hasTerms && <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-700 font-semibold">Payment terms</span>}
@@ -435,7 +532,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
               })}
 
               {templates.filter((t: any) => t.category === 'full').length === 0 && (
-                <p className="text-xs text-ink-faint text-center py-2">No full templates saved yet. Save one from a quotation builder.</p>
+                <p className="text-[10px] text-ink-faint text-center py-2">No full templates saved yet. Save one from a quotation builder.</p>
               )}
             </div>
           </div>
