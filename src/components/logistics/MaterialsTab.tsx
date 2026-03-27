@@ -635,7 +635,7 @@ function CertificationsSection({ itemId }: { itemId: string }) {
         <ul className="space-y-1">
           {certs.map((cert: any) => (
             <li key={cert.id} className="flex items-center gap-2 px-3 py-2 rounded border border-surface-200 bg-surface-50">
-              <FileText className="w-4 h-4 text-ink-faint flex-shrink-0" />
+              <span className="icon-well bg-surface-200/40"><FileText className="w-3.5 h-3.5 text-ink-faint" /></span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary">{certTypeLabel(cert.type)}</span>

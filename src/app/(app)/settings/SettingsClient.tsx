@@ -170,7 +170,7 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
         {/* Header */}
         <div className="px-3 py-3 border-b border-surface-200">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-base flex-shrink-0">&#x2699;&#xFE0F;</span>
+            <span className="w-7 h-7 rounded-lg bg-surface-200/40 flex items-center justify-center text-sm flex-shrink-0">&#x2699;&#xFE0F;</span>
             <span className="font-semibold text-xs text-ink leading-tight truncate">Settings</span>
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`sidebar-item text-[11px] ${tab === t.id ? 'active' : ''}`}>
-              {t.icon}
+              <span className={`icon-well ${tab === t.id ? 'bg-primary/15' : ''}`}>{t.icon}</span>
               <span>{t.label}</span>
             </button>
           ))}
@@ -223,7 +223,9 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
             <div className="space-y-5">
               {!limits.canBrandReports && (
                 <div className="card p-4 flex items-center gap-3 bg-primary/5 border-primary/20">
-                  <Crown className="w-5 h-5 text-primary flex-shrink-0" />
+                  <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Crown className="w-4 h-4 text-primary" />
+                  </span>
                   <div className="flex-1 text-sm text-ink">Company branding on reports requires <strong>Pro or Max</strong> plan.</div>
                   <button onClick={() => router.push('/billing')} className="btn-primary text-xs py-1.5 px-3">Upgrade</button>
                 </div>
@@ -427,8 +429,8 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ROLE_COLORS[m.role] ?? ''}`}>{m.role}</span>
                           {m.role !== 'OWNER' && (isOwner || isAdmin) && (
                             <div className="flex gap-1">
-                              <button onClick={() => isEditing ? setEditingMemberId(null) : startEditPerms(m)} className="p-1.5 rounded text-ink-muted hover:bg-surface-200"><Edit3 className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => setMemberDeleteId(m.userId)} className="p-1.5 rounded text-red-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => isEditing ? setEditingMemberId(null) : startEditPerms(m)} className="p-1.5 rounded-lg text-ink-faint hover:text-primary hover:bg-primary/10 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => setMemberDeleteId(m.userId)} className="p-1.5 rounded-lg text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                             </div>
                           )}
                         </div>

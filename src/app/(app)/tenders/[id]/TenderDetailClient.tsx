@@ -268,7 +268,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
                     <td className="px-4 py-3">
                       {canWrite('tenders') && <button onClick={() => handleRemoveItem(item.id)}
                         disabled={removing === item.id}
-                        className="p-1 rounded text-ink-faint hover:text-red-500 transition-colors disabled:opacity-40">
+                        className="p-1.5 rounded-lg text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>}
                     </td>
@@ -291,7 +291,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
               {tenderReports.map(r => (
                 <button key={r.id} onClick={() => router.push(`/tenders/${tender.id}/report/${r.id}`)}
                   className="card w-full text-left p-4 flex items-center gap-3 hover:ring-1 hover:ring-primary transition-all group">
-                  <FileText className="w-4 h-4 text-ink-muted" />
+                  <span className="icon-well bg-surface-200/40"><FileText className="w-3.5 h-3.5 text-ink-muted" /></span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm text-ink">{r.reference || r.title}</span>

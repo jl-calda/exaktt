@@ -88,7 +88,7 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
         {/* Header */}
         <div className="px-3 py-3 border-b border-surface-200">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-base flex-shrink-0">🚚</span>
+            <span className="w-7 h-7 rounded-lg bg-surface-200/40 flex items-center justify-center text-sm flex-shrink-0">🚚</span>
             <span className="font-semibold text-xs text-ink leading-tight truncate">Logistics</span>
           </div>
         </div>
@@ -98,7 +98,9 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
           {NAV_TABS.map(({ id, label, Icon }) => (
             <button key={id} onClick={() => setTab(id)}
               className={`sidebar-item text-[11px] ${tab === id ? 'active' : ''}`}>
-              <Icon className="w-[15px] h-[15px] shrink-0" strokeWidth={tab === id ? 2.2 : 1.8} />
+              <span className={`icon-well ${tab === id ? 'bg-primary/15' : ''}`}>
+                <Icon className="w-[15px] h-[15px]" strokeWidth={tab === id ? 2.2 : 1.8} />
+              </span>
               <span>{label}</span>
             </button>
           ))}

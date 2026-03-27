@@ -581,7 +581,7 @@ export default function TenderReportBuilder({
           <ArrowLeft className="w-3.5 h-3.5" /> Back
         </button>
         <div className="h-4 w-px bg-surface-200" />
-        <FileText className="w-4 h-4 text-ink-muted" />
+        <span className="icon-well bg-surface-200/40"><FileText className="w-3.5 h-3.5 text-ink-muted" /></span>
         <span className="font-semibold text-sm text-ink">{title || 'Quotation'}</span>
         {reference && <code className="text-[10px] bg-surface-100 text-ink-muted px-1.5 py-0.5 rounded">{reference}</code>}
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${status === 'submitted' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>

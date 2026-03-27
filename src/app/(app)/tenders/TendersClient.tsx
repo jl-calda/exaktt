@@ -444,7 +444,7 @@ export default function TendersClient({
                 onClick={() => toggleSettings('blocks')}>
                 <div className="flex items-center gap-2">
                   {settingsCollapsed.has('blocks') ? <ChevronRight className="w-4 h-4 text-ink-muted" /> : <ChevronDown className="w-4 h-4 text-ink-muted" />}
-                  <Layers className="w-4 h-4 text-ink-muted" />
+                  <span className="icon-well bg-surface-200/40"><Layers className="w-3.5 h-3.5 text-ink-muted" /></span>
                   <span className="font-semibold text-sm text-ink">Blocks</span>
                   {blocks.length > 0 && <span className="text-[10px] text-ink-faint">({blocks.length})</span>}
                 </div>
@@ -518,8 +518,8 @@ export default function TendersClient({
                                 {b.blockContent && <div className="text-xs text-ink-faint mt-1 line-clamp-2">{b.blockContent}</div>}
                               </div>
                               <div className="flex gap-1 flex-shrink-0">
-                                <button onClick={() => startEditBlock(b)} className="p-1.5 rounded text-ink-muted hover:bg-surface-200 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
-                                <button onClick={() => setBlockDeleteId(b.id)} className="p-1.5 rounded text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => startEditBlock(b)} className="p-1.5 rounded-lg text-ink-faint hover:text-primary hover:bg-primary/10 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => setBlockDeleteId(b.id)} className="p-1.5 rounded-lg text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                               </div>
                             </div>
                           ) : (
@@ -557,7 +557,7 @@ export default function TendersClient({
               <div className="cursor-pointer select-none card-header !justify-start gap-2 bg-surface-50"
                 onClick={() => toggleSettings('reportDefaults')}>
                 {settingsCollapsed.has('reportDefaults') ? <ChevronRight className="w-4 h-4 text-ink-muted" /> : <ChevronDown className="w-4 h-4 text-ink-muted" />}
-                <FileText className="w-4 h-4 text-ink-muted" />
+                <span className="icon-well bg-surface-200/40"><FileText className="w-3.5 h-3.5 text-ink-muted" /></span>
                 <span className="font-semibold text-sm text-ink">Report Defaults</span>
               </div>
 
@@ -587,7 +587,7 @@ export default function TendersClient({
                 onClick={() => toggleSettings('libraryItems')}>
                 <div className="flex items-center gap-2">
                   {settingsCollapsed.has('libraryItems') ? <ChevronRight className="w-4 h-4 text-ink-muted" /> : <ChevronDown className="w-4 h-4 text-ink-muted" />}
-                  <Layers className="w-4 h-4 text-ink-muted" />
+                  <span className="icon-well bg-surface-200/40"><Layers className="w-3.5 h-3.5 text-ink-muted" /></span>
                   <span className="font-semibold text-sm text-ink">Predefined Items Library</span>
                   {libraryItems.length > 0 && <span className="text-[10px] text-ink-faint">({libraryItems.length})</span>}
                 </div>
@@ -605,7 +605,7 @@ export default function TendersClient({
                         onChange={e => updateLibraryItem(item.id, { description: e.target.value })} />
                       <NumberInput value={item.amount} unit="$" min={0} className="w-28"
                         onChange={e => updateLibraryItem(item.id, { amount: parseFloat(e.target.value) || 0 })} />
-                      <button onClick={() => removeLibraryItem(item.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => removeLibraryItem(item.id)} className="p-1.5 rounded-lg text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   ))}
                   <Button size="sm" variant="primary" onClick={saveLibraryItems} loading={savingLibrary}>Save Library</Button>
