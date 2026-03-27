@@ -66,7 +66,7 @@ export default function UpgradePrompt({ feature, message, description, plan = 'F
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={onDismiss} />
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-float animate-fade-in overflow-hidden">
+      <div className="relative w-full max-w-md bg-surface-50 rounded-2xl shadow-float animate-fade-in overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-br from-primary to-accent p-6 text-white text-center">
           <span className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-2">
