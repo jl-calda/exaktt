@@ -81,7 +81,7 @@ export default function OverviewClient({ projects }: Props) {
 
   return (
     <div className="min-h-full">
-      <main className="px-4 py-4 md:px-6 md:py-5 max-w-7xl">
+      <main className="px-4 py-4 md:px-6 md:py-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">

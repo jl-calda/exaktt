@@ -24,6 +24,7 @@ type Activity = {
   isWithinDay?: boolean; startTime?: string | null; endTime?: string | null
   team?: any; assignee?: any; assigneeName?: string | null
   teamId?: string | null; assetIds?: string[]; skills?: string[]; requiredOutput?: string[]
+  estimatedHours?: number | null
 }
 type Milestone = {
   id: string; name: string; color: string; description?: string | null
