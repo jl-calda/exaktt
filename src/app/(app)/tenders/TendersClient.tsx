@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus, ChevronRight, ChevronDown, CalendarDays, Trash2, Edit3, Check, X,
-  FileText, Layers, Settings as SettingsIcon,
+  FileText, Layers, Settings as SettingsIcon, ClipboardList, Clock,
 } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { nanoid } from 'nanoid'
@@ -58,8 +58,11 @@ export default function TendersClient({
   const { canWrite } = usePermissions()
 
   /* ── Page tab ─────────────────────────────────────────────── */
-  type PageTab = 'tenders' | 'settings'
-  const [pageTab, setPageTab] = useState<PageTab>('tenders')
+  type PageTab = 'overview' | 'quotations' | 'settings'
+  const [pageTab, setPageTab] = useState<PageTab>('overview')
+
+  /* ── Quotations filter ──────────────────────────────────── */
+  const [qFilter, setQFilter] = useState<string | null>(null)
 
   /* ── Settings sub-sections collapsed state ─────────────────── */
   const [settingsCollapsed, setSettingsCollapsed] = useState<Set<string>>(new Set())
@@ -226,7 +229,8 @@ export default function TendersClient({
           <div className="flex items-center gap-4">
             <div className="flex gap-1">
               {([
-                { id: 'tenders' as PageTab, label: 'Tenders', Icon: FileText },
+                { id: 'overview' as PageTab, label: 'Overview', Icon: Layers },
+                { id: 'quotations' as PageTab, label: 'Quotations', Icon: ClipboardList },
                 { id: 'settings' as PageTab, label: 'Settings', Icon: SettingsIcon },
               ]).map(t => (
                 <button key={t.id} onClick={() => setPageTab(t.id)}
@@ -237,15 +241,41 @@ export default function TendersClient({
               ))}
             </div>
           </div>
-          {pageTab === 'tenders' && canWrite('tenders') && (
+          {pageTab === 'overview' && canWrite('tenders') && (
             <button onClick={() => setCreating(v => !v)} className="btn-primary text-sm">
               <Plus className="w-4 h-4" /> New Tender
             </button>
           )}
         </div>
 
-        {/* ── Tenders Tab ────────────────────────────────────────── */}
-        {pageTab === 'tenders' && (<>
+        {/* ── Overview Tab ──────────────────────────────────────── */}
+        {pageTab === 'overview' && (<>
+
+          {/* Stat cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            {[
+              { label: 'Deadlines', value: upcomingExpiry.length, Icon: CalendarDays, hero: true, sub: upcomingExpiry.length > 0 ? `${upcomingExpiry[0]?.daysLeft}d next` : 'None upcoming' },
+              { label: 'Tenders', value: tenders.length, Icon: FileText, hero: false, well: 'bg-blue-100 text-blue-600', sub: `${tenders.filter(t => t.status === 'DRAFT').length} drafts` },
+              { label: 'Quotations', value: allReports.length, Icon: ClipboardList, hero: false, well: 'bg-amber-100 text-amber-600', sub: `${allReports.filter(r => r.status === 'submitted').length} submitted` },
+              { label: 'Won', value: tenders.filter(t => t.status === 'WON').length, Icon: Check, hero: false, well: 'bg-violet-100 text-violet-600', sub: `of ${tenders.length} total` },
+            ].map(s => (
+              <div key={s.label}
+                className={s.hero
+                  ? 'card p-4 bg-primary border-transparent'
+                  : 'card p-4'}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className={s.hero ? 'text-xs text-white/70 font-medium' : 'text-xs text-ink-faint font-medium'}>{s.label}</span>
+                  <span className={s.hero
+                    ? 'w-6 h-6 rounded-lg flex items-center justify-center bg-white/20 text-white'
+                    : `w-6 h-6 rounded-lg flex items-center justify-center ${s.well}`}>
+                    <s.Icon className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+                <div className={s.hero ? 'text-2xl font-bold text-white' : 'text-2xl font-bold text-ink'}>{s.value}</div>
+                <div className={s.hero ? 'text-[11px] text-white/60 mt-0.5' : 'text-[11px] text-ink-faint mt-0.5'}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
 
           {/* Create form */}
           {creating && (
@@ -316,6 +346,12 @@ export default function TendersClient({
             <div className="card overflow-hidden">
               <div className="card-header">
                 <span className="text-xs font-semibold text-ink">Recent Quotations</span>
+                {allReports.length > 5 && (
+                  <button onClick={() => setPageTab('quotations')}
+                    className="text-[11px] text-primary hover:underline flex items-center gap-0.5">
+                    View all <ChevronRight className="w-3 h-3" />
+                  </button>
+                )}
               </div>
               <div className="divide-y divide-surface-200/40">
                 {allReports.slice(0, 5).map(r => (
@@ -395,11 +431,30 @@ export default function TendersClient({
             </div>
           </div>
 
-          {/* Reports grouped by tender */}
+        </>)}
+
+        {/* ── Quotations Tab ───────────────────────────────────────── */}
+        {pageTab === 'quotations' && (<>
+          {/* Filter pills */}
+          <div className="flex gap-1.5 flex-wrap mb-4">
+            <button onClick={() => setQFilter(null)}
+              className={`filter-pill ${qFilter === null ? 'active' : ''}`}>
+              All ({allReports.length})
+            </button>
+            {['draft', 'submitted', 'approved', 'rejected'].map(s => {
+              const count = allReports.filter(r => r.status === s).length
+              if (count === 0) return null
+              return (
+                <button key={s} onClick={() => setQFilter(f => f === s ? null : s)}
+                  className={`filter-pill ${qFilter === s ? 'active' : ''}`}>
+                  {s.charAt(0).toUpperCase() + s.slice(1)} ({count})
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Full quotations table */}
           <div className="table-wrap">
-            <div className="card-header">
-              <span className="text-xs font-semibold text-ink">All Quotation Reports</span>
-            </div>
             <table>
               <thead>
                 <tr>
@@ -413,21 +468,23 @@ export default function TendersClient({
                 </tr>
               </thead>
               <tbody>
-                {allReports.map(r => (
+                {allReports.filter(r => !qFilter || r.status === qFilter).map(r => (
                   <tr key={r.id} className="cursor-pointer" onClick={() => router.push(`/tenders/${r.tender?.id}/report/${r.id}`)}>
                     <td className="text-xs text-ink font-medium">{r.tender?.name ?? '—'}</td>
                     <td className="text-xs text-ink-muted font-mono">{r.reference ?? '—'}</td>
                     <td className="text-xs text-ink">{r.clientName ?? '—'}</td>
                     <td>
-                      <span className={`badge text-[10px] font-bold ${r.status === 'submitted' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{r.status}</span>
+                      <span className={`badge text-[10px] font-bold ${r.status === 'submitted' ? 'bg-blue-100 text-blue-700' : r.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : r.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{r.status}</span>
                     </td>
                     <td className="text-xs text-ink-muted">{r.date ? format(new Date(r.date), 'dd MMM yyyy') : '—'}</td>
                     <td className="text-xs text-ink-muted">{r.validUntil ? format(new Date(r.validUntil), 'dd MMM yyyy') : '—'}</td>
                     <td><ChevronRight className="w-3.5 h-3.5 text-ink-faint" /></td>
                   </tr>
                 ))}
-                {allReports.length === 0 && (
-                  <tr><td colSpan={7} className="px-4 py-8 text-center text-xs text-ink-faint">No quotation reports yet. Generate one from a tender detail page.</td></tr>
+                {allReports.filter(r => !qFilter || r.status === qFilter).length === 0 && (
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-xs text-ink-faint">
+                    {qFilter ? `No ${qFilter} quotations` : 'No quotation reports yet. Generate one from a tender detail page.'}
+                  </td></tr>
                 )}
               </tbody>
             </table>
