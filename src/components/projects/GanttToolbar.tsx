@@ -12,7 +12,7 @@ const VIEW_MODES = [
 interface Props {
   viewMode: 'days' | 'weeks' | 'months'
   onViewModeChange: (mode: 'days' | 'weeks' | 'months') => void
-  onAddMilestone: () => void
+  onAddMilestone?: () => void
   onCollapseAll: () => void
   onExpandAll: () => void
 }
@@ -42,10 +42,12 @@ export default function GanttToolbar({ viewMode, onViewModeChange, onAddMileston
         title="Expand all" />
 
       {/* Add milestone */}
-      <Button variant="primary" size="xs" onClick={onAddMilestone}
-        icon={<Plus className="w-3 h-3" />}>
-        Milestone
-      </Button>
+      {onAddMilestone && (
+        <Button variant="primary" size="xs" onClick={onAddMilestone}
+          icon={<Plus className="w-3 h-3" />}>
+          Milestone
+        </Button>
+      )}
     </div>
   )
 }
