@@ -66,7 +66,7 @@ export default function SystemShellSaaS({
     let slug: string
     if (tab === 'setup') slug = setupSubTab === 'setup' ? 'setup' : setupSubTab
     else slug = tab
-    router.replace(`/products/${sys.id}/${slug}`, { scroll: false })
+    window.history.replaceState(null, '', `/products/${sys.id}/${slug}`)
   }, [tab, setupSubTab, sys.id, router])
 
   const isSample = sys.name.includes('(Sample)')
