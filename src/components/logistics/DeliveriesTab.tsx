@@ -1,11 +1,12 @@
 // src/components/logistics/DeliveriesTab.tsx
 'use client'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Plus, ChevronDown, ChevronRight, Edit3, Trash2, Check, X, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
+import DataTable, { useTableSort, type Column } from '@/components/ui/DataTable'
 import { format } from 'date-fns'
 import { nanoid } from 'nanoid'
 
