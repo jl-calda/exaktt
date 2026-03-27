@@ -7,7 +7,7 @@ import type { MtoSystem } from '@/types'
 import { PRIMITIVE_DIMS, DIMS_FOR_INPUT_MODEL } from '@/lib/engine/constants'
 
 // ── Layout constants ───────────────────────────────────────────────────────────
-const NODE_W      = 148
+const NODE_W      = 160
 const NODE_H      = 44
 const H_GAP       = 6     // gap between nodes in same sub-row
 const WRAP_V_GAP  = 8     // gap between wrapped sub-rows within same level
@@ -19,24 +19,24 @@ const MAX_PER_ROW = 6     // nodes before wrapping to next sub-row
 
 // ── Colours ────────────────────────────────────────────────────────────────────
 const C = {
-  system:   { bg: '#1e293b', border: '#475569', text: '#f1f5f9', edge: '#94a3b8' },
-  prim:     { bg: '#dbeafe', border: '#93c5fd', text: '#1e40af', edge: '#60a5fa' },
-  custom:   { bg: '#ede9fe', border: '#c4b5fd', text: '#6d28d9', edge: '#a78bfa' },
-  criteria: { bg: '#fef3c7', border: '#fcd34d', text: '#92400e', edge: '#fbbf24' },
-  variant:  { bg: '#fce7f3', border: '#f9a8d4', text: '#9d174d', edge: '#f472b6' },
-  material: { bg: '#ffffff', border: '#e2e8f0', text: '#1e293b', edge: '#94a3b8' },
-  bracket:  { bg: '#dcfce7', border: '#86efac', text: '#166534', edge: '#4ade80' },
-  activity: { bg: '#f0f9ff', border: '#7dd3fc', text: '#0c4a6e', edge: '#38bdf8' },
+  system:   { bg: '#f8fafc', border: '#e2e8f0', text: '#334155', edge: '#94a3b8' },
+  prim:     { bg: '#eff6ff', border: '#bfdbfe', text: '#1e40af', edge: '#93c5fd' },
+  custom:   { bg: '#faf5ff', border: '#e9d5ff', text: '#7c3aed', edge: '#c4b5fd' },
+  criteria: { bg: '#fefce8', border: '#fde68a', text: '#a16207', edge: '#fcd34d' },
+  variant:  { bg: '#fdf2f8', border: '#fbcfe8', text: '#be185d', edge: '#f9a8d4' },
+  material: { bg: '#ffffff', border: '#e2e8f0', text: '#334155', edge: '#cbd5e1' },
+  bracket:  { bg: '#f0fdf4', border: '#bbf7d0', text: '#15803d', edge: '#86efac' },
+  activity: { bg: '#ecfeff', border: '#a5f3fc', text: '#0e7490', edge: '#67e8f9' },
 } as const
 type CK = keyof typeof C
 
 const LEVEL_META = [
-  { label: 'Inputs',               color: '#475569' },
-  { label: 'Custom Dimensions',    color: '#7c3aed' },
-  { label: 'Criteria & Variants',  color: '#d97706' },
+  { label: 'Inputs',               color: '#64748b' },
+  { label: 'Custom Dimensions',    color: '#64748b' },
+  { label: 'Criteria & Variants',  color: '#64748b' },
   { label: 'Materials',            color: '#64748b' },
-  { label: 'Sub-assemblies',       color: '#16a34a' },
-  { label: 'Work Activities',      color: '#0369a1' },
+  { label: 'Sub-assemblies',       color: '#64748b' },
+  { label: 'Work Activities',      color: '#64748b' },
 ]
 
 interface NodeBox {
@@ -344,7 +344,7 @@ export default function SystemGraphTab({ sys }: { sys: MtoSystem }) {
                     <div style={{
                       position: 'absolute', left: PAD_X, right: PAD_X,
                       top: levelBaseY[i] - ROW_GAP / 2, height: 1,
-                      background: '#f1f5f9', pointerEvents: 'none',
+                      background: '#e2e8f0', pointerEvents: 'none',
                       opacity: levelActive ? 1 : 0.15,
                       transition: 'opacity 0.15s',
                     }} />
@@ -358,7 +358,7 @@ export default function SystemGraphTab({ sys }: { sys: MtoSystem }) {
               <defs>
                 {(Object.keys(C) as CK[]).map(k => (
                   <marker key={k} id={`arr-${k}`} markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
-                    <path d="M0,0 L0,5 L5,2.5 z" fill={C[k].edge} opacity="0.8" />
+                    <path d="M0,0 L0,5 L5,2.5 z" fill={C[k].edge} opacity="0.5" />
                   </marker>
                 ))}
               </defs>
@@ -371,8 +371,8 @@ export default function SystemGraphTab({ sys }: { sys: MtoSystem }) {
                     d={curvePath(fn.x + NODE_W / 2, fn.y + NODE_H, tn.x + NODE_W / 2, tn.y)}
                     fill="none"
                     stroke={C[e.ck].edge}
-                    strokeWidth={active ? 1.8 : 1}
-                    strokeOpacity={active ? 0.75 : 0.07}
+                    strokeWidth={active ? 1.5 : 0.8}
+                    strokeOpacity={active ? 0.65 : 0.06}
                     markerEnd={active ? `url(#arr-${e.ck})` : undefined}
                     style={{ transition: 'stroke-opacity 0.15s' }}
                   />
@@ -386,24 +386,25 @@ export default function SystemGraphTab({ sys }: { sys: MtoSystem }) {
               const dimmed     = involvedIds ? !involvedIds.has(n.id) : false
               return (
                 <div key={n.id}
+                  title={n.label + (n.sub ? ' · ' + n.sub : '')}
                   onClick={ev => { ev.stopPropagation(); setSelectedId(id => id === n.id ? null : n.id) }}
                   style={{
                     position: 'absolute', left: n.x, top: n.y,
                     width: NODE_W, height: NODE_H,
                     background: C[n.ck].bg,
                     border: isSelected ? `2px solid ${C[n.ck].text}` : `1.5px solid ${C[n.ck].border}`,
-                    borderRadius: 9,
+                    borderRadius: NODE_H / 2,
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: '0 8px', boxSizing: 'border-box', overflow: 'hidden',
                     boxShadow: isSelected
-                      ? `0 0 0 3px ${C[n.ck].edge}55, 0 2px 8px rgba(0,0,0,0.12)`
-                      : '0 1px 3px rgba(0,0,0,0.06)',
+                      ? `0 0 0 2px ${C[n.ck].edge}55, 0 2px 8px rgba(0,0,0,0.12)`
+                      : '0 1px 2px rgba(0,0,0,0.04)',
                     opacity: dimmed ? 0.1 : 1,
                     cursor: 'pointer',
                     transition: 'opacity 0.15s, box-shadow 0.15s',
                   }}>
                   {n.ck === 'material' ? (
-                    <div style={{ width: 26, height: 26, borderRadius: 6, flexShrink: 0, background: '#f1f5f9', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 6, flexShrink: 0, background: '#f8fafc', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {n.photo ? <img src={n.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 12 }}>📦</span>}
                     </div>
                   ) : n.icon ? (

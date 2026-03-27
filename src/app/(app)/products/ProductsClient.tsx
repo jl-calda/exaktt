@@ -126,22 +126,28 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
                      ? `${systems.length} / ${limits.maxSystems} used`
                      : null,
             icon:  <BookOpen className="w-3.5 h-3.5" />,
+            hero:  true,
+            well:  'bg-emerald-100 text-emerald-600',
           },
-          { label: 'Jobs saved', value: totalJobs,      sub: null, icon: <Layers className="w-3.5 h-3.5" /> },
-          { label: 'Reports',    value: reports.length, sub: null, icon: <FileText className="w-3.5 h-3.5" /> },
+          { label: 'Jobs saved', value: totalJobs,      sub: null, icon: <Layers className="w-3.5 h-3.5" />, hero: false, well: 'bg-blue-100 text-blue-600' },
+          { label: 'Reports',    value: reports.length, sub: null, icon: <FileText className="w-3.5 h-3.5" />, hero: false, well: 'bg-amber-100 text-amber-600' },
           plan === 'FREE'
-            ? { label: 'Upgrade', value: 'Pro', sub: 'Unlimited products', icon: <Crown className="w-3.5 h-3.5" />, upgrade: true }
-            : { label: 'Plan', value: 'Pro', sub: 'All features unlocked', icon: <Crown className="w-3.5 h-3.5" />, upgrade: false },
+            ? { label: 'Upgrade', value: 'Pro', sub: 'Unlimited products', icon: <Crown className="w-3.5 h-3.5" />, upgrade: true, hero: false, well: 'bg-violet-100 text-violet-600' }
+            : { label: 'Plan', value: 'Pro', sub: 'All features unlocked', icon: <Crown className="w-3.5 h-3.5" />, upgrade: false, hero: false, well: 'bg-violet-100 text-violet-600' },
         ].map((s: any) => (
           <div key={s.label}
             onClick={s.upgrade ? () => router.push('/billing') : undefined}
-            className={`card p-4 ${s.upgrade ? 'cursor-pointer hover:shadow-panel hover:-translate-y-0.5 transition-all border-primary/20 bg-primary/5' : ''}`}>
+            className={s.hero
+              ? 'card p-4 bg-primary border-transparent'
+              : `card p-4 ${s.upgrade ? 'cursor-pointer hover:shadow-panel hover:-translate-y-0.5 transition-all border-primary/20 bg-primary/5' : ''}`}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-ink-faint font-medium">{s.label}</span>
-              <span className={`w-6 h-6 rounded-lg flex items-center justify-center ${s.upgrade ? 'text-primary bg-primary/10' : 'text-ink-faint bg-surface-200/40'}`}>{s.icon}</span>
+              <span className={s.hero ? 'text-xs text-white/70 font-medium' : 'text-xs text-ink-faint font-medium'}>{s.label}</span>
+              <span className={s.hero
+                ? 'w-6 h-6 rounded-lg flex items-center justify-center bg-white/20 text-white'
+                : `w-6 h-6 rounded-lg flex items-center justify-center ${s.upgrade ? 'text-primary bg-primary/10' : s.well}`}>{s.icon}</span>
             </div>
-            <div className={`text-2xl font-bold ${s.upgrade ? 'text-primary' : 'text-ink'}`}>{s.value}</div>
-            {s.sub && <div className="text-[11px] text-ink-faint mt-0.5">{s.sub}</div>}
+            <div className={s.hero ? 'text-2xl font-bold text-white' : `text-2xl font-bold ${s.upgrade ? 'text-primary' : 'text-ink'}`}>{s.value}</div>
+            {s.sub && <div className={s.hero ? 'text-[11px] text-white/60 mt-0.5' : 'text-[11px] text-ink-faint mt-0.5'}>{s.sub}</div>}
           </div>
         ))}
       </div>

@@ -38,10 +38,10 @@ export default function OverviewTab({ library, suppliers, pos, dos, onNavigate }
     .slice(0, 5)
 
   const stats = [
-    { label: 'Materials',          value: library.length,       icon: Package,       tab: 'materials'  as Tab },
-    { label: 'Suppliers',          value: suppliers.length,      icon: ClipboardList, tab: 'suppliers'  as Tab },
-    { label: 'Open Orders',        value: openPOs.length,        icon: ShoppingCart,  tab: 'orders'     as Tab },
-    { label: 'Pending Deliveries', value: pendingDOs.length,     icon: Truck,         tab: 'deliveries' as Tab },
+    { label: 'Materials',          value: library.length,       icon: Package,       tab: 'materials'  as Tab, hero: true,  well: 'bg-emerald-100 text-emerald-600' },
+    { label: 'Suppliers',          value: suppliers.length,      icon: ClipboardList, tab: 'suppliers'  as Tab, hero: false, well: 'bg-blue-100 text-blue-600' },
+    { label: 'Open Orders',        value: openPOs.length,        icon: ShoppingCart,  tab: 'orders'     as Tab, hero: false, well: 'bg-amber-100 text-amber-600' },
+    { label: 'Pending Deliveries', value: pendingDOs.length,     icon: Truck,         tab: 'deliveries' as Tab, hero: false, well: 'bg-violet-100 text-violet-600' },
   ]
 
   return (
@@ -52,14 +52,18 @@ export default function OverviewTab({ library, suppliers, pos, dos, onNavigate }
           const Icon = s.icon
           return (
             <button key={s.label} onClick={() => onNavigate(s.tab)}
-              className="card p-4 text-left hover:shadow-panel hover:-translate-y-0.5 transition-all group">
+              className={s.hero
+                ? 'card p-4 text-left hover:shadow-panel hover:-translate-y-0.5 transition-all group bg-primary border-transparent'
+                : 'card p-4 text-left hover:shadow-panel hover:-translate-y-0.5 transition-all group'}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-ink-faint font-medium">{s.label}</span>
-                <span className="w-6 h-6 rounded-lg bg-surface-200/40 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
-                  <Icon className="w-3.5 h-3.5 text-ink-faint group-hover:text-primary transition-colors" />
+                <span className={s.hero ? 'text-xs text-white/70 font-medium' : 'text-xs text-ink-faint font-medium'}>{s.label}</span>
+                <span className={s.hero
+                  ? 'w-6 h-6 rounded-lg flex items-center justify-center bg-white/20 text-white'
+                  : `w-6 h-6 rounded-lg flex items-center justify-center ${s.well}`}>
+                  <Icon className="w-3.5 h-3.5" />
                 </span>
               </div>
-              <div className="text-2xl font-bold text-ink">{s.value}</div>
+              <div className={s.hero ? 'text-2xl font-bold text-white' : 'text-2xl font-bold text-ink'}>{s.value}</div>
             </button>
           )
         })}
