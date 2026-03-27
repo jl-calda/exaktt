@@ -8,7 +8,7 @@ import LibraryTab from './LibraryTab'
 import MaterialsTable from './panels/MaterialsTable'
 import CustomBracketsPanel from './panels/CustomBracketsPanel'
 
-type SubTab = 'all' | 'library' | 'brackets'
+type View = 'materials' | 'brackets' | 'library'
 
 interface Props {
   sys:         MtoSystem
@@ -16,11 +16,10 @@ interface Props {
   globalTags:  GlobalTag[]
   onGoToSetup: () => void
   plan?:       Plan
-  subTab?:     SubTab
+  view?:       View
 }
 
-export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE', subTab: initialSubTab = 'all' }: Props) {
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>(initialSubTab)
+export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE', view = 'materials' }: Props) {
   const [library,           setLibrary]           = useState<any[]>([])
   const [labourRates,       setLabourRates]       = useState<any[]>([])
   const [workActivityRates, setWorkActivityRates] = useState<any[]>([])
@@ -43,33 +42,10 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
     return true
   })
 
-  const SUB_TABS: { id: SubTab; label: string }[] = [
-    { id: 'all',      label: 'Materials' },
-    { id: 'brackets', label: 'Sub-assemblies' },
-    { id: 'library',  label: 'Library' },
-  ]
-
   return (
     <div>
-      {/* Sub-tab navigation */}
-      <div className="flex items-center gap-1 mb-4 border-b border-surface-200/50 pb-px">
-        {SUB_TABS.map(({ id, label }) => (
-          <button key={id} onClick={() => setActiveSubTab(id)}
-            className={`px-3 py-2 text-xs font-semibold rounded-t-lg border-b-2 transition-all duration-200 ${
-              activeSubTab === id
-                ? 'border-primary text-primary bg-primary/5'
-                : 'border-transparent text-ink-muted hover:text-ink hover:bg-surface-100'
-            }`}>
-            {label}
-            {id === 'brackets' && (sys.customBrackets ?? []).length > 0 && (
-              <span className="ml-1.5 text-[10px] font-normal text-ink-faint">({(sys.customBrackets ?? []).length})</span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Filter bar — tag pills only, shown on All tab */}
-      {activeSubTab === 'all' && globalTags.length > 0 && (
+      {/* Filter bar — tag pills only, shown on materials view */}
+      {view === 'materials' && globalTags.length > 0 && (
         <div className="flex items-center gap-1.5 flex-wrap mb-5">
           {globalTags.map(tag => {
             const active = tagFilter.includes(tag.id)
@@ -85,7 +61,7 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
         </div>
       )}
 
-      {activeSubTab === 'all' && (
+      {view === 'materials' && (
         <MaterialsTable
           inputModel={sys.inputModel}
           materials={filteredMaterials}
@@ -104,7 +80,7 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
         />
       )}
 
-      {activeSubTab === 'brackets' && (
+      {view === 'brackets' && (
         <CustomBracketsPanel
           customBrackets={sys.customBrackets ?? []}
           materials={sys.materials}
@@ -117,7 +93,7 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
         />
       )}
 
-      {activeSubTab === 'library' && (
+      {view === 'library' && (
         <LibraryTab
           plan={plan}
           globalTags={globalTags}
