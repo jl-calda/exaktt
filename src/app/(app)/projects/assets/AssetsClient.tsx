@@ -128,16 +128,18 @@ export default function AssetsClient({ initialAssets }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      const { data: updated } = await res.json()
-      if (updated) setAssets(prev => prev.map(a => a.id === modal.asset!.id ? { ...a, ...updated } : a))
+      if (!res.ok) { setSaving(false); return }
+      const updated = await res.json()
+      setAssets(prev => prev.map(a => a.id === modal.asset!.id ? { ...a, ...updated } : a))
     } else {
       const res = await fetch('/api/project-assets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      const { data: created } = await res.json()
-      if (created) setAssets(prev => [created, ...prev])
+      if (!res.ok) { setSaving(false); return }
+      const created = await res.json()
+      setAssets(prev => [created, ...prev])
     }
     setModal({ open: false })
     setSaving(false)
