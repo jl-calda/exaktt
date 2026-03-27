@@ -77,7 +77,7 @@ export default function ClientCombobox({
         )}
 
         {open && (filtered.length > 0 || showCreate) && (
-          <ul className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-surface-200 rounded-xl shadow-lg max-h-56 overflow-y-auto py-1 animate-fade-in">
+          <ul className="absolute z-50 top-full mt-1 left-0 right-0 bg-surface-50 border border-surface-200 rounded-xl shadow-lg max-h-56 overflow-y-auto py-1 animate-fade-in">
             {filtered.map(c => (
               <li key={c.id}>
                 <button

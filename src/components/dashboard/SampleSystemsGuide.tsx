@@ -81,7 +81,7 @@ export default function SampleSystemsGuide({ onCreated, atLimit }: Props) {
         <button
           onClick={() => setActiveCategory(null)}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-            activeCategory === null ? 'bg-ink text-white border-ink' : 'bg-white text-ink-muted border-surface-300 hover:border-surface-400'
+            activeCategory === null ? 'bg-ink text-white border-ink' : 'bg-surface-50 text-ink-muted border-surface-300 hover:border-surface-400'
           }`}>
           All <span className="text-[10px] opacity-60">{SAMPLE_SYSTEMS.length}</span>
         </button>
@@ -89,7 +89,7 @@ export default function SampleSystemsGuide({ onCreated, atLimit }: Props) {
           <button key={cat}
             onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-              activeCategory === cat ? 'bg-ink text-white border-ink' : 'bg-white text-ink-muted border-surface-300 hover:border-surface-400'
+              activeCategory === cat ? 'bg-ink text-white border-ink' : 'bg-surface-50 text-ink-muted border-surface-300 hover:border-surface-400'
             }`}>
             {CATEGORY_ICONS[cat] ?? '📦'} {cat}
             <span className="text-[10px] opacity-60">{SAMPLE_SYSTEMS.filter(s => s.category === cat).length}</span>

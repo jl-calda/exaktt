@@ -223,7 +223,7 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
             <div className="space-y-5">
               {!limits.canBrandReports && (
                 <div className="card p-4 flex items-center gap-3 bg-primary/5 border-primary/20">
-                  <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="w-8 h-8 rounded-lg bg-surface-200/40 flex items-center justify-center flex-shrink-0">
                     <Crown className="w-4 h-4 text-primary" />
                   </span>
                   <div className="flex-1 text-sm text-ink">Company branding on reports requires <strong>Pro or Max</strong> plan.</div>
@@ -421,7 +421,7 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
                     return (
                       <div key={m.userId} className={`p-3 border border-surface-200 ${isEditing ? 'ring-2 ring-primary bg-primary/5' : ''}`} style={{ borderRadius: 'var(--radius)' }}>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">{initials}</div>
+                          <div className="w-8 h-8 rounded-full bg-surface-200/40 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">{initials}</div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-ink">{m.user?.name || m.user?.email}</div>
                             <div className="text-xs text-ink-faint">{m.user?.email}</div>
@@ -429,7 +429,7 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ROLE_COLORS[m.role] ?? ''}`}>{m.role}</span>
                           {m.role !== 'OWNER' && (isOwner || isAdmin) && (
                             <div className="flex gap-1">
-                              <button onClick={() => isEditing ? setEditingMemberId(null) : startEditPerms(m)} className="p-1.5 rounded-lg text-ink-faint hover:text-primary hover:bg-primary/10 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => isEditing ? setEditingMemberId(null) : startEditPerms(m)} className="p-1.5 rounded-lg text-ink-faint hover:text-primary hover:bg-surface-100 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
                               <button onClick={() => setMemberDeleteId(m.userId)} className="p-1.5 rounded-lg text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                             </div>
                           )}

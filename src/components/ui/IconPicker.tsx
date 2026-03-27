@@ -132,7 +132,7 @@ function EmojiBtn({ icon, selected, onSelect }: { icon: string; selected: boolea
       type="button"
       onClick={onSelect}
       className={`w-8 h-8 rounded-lg text-lg flex items-center justify-center transition-all hover:bg-surface-100 ${
-        selected ? 'bg-primary/10 ring-2 ring-primary' : ''
+        selected ? 'bg-surface-50 ring-2 ring-primary' : ''
       }`}
     >
       {icon}

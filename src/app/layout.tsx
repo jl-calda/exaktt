@@ -27,7 +27,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title:       'Exakt — Material Take-Off Platform',
+  title:       'Exaktt — Material Take-Off Platform',
   description: 'Professional material take-off, tendering and logistics platform.',
 }
 

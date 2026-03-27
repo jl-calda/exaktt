@@ -54,14 +54,14 @@ export default function BillingClient({ plan, stripeCustomerId, planExpiresAt }:
             )}
           </div>
           {plan === 'PRO' && stripeCustomerId && (
-            <button onClick={handlePortal} disabled={loading === 'portal'} className="btn-secondary text-sm py-2">
+            <button onClick={handlePortal} disabled={loading === 'portal'} className="btn-secondary text-xs py-2">
               {loading === 'portal' ? 'Loading…' : 'Manage subscription'}
             </button>
           )}
         </div>
 
-        <h1 className="font-semibold text-base text-ink text-center mb-2">Simple, transparent pricing</h1>
-        <p className="text-ink-muted text-sm text-center mb-10">Built for quantity surveyors and logistics teams.</p>
+        <h1 className="font-semibold text-sm text-ink text-center mb-2">Simple, transparent pricing</h1>
+        <p className="text-ink-muted text-xs text-center mb-10">Built for quantity surveyors and logistics teams.</p>
 
         {/* Pricing grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
@@ -75,7 +75,7 @@ export default function BillingClient({ plan, stripeCustomerId, planExpiresAt }:
                 {p.badge && (
                   <div className="badge bg-accent/10 text-accent w-fit mb-3 text-[10px] font-bold">{p.badge}</div>
                 )}
-                <div className="font-display font-black text-lg text-ink">{p.name}</div>
+                <div className="font-bold text-sm text-ink">{p.name}</div>
                 <div className="mt-2 mb-4">
                   {p.price === 0
                     ? <span className="text-3xl font-black text-ink">Free</span>
@@ -83,18 +83,18 @@ export default function BillingClient({ plan, stripeCustomerId, planExpiresAt }:
                 </div>
                 <ul className="space-y-2 flex-1 mb-6">
                   {p.features.map(f => (
-                    <li key={f} className="flex items-start gap-2 text-xs text-ink-muted">
+                    <li key={f} className="flex items-start gap-2 text-[11px] text-ink-muted">
                       <Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
                       {f}
                     </li>
                   ))}
                 </ul>
                 {p.id === 'free'
-                  ? <div className="btn-secondary text-sm justify-center opacity-60 cursor-default">{isCurrent ? 'Current plan' : 'Free forever'}</div>
+                  ? <div className="btn-secondary text-xs justify-center opacity-60 cursor-default">{isCurrent ? 'Current plan' : 'Free forever'}</div>
                   : isCurrent
-                    ? <div className="btn-secondary text-sm justify-center opacity-60 cursor-default">Current plan</div>
+                    ? <div className="btn-secondary text-xs justify-center opacity-60 cursor-default">Current plan</div>
                     : <button onClick={() => handleCheckout(p.priceId!, p.id)} disabled={!!loading}
-                        className={`text-sm justify-center ${p.highlighted ? 'btn-primary' : 'btn-secondary'}`}>
+                        className={`text-xs justify-center ${p.highlighted ? 'btn-primary' : 'btn-secondary'}`}>
                         {loading === p.id ? 'Loading…' : p.cta}
                       </button>}
               </div>

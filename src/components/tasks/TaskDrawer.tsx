@@ -56,7 +56,7 @@ export default function TaskDrawer() {
       <div className="fixed inset-0 z-40 bg-black/20" onClick={closeDrawer} />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-surface border-l border-surface-200 shadow-xl flex flex-col">
+      <div className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-surface border-l border-surface-200 shadow-xl flex flex-col animate-slide-in-right">
         {/* Header */}
         <div className="card-header">
           <div className="flex items-center gap-2">

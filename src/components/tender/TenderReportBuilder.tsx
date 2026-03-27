@@ -628,7 +628,7 @@ export default function TenderReportBuilder({
         ]).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
-              tab === t.id ? 'bg-primary/10 text-primary font-semibold' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
+              tab === t.id ? 'bg-surface-50 text-ink font-semibold shadow-[var(--shadow-card)]' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
             }`} style={{ borderRadius: 'var(--radius)' }}>
             <t.Icon className="w-3.5 h-3.5" />
             {t.label}
@@ -945,7 +945,7 @@ export default function TenderReportBuilder({
 
           {/* Included job lines with margin editing */}
           {lineItems.filter(s => s.type === 'job_line').map(section => (
-            <div key={section.id} className="border border-surface-300 rounded-lg p-3 space-y-2 bg-white">
+            <div key={section.id} className="border border-surface-300 rounded-lg p-3 space-y-2 bg-surface-50">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Job</span>
                 <span className="text-xs font-medium text-ink truncate flex-1">{(section as any).description || 'Untitled'}</span>
@@ -961,7 +961,7 @@ export default function TenderReportBuilder({
 
           {/* Custom lines */}
           {lineItems.filter(s => s.type === 'custom_line').map(section => (
-            <div key={section.id} className="border border-surface-300 rounded-lg p-3 space-y-2 bg-white">
+            <div key={section.id} className="border border-surface-300 rounded-lg p-3 space-y-2 bg-surface-50">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Custom</span>
                 <input className="input text-xs flex-1" value={(section as any).description ?? ''} disabled={isReadOnly}
@@ -1004,7 +1004,7 @@ export default function TenderReportBuilder({
                   className={`w-full text-left p-3 border rounded-lg transition-colors ${alreadyAdded ? 'bg-primary/5 border-primary/30' : 'border-surface-200 hover:border-primary hover:bg-primary/5'} ${isReadOnly ? 'opacity-60' : ''}`}>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-sm text-ink">{t.name}</span>
-                    {alreadyAdded && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold">Added</span>}
+                    {alreadyAdded && <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-100 text-primary font-semibold">Added</span>}
                   </div>
                   {t.blockTitle && <div className="text-xs text-ink-muted mt-0.5">{t.blockTitle}</div>}
                   {t.blockContent && <div className="text-xs text-ink-faint mt-0.5 line-clamp-2">{t.blockContent}</div>}
@@ -1040,7 +1040,7 @@ export default function TenderReportBuilder({
           {sections.map((section, idx) => {
             const badge = SECTION_BADGES[section.type]
             return (
-              <div key={section.id} className="border border-surface-300 rounded-lg p-3 space-y-2 bg-white">
+              <div key={section.id} className="border border-surface-300 rounded-lg p-3 space-y-2 bg-surface-50">
                 {/* Section header */}
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-3.5 h-3.5 text-ink-faint flex-shrink-0" />
@@ -1175,7 +1175,7 @@ export default function TenderReportBuilder({
                 Add Job Line
               </Button>
               {jobDropdownOpen && availableItems.length > 0 && (
-                <div className="absolute top-full left-0 mt-1 z-20 bg-white border border-surface-300 rounded-lg shadow-lg w-64 max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 mt-1 z-20 bg-surface-50 border border-surface-300 rounded-lg shadow-lg w-64 max-h-48 overflow-y-auto">
                   {availableItems.map(ti => (
                     <button key={ti.id} onClick={() => addJobLine(ti)}
                       className="w-full text-left px-3 py-2 text-sm hover:bg-surface-100 border-b border-surface-200 last:border-0">
@@ -1200,7 +1200,7 @@ export default function TenderReportBuilder({
                 Add Text Block
               </Button>
               {textDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 z-20 bg-white border border-surface-300 rounded-lg shadow-lg w-56 max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 mt-1 z-20 bg-surface-50 border border-surface-300 rounded-lg shadow-lg w-56 max-h-48 overflow-y-auto">
                   <button onClick={() => addTextBlock()}
                     className="w-full text-left px-3 py-2 text-sm hover:bg-surface-100 border-b border-surface-200 font-medium text-ink">
                     <Plus className="w-3 h-3 inline mr-1" /> Custom Block
@@ -1325,7 +1325,7 @@ export default function TenderReportBuilder({
 
       {/* ── Right: Preview ─────────────────────────────────────────────── */}
       <div className="flex-1 min-w-0 overflow-y-auto">
-        <div className="card overflow-hidden bg-white">
+        <div className="card overflow-hidden bg-surface-50">
 
           {/* Preview header */}
           <div className="p-5 border-b border-surface-300" style={{ borderBottomColor: accent + '30' }}>
@@ -1366,7 +1366,7 @@ export default function TenderReportBuilder({
                 </thead>
                 <tbody>
                   {lineItems.map((item, i) => (
-                    <tr key={item.id} className={i % 2 === 0 ? 'bg-white' : 'bg-surface-50'}>
+                    <tr key={item.id} className={i % 2 === 0 ? 'bg-surface-50' : 'bg-surface-100/50'}>
                       <td className="px-3 py-2 text-ink-faint">{i + 1}</td>
                       <td className="px-3 py-2">
                         <div className="font-medium text-ink">{item.description || 'Untitled'}</div>

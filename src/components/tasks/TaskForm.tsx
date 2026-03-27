@@ -51,7 +51,7 @@ export default function TaskForm({ linkedUrl, onSave, onCancel }: Props) {
       <Input label="Title *" value={title} onChange={e => setTitle(e.target.value)} placeholder="What needs to be done?" />
       <div>
         <label className="label">Description</label>
-        <textarea className="input text-sm resize-none" rows={2} value={description}
+        <textarea className="input text-xs resize-none" rows={2} value={description}
           onChange={e => setDescription(e.target.value)} placeholder="Details..." />
       </div>
       <Select label="Assign to *" value={assigneeId} onChange={e => setAssigneeId(e.target.value)}
@@ -62,7 +62,7 @@ export default function TaskForm({ linkedUrl, onSave, onCancel }: Props) {
         <Input label="Target date" type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} />
       </div>
       {linkedUrl && (
-        <div className="text-[10px] text-ink-faint bg-primary/5 border border-primary/20 px-2.5 py-1.5 rounded flex items-center gap-1.5">
+        <div className="text-[10px] text-ink-faint bg-surface-50 border border-surface-200 px-2.5 py-1.5 rounded flex items-center gap-1.5">
           <span className="text-primary font-semibold">
             {linkedUrl.includes('/report/') ? '📋 Linked to Report'
             : linkedUrl.includes('/tenders/') ? '📑 Linked to Tender'

@@ -55,8 +55,8 @@ export default function ClientsClient({ initialClients }: Props) {
       <main className="px-4 py-4 md:px-6 md:py-5">
 
         <div className="flex items-center justify-between mb-4">
-          <h1 className="font-semibold text-base text-ink">Clients</h1>
-          <button onClick={openCreate} className="btn-primary text-sm">
+          <h1 className="font-semibold text-sm text-ink">Clients</h1>
+          <button onClick={openCreate} className="btn-primary text-xs">
             <Plus className="w-4 h-4" /> New Client
           </button>
         </div>
@@ -64,8 +64,8 @@ export default function ClientsClient({ initialClients }: Props) {
         {clients.length === 0 ? (
           <div className="card p-12 text-center">
             <div className="text-5xl mb-4">🤝</div>
-            <h2 className="font-semibold text-sm text-ink mb-1.5">No clients yet</h2>
-            <p className="text-sm text-ink-muted mb-6 max-w-sm mx-auto">
+            <h2 className="font-semibold text-[13px] text-ink mb-1.5">No clients yet</h2>
+            <p className="text-xs text-ink-muted mb-6 max-w-sm mx-auto">
               Add clients to reuse them across tenders and track contact information.
             </p>
             <button onClick={openCreate} className="btn-primary mx-auto">
@@ -80,12 +80,12 @@ export default function ClientsClient({ initialClients }: Props) {
                   <div className="min-w-0">
                     <div className="font-semibold text-ink truncate">{client.name}</div>
                     {client.contactPerson && (
-                      <div className="text-sm text-ink-muted mt-0.5">{client.contactPerson}</div>
+                      <div className="text-xs text-ink-muted mt-0.5">{client.contactPerson}</div>
                     )}
                   </div>
                   <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => openEdit(client)}
-                      className="p-1.5 rounded-lg text-ink-faint hover:text-primary hover:bg-primary/10 transition-colors"
+                      className="p-1.5 rounded-lg text-ink-faint hover:text-primary hover:bg-surface-100 transition-colors"
                       title="Edit">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>

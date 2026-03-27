@@ -69,7 +69,7 @@ export default function TaskDetail({ taskId, onBack, onRefresh }: Props) {
           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${STATUS_COLORS[task.status]}`}>{task.status.replace('_', ' ')}</span>
           <span className="text-[10px] text-ink-faint capitalize">{task.priority}</span>
         </div>
-        <h3 className="font-semibold text-sm text-ink mt-1">{task.title}</h3>
+        <h3 className="font-semibold text-[13px] text-ink mt-1">{task.title}</h3>
         {task.description && <p className="text-xs text-ink-muted mt-1">{task.description}</p>}
         <div className="text-[10px] text-ink-faint mt-2 space-x-3">
           <span>From: {task.createdBy?.name}</span>

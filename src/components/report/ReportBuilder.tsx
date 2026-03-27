@@ -243,7 +243,7 @@ export default function ReportBuilder({ sys, jobId, results, runs, plan, profile
             <div className="card p-3 bg-emerald-50 border-emerald-200">
               <div className="text-xs font-bold text-emerald-700 mb-1">Report shared!</div>
               <div className="flex items-center gap-2">
-                <input value={shareUrl} readOnly className="input text-xs py-1 flex-1 bg-white" />
+                <input value={shareUrl} readOnly className="input text-xs py-1 flex-1 bg-surface-50" />
                 <button onClick={() => navigator.clipboard.writeText(shareUrl)}
                   className="text-xs text-primary font-semibold">Copy</button>
               </div>
@@ -309,7 +309,7 @@ export default function ReportBuilder({ sys, jobId, results, runs, plan, profile
                   const amount = price * mat.grandTotal
                   const stock  = config.showStockInfo ? ((mat as any).spec?.stockLengthMm) : null
                   return (
-                    <tr key={mat.id} className={i % 2 === 0 ? 'bg-white' : 'bg-surface-50'}>
+                    <tr key={mat.id} className={i % 2 === 0 ? 'bg-surface-50' : 'bg-surface-100/50'}>
                       <td className="px-3 py-1.5 text-ink-faint">{i + 1}</td>
                       <td className="px-3 py-1.5">
                         <div className="font-medium text-ink">{mat.name}</div>

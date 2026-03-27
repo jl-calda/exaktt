@@ -117,7 +117,7 @@ export default function Sidebar({ role }: Props) {
                 className="flex items-center gap-3">
                 <div className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center font-bold text-white text-[11px] shadow-sm"
                   style={{ background: 'var(--color-primary)' }}>E</div>
-                <span className="font-bold text-[13px] text-ink">Exakt</span>
+                <span className="font-bold text-[13px] text-ink">Exaktt</span>
               </Link>
               <button onClick={() => setMobileOpen(false)} className="text-ink-muted hover:text-ink">
                 <X className="w-5 h-5" />
@@ -143,7 +143,7 @@ export default function Sidebar({ role }: Props) {
           </Link>
           <span className="ml-3 font-bold text-[13px] text-ink whitespace-nowrap
             opacity-0 group-hover/sb:opacity-100 transition-opacity duration-150 delay-75 select-none">
-            Exakt
+            Exaktt
           </span>
         </div>
         {navContent(false)}

@@ -266,7 +266,7 @@ export default function SystemShellSaaS({
           <button key={id}
             onClick={() => setTab(id)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[11px] font-medium whitespace-nowrap transition-colors duration-200 shrink-0 ${
-              tab === id ? 'bg-primary/10 text-primary font-semibold' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
+              tab === id ? 'bg-surface-50 text-ink font-semibold shadow-[var(--shadow-card)]' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
             }`}>
             <Icon className="w-3.5 h-3.5" strokeWidth={tab === id ? 2.2 : 1.8} />
             {label}
@@ -375,7 +375,7 @@ export default function SystemShellSaaS({
                 <button key={id} onClick={() => setSetupSubTab(id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors duration-200 rounded-[10px] ${
                     setupSubTab === id
-                      ? 'bg-primary/10 text-primary font-semibold'
+                      ? 'bg-surface-50 text-ink font-semibold shadow-[var(--shadow-card)]'
                       : 'text-ink-muted hover:text-ink hover:bg-surface-100'
                   }`}>
                   <Icon className="w-3.5 h-3.5" strokeWidth={setupSubTab === id ? 2.2 : 1.8} />

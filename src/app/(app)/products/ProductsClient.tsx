@@ -144,7 +144,7 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
               <span className={s.hero ? 'text-xs text-white/70 font-medium' : 'text-xs text-ink-faint font-medium'}>{s.label}</span>
               <span className={s.hero
                 ? 'w-6 h-6 rounded-lg flex items-center justify-center bg-white/20 text-white'
-                : `w-6 h-6 rounded-lg flex items-center justify-center ${s.upgrade ? 'text-primary bg-primary/10' : s.well}`}>{s.icon}</span>
+                : `w-6 h-6 rounded-lg flex items-center justify-center ${s.upgrade ? 'text-primary bg-surface-200/40' : s.well}`}>{s.icon}</span>
             </div>
             <div className={s.hero ? 'text-2xl font-bold text-white' : `text-2xl font-bold ${s.upgrade ? 'text-primary' : 'text-ink'}`}>{s.value}</div>
             {s.sub && <div className={s.hero ? 'text-[11px] text-white/60 mt-0.5' : 'text-[11px] text-ink-faint mt-0.5'}>{s.sub}</div>}
@@ -202,7 +202,7 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
                     {/* Quick presets */}
                     {ALL_PRESET_ICONS.slice(0, 10).map(i => (
                       <button key={i} type="button" onClick={() => setNewIcon(i)}
-                        className={`w-[26px] h-[26px] rounded-md text-sm flex items-center justify-center transition-all ${newIcon === i ? 'ring-2 ring-primary bg-primary/10' : 'bg-surface-100 hover:bg-surface-200'}`}>
+                        className={`w-[26px] h-[26px] rounded-md text-sm flex items-center justify-center transition-all ${newIcon === i ? 'ring-2 ring-primary bg-surface-50' : 'bg-surface-100 hover:bg-surface-200'}`}>
                         {i}
                       </button>
                     ))}
@@ -240,7 +240,7 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
                       <div className="flex gap-1">
                         {group.icons.map(i => (
                           <button key={i} type="button" onClick={() => { setNewIcon(i); setShowIconPicker(false) }}
-                            className={`w-[26px] h-[26px] rounded-md text-sm flex items-center justify-center transition-all ${newIcon === i ? 'ring-2 ring-primary bg-primary/10' : 'bg-surface-100 hover:bg-surface-200'}`}>
+                            className={`w-[26px] h-[26px] rounded-md text-sm flex items-center justify-center transition-all ${newIcon === i ? 'ring-2 ring-primary bg-surface-50' : 'bg-surface-100 hover:bg-surface-200'}`}>
                             {i}
                           </button>
                         ))}
@@ -289,7 +289,7 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
                   </div>
                   <div className="relative z-10 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={e => handleDuplicate(sys.id, e)} disabled={duplicating === sys.id}
-                      title="Duplicate" className="p-1 rounded-md text-ink-faint hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-40">
+                      title="Duplicate" className="p-1 rounded-md text-ink-faint hover:text-primary hover:bg-surface-100 transition-colors disabled:opacity-40">
                       <Copy className="w-3 h-3" />
                     </button>
                     <button onClick={e => { e.stopPropagation(); setConfirmDel({ id: sys.id, name: sys.name }) }}

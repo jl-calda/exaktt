@@ -198,7 +198,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
             return (
               <button key={s} onClick={() => handleStatusChange(s)}
                 className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
-                style={{ borderColor: m.color + '50', color: m.color, background: m.bg }}>
+                style={{ color: m.color, background: m.bg, borderColor: 'var(--color-surface-200)' }}>
                 Mark as {m.label}
               </button>
             )
@@ -246,7 +246,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
               </thead>
               <tbody>
                 {items.map((item, i) => (
-                  <tr key={item.id} className={i % 2 === 0 ? 'bg-white' : 'bg-surface-50'}>
+                  <tr key={item.id} className={i % 2 === 0 ? 'bg-surface-50' : 'bg-surface-100/40'}>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
                         {item.system && (
@@ -418,7 +418,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
                     className="w-full text-left p-4 border border-surface-200 hover:border-primary hover:bg-primary/5 transition-all group"
                     style={{ borderRadius: 'var(--radius-card)' }}>
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-xl flex-shrink-0">📋</div>
+                      <div className="w-10 h-10 rounded-lg bg-surface-200/40 flex items-center justify-center text-xl flex-shrink-0">📋</div>
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-sm text-ink group-hover:text-primary">{t.name}</div>
                         {t.title && <div className="text-xs text-ink-muted mt-0.5">Title: {t.title}</div>}

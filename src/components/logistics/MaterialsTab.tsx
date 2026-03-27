@@ -495,7 +495,7 @@ function ManageGradesModal({ open, onClose, grades, onRefresh }: {
                   className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer
                     ${added
                       ? 'border-surface-200 bg-surface-50 text-ink-muted hover:bg-surface-100'
-                      : 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10'
+                      : 'border-primary/30 bg-surface-50 text-primary hover:bg-surface-100'
                     }`}
                 >
                   {added && <Check className="w-3 h-3 text-emerald-500" />}
@@ -638,7 +638,7 @@ function CertificationsSection({ itemId }: { itemId: string }) {
               <span className="icon-well bg-surface-200/40"><FileText className="w-3.5 h-3.5 text-ink-faint" /></span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary">{certTypeLabel(cert.type)}</span>
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-surface-100 text-primary">{certTypeLabel(cert.type)}</span>
                   {cert.certNumber && <span className="text-xs text-ink"># {cert.certNumber}</span>}
                   {cert.issuedBy && <span className="text-xs text-ink-faint">by {cert.issuedBy}</span>}
                   {cert.expiryDate && <span className="text-xs text-ink-faint">exp. {new Date(cert.expiryDate).toLocaleDateString()}</span>}
