@@ -1,7 +1,7 @@
 // src/components/logistics/PurchaseOrdersTab.tsx
 'use client'
 import { useState, useMemo } from 'react'
-import { Plus, ChevronDown, ChevronRight, Edit3, Trash2, Check, X, Package } from 'lucide-react'
+import { Plus, Edit3, Trash2, Check, X, Package } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Select } from '@/components/ui/Select'

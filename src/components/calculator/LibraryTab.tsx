@@ -110,7 +110,7 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
       render: (item) => {
         if (editingId === item.id) {
           return (
-            <div className="absolute left-0 right-0 p-5 bg-primary/5 z-10" style={{ marginTop: '-0.625rem', marginBottom: '-0.625rem' }}>
+            <div className="min-w-[calc(100vw-12rem)] sm:min-w-[540px] p-5 -m-2 bg-primary/5 rounded-xl">
               <div className="text-xs font-bold text-primary uppercase tracking-wide mb-4">Edit Library Item</div>
               {editDraft && (
                 <ItemForm
