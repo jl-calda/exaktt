@@ -169,7 +169,7 @@ function AddActivityDropdown({ rates, phase, onSelectRate, onManual }: {
   return (
     <div className="relative" ref={ref}>
       <button type="button" onClick={e => { e.stopPropagation(); setOpen(v => !v) }}
-        className="p-1 rounded text-ink-faint hover:text-primary hover:bg-primary/10 transition-colors"
+        className="p-1 rounded text-ink-faint hover:text-primary hover:bg-surface-100 transition-colors"
         title="Add activity">
         <Plus className="w-3.5 h-3.5" />
       </button>

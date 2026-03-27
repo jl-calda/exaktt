@@ -40,7 +40,7 @@ export default function NotificationBell() {
         className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-faint hover:text-ink hover:bg-surface-200/60 transition-colors relative" title="Notifications">
         <Bell className="w-[15px] h-[15px]" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -53,7 +53,7 @@ export default function NotificationBell() {
           </div>
           <div className="max-h-72 overflow-y-auto divide-y divide-surface-100">
             {notifications.slice(0, 20).map(n => (
-              <div key={n.id} className={`px-3 py-2.5 ${n.isRead ? '' : 'bg-primary/5'}`}>
+              <div key={n.id} className={`px-3 py-2.5 ${n.isRead ? '' : 'bg-surface-50'}`}>
                 <div className="text-xs font-medium text-ink">{n.title}</div>
                 {n.body && <div className="text-[10px] text-ink-muted mt-0.5">{n.body}</div>}
                 <div className="text-[10px] text-ink-faint mt-1">{format(new Date(n.createdAt), 'dd MMM HH:mm')}</div>

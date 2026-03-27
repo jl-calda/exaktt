@@ -38,7 +38,7 @@ export default function TaskList({ tasks, onSelect }: Props) {
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${STATUS_COLORS[t.status] ?? ''}`}>{t.status.replace('_', ' ')}</span>
                 {(t.priority === 'high' || t.priority === 'urgent') && <AlertTriangle className={`w-3 h-3 ${PRIORITY_COLORS[t.priority]}`} />}
               </div>
-              <div className="font-medium text-sm text-ink mt-1 truncate group-hover:text-primary">{t.title}</div>
+              <div className="font-medium text-xs text-ink mt-1 truncate group-hover:text-primary">{t.title}</div>
               <div className="text-[10px] text-ink-faint mt-0.5">
                 {t.assignee?.name ?? 'Unassigned'}
                 {t.targetDate && <span className="ml-2"><Clock className="w-2.5 h-2.5 inline" /> {format(new Date(t.targetDate), 'dd MMM')}</span>}

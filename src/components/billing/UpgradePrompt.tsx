@@ -42,7 +42,7 @@ export default function UpgradePrompt({ feature, message, description, plan = 'F
 
   if (isInline) return (
     <div className="flex items-start gap-3 bg-gradient-to-r from-primary-50 to-accent/5 border border-primary/20 rounded-xl p-4">
-      <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+      <span className="w-8 h-8 rounded-lg bg-surface-200/40 flex items-center justify-center flex-shrink-0">
         <Sparkles className="w-4 h-4 text-primary" />
       </span>
       <div className="flex-1 min-w-0">

@@ -49,7 +49,7 @@ function CategoryCombobox({ categories, value, onChange, onNew }: {
         <ChevronDown className="w-3.5 h-3.5 text-ink-faint flex-shrink-0" />
       </button>
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-surface-200 shadow-float py-1 min-w-48" style={{ borderRadius: 'var(--radius)' }}>
+        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-surface-50 border border-surface-200 shadow-float py-1 min-w-48" style={{ borderRadius: 'var(--radius)' }}>
           <div className="px-2 pb-1">
             <input className="input text-xs py-1" placeholder="Search…" value={query}
               onChange={e => setQuery(e.target.value)} autoFocus />
@@ -105,7 +105,7 @@ function GradeCombobox({ grades, value, onChange, onNew }: {
         <ChevronDown className="w-3.5 h-3.5 text-ink-faint flex-shrink-0" />
       </button>
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-surface-200 shadow-float py-1 min-w-48" style={{ borderRadius: 'var(--radius)' }}>
+        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-surface-50 border border-surface-200 shadow-float py-1 min-w-48" style={{ borderRadius: 'var(--radius)' }}>
           <div className="px-2 pb-1">
             <input className="input text-xs py-1" placeholder="Search…" value={query}
               onChange={e => setQuery(e.target.value)} autoFocus />
@@ -167,7 +167,7 @@ function ManufacturerCombobox({ manufacturers, value, onChange, onNew }: {
         <ChevronDown className="w-3.5 h-3.5 text-ink-faint flex-shrink-0" />
       </button>
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-surface-200 shadow-float py-1 min-w-48" style={{ borderRadius: 'var(--radius)' }}>
+        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-surface-50 border border-surface-200 shadow-float py-1 min-w-48" style={{ borderRadius: 'var(--radius)' }}>
           <div className="px-2 pb-1">
             <input className="input text-xs py-1" placeholder="Search…" value={query}
               onChange={e => setQuery(e.target.value)} autoFocus />

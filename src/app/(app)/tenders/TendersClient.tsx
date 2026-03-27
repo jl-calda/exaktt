@@ -575,7 +575,7 @@ export default function TendersClient({
                                 {b.blockContent && <div className="text-xs text-ink-faint mt-1 line-clamp-2">{b.blockContent}</div>}
                               </div>
                               <div className="flex gap-1 flex-shrink-0">
-                                <button onClick={() => startEditBlock(b)} className="p-1.5 rounded-lg text-ink-faint hover:text-primary hover:bg-primary/10 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => startEditBlock(b)} className="p-1.5 rounded-lg text-ink-faint hover:text-primary hover:bg-surface-100 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
                                 <button onClick={() => setBlockDeleteId(b.id)} className="p-1.5 rounded-lg text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                               </div>
                             </div>

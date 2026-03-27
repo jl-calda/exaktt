@@ -628,7 +628,7 @@ export default function TenderReportBuilder({
         ]).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
-              tab === t.id ? 'bg-primary/10 text-primary font-semibold' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
+              tab === t.id ? 'bg-surface-50 text-ink font-semibold shadow-[var(--shadow-card)]' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
             }`} style={{ borderRadius: 'var(--radius)' }}>
             <t.Icon className="w-3.5 h-3.5" />
             {t.label}
@@ -1004,7 +1004,7 @@ export default function TenderReportBuilder({
                   className={`w-full text-left p-3 border rounded-lg transition-colors ${alreadyAdded ? 'bg-primary/5 border-primary/30' : 'border-surface-200 hover:border-primary hover:bg-primary/5'} ${isReadOnly ? 'opacity-60' : ''}`}>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-sm text-ink">{t.name}</span>
-                    {alreadyAdded && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold">Added</span>}
+                    {alreadyAdded && <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-100 text-primary font-semibold">Added</span>}
                   </div>
                   {t.blockTitle && <div className="text-xs text-ink-muted mt-0.5">{t.blockTitle}</div>}
                   {t.blockContent && <div className="text-xs text-ink-faint mt-0.5 line-clamp-2">{t.blockContent}</div>}

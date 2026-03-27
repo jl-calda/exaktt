@@ -593,7 +593,7 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
                       }))}
                       className={`flex items-center gap-1 px-2 py-1 text-[11px] font-medium border rounded-full transition-all ${
                         selected
-                          ? 'border-primary bg-primary/10 text-primary'
+                          ? 'border-primary bg-surface-50 text-primary'
                           : 'border-surface-200 text-ink-muted hover:border-surface-300'
                       }`}>
                       <span className="text-sm">{s.icon}</span> {s.shortName || s.name}
