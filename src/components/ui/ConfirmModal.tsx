@@ -19,7 +19,7 @@ export function ConfirmModal({
   return (
     <Modal open={open} onClose={onCancel} maxWidth="max-w-sm">
       <div className="flex flex-col items-center text-center gap-3 py-2">
-        <div className="w-10 h-10 rounded-full bg-red-50 border border-red-100 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full bg-red-50 border border-red-200/60 flex items-center justify-center">
           <Trash2 className="w-4 h-4 text-red-500" />
         </div>
         <div>

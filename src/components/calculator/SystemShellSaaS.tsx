@@ -250,7 +250,10 @@ export default function SystemShellSaaS({
           className="flex items-center gap-1 text-xs text-ink-faint hover:text-ink transition-colors shrink-0">
           <ArrowLeft className="w-3.5 h-3.5" />
         </button>
-        <span className="text-base shrink-0">{sys.icon}</span>
+        <span className="w-6 h-6 rounded-md flex items-center justify-center text-sm shrink-0"
+          style={{ background: (sys.color ?? 'var(--color-primary)') + '15' }}>
+          {sys.icon}
+        </span>
         <span className="font-semibold text-xs text-ink truncate flex-1">{sys.name}</span>
         {saving && <span className="text-[10px] text-ink-faint flex items-center gap-1 shrink-0"><Save className="w-2.5 h-2.5" /></span>}
         {canWrite('systems') && <button onClick={() => setShowReport(true)} className="btn-primary text-[11px] px-2.5 py-1 shrink-0">
@@ -288,7 +291,10 @@ export default function SystemShellSaaS({
         {/* Identity */}
         <div className="px-3 py-3 border-b border-surface-200">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-base flex-shrink-0">{sys.icon}</span>
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0 shadow-sm"
+              style={{ background: (sys.color ?? 'var(--color-primary)') + '15', border: `1px solid ${sys.color ?? 'var(--color-primary)'}20` }}>
+              {sys.icon}
+            </span>
             <span className="font-semibold text-xs text-ink leading-tight truncate">{sys.name}</span>
           </div>
           {saving && <div className="text-[10px] text-ink-faint mt-1 flex items-center gap-1"><Save className="w-2.5 h-2.5" /> Saving…</div>}
@@ -303,7 +309,9 @@ export default function SystemShellSaaS({
             <button key={id}
               onClick={() => setTab(id)}
               className={`sidebar-item text-[11px] ${tab === id ? 'active' : ''}`}>
-              <Icon className="w-[15px] h-[15px] shrink-0" strokeWidth={tab === id ? 2.2 : 1.8} />
+              <span className={`icon-well ${tab === id ? 'bg-primary/15' : ''}`}>
+                <Icon className="w-[15px] h-[15px]" strokeWidth={tab === id ? 2.2 : 1.8} />
+              </span>
               <span>{label}</span>
             </button>
           ))}

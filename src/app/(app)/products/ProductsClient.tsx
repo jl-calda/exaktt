@@ -138,7 +138,7 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
             className={`card p-4 ${s.upgrade ? 'cursor-pointer hover:shadow-panel hover:-translate-y-0.5 transition-all border-primary/20 bg-primary/5' : ''}`}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-ink-faint font-medium">{s.label}</span>
-              <span className={s.upgrade ? 'text-primary' : 'text-ink-faint'}>{s.icon}</span>
+              <span className={`w-6 h-6 rounded-lg flex items-center justify-center ${s.upgrade ? 'text-primary bg-primary/10' : 'text-ink-faint bg-surface-200/40'}`}>{s.icon}</span>
             </div>
             <div className={`text-2xl font-bold ${s.upgrade ? 'text-primary' : 'text-ink'}`}>{s.value}</div>
             {s.sub && <div className="text-[11px] text-ink-faint mt-0.5">{s.sub}</div>}
@@ -166,31 +166,31 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
 
         {/* Create form */}
         {creating && (
-          <div className="mb-4 animate-fade-in border border-secondary-200 bg-secondary-50/20 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
-            <div className="px-4 py-2.5 bg-secondary-100 border-b border-secondary-200">
-              <span className="text-xs font-semibold text-secondary-700">New Product</span>
+          <div className="mb-4 animate-fade-in border border-surface-200/60 bg-surface-50 overflow-hidden" style={{ borderRadius: 'var(--radius-card)' }}>
+            <div className="card-header">
+              <span className="text-xs font-semibold text-ink">New Product</span>
             </div>
             <form onSubmit={handleCreate} className="p-4">
               {/* Main row */}
               <div className="flex flex-wrap gap-3 items-end">
                 <div className="flex-1 min-w-40">
-                  <label className="label !text-secondary-600">Product name *</label>
+                  <label className="label">Product name *</label>
                   <input value={newName} onChange={e => setNewName(e.target.value)}
                     placeholder='e.g. "SecuRope Horizontal Lifeline"' className="input" autoFocus required
-                    style={{ borderColor: 'var(--color-secondary-200)' }} />
+ />
                 </div>
                 <div className="flex-1 min-w-40">
-                  <label className="label !text-secondary-600">Description</label>
+                  <label className="label">Description</label>
                   <input value={newDesc} onChange={e => setNewDesc(e.target.value)}
                     placeholder='e.g. "Fallprotec EN 795-2012 Type C"' className="input"
-                    style={{ borderColor: 'var(--color-secondary-200)' }} />
+ />
                 </div>
                 <div>
-                  <label className="label !text-secondary-600">Icon</label>
+                  <label className="label">Icon</label>
                   <div className="flex items-center gap-1.5">
                     {/* Current icon */}
-                    <div className="w-[30px] h-[30px] rounded-md flex items-center justify-center text-base shrink-0 border border-surface-300"
-                      style={{ background: newColor + '18' }}>
+                    <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center text-base shrink-0 shadow-sm"
+                      style={{ background: newColor + '15', border: `1px solid ${newColor}20` }}>
                       {newIcon}
                     </div>
                     {/* Quick presets */}
@@ -207,7 +207,7 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
                   </div>
                 </div>
                 <div>
-                  <label className="label !text-secondary-600">Colour</label>
+                  <label className="label">Colour</label>
                   <div className="flex gap-1.5">
                     {COLORS.map(c => (
                       <button key={c} type="button" onClick={() => setNewColor(c)}
@@ -275,8 +275,8 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
               <div key={sys.id} className="card p-4 text-left hover:shadow-panel hover:-translate-y-0.5 transition-all group relative">
                 <button className="absolute inset-0 rounded-2xl" onClick={() => router.push('/products/' + sys.id)} />
                 <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0"
-                    style={{ background: sys.color + '18', border: `1.5px solid ${sys.color}30` }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0 shadow-sm"
+                    style={{ background: sys.color + '15', border: `1px solid ${sys.color}20` }}>
                     {sys.icon}
                   </div>
                   <div className="flex-1 min-w-0">
