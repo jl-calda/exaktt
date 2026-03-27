@@ -13,6 +13,7 @@ import GanttToolbar from '@/components/projects/GanttToolbar'
 import MilestoneModal from '@/components/projects/MilestoneModal'
 import ActivityModal from '@/components/projects/ActivityModal'
 import ProjectFormModal from '@/components/projects/ProjectFormModal'
+import { MILESTONE_COLORS, getColor } from '@/components/projects/colors'
 
 /* ── Types ── */
 type Activity = {
@@ -60,6 +61,14 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
   const [milestoneModal, setMilestoneModal] = useState<{ open: boolean; milestone?: Milestone }>({ open: false })
   const [activityModal, setActivityModal] = useState<{ open: boolean; milestoneId?: string; activity?: Activity }>({ open: false })
   const [showStatusMenu, setShowStatusMenu] = useState(false)
+
+  // Inline milestone form
+  const [showInlineForm, setShowInlineForm] = useState(false)
+  const [inlineName, setInlineName] = useState('')
+  const [inlineColor, setInlineColor] = useState(() => getColor(MILESTONE_COLORS, project.milestones.length))
+  const [inlineStartDate, setInlineStartDate] = useState('')
+  const [inlineEndDate, setInlineEndDate] = useState('')
+  const [inlineSaving, setInlineSaving] = useState(false)
 
   /* ── PM Indicators ── */
   const allActivities = useMemo(() => project.milestones.flatMap(m => m.activities), [project])
@@ -193,6 +202,40 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
     }))
   }, [project.id])
 
+  const resetInlineForm = useCallback(() => {
+    setShowInlineForm(false)
+    setInlineName('')
+    setInlineStartDate('')
+    setInlineEndDate('')
+  }, [])
+
+  const handleInlineSave = useCallback(async () => {
+    if (!inlineName.trim()) return
+    setInlineSaving(true)
+    const res = await fetch(`/api/projects/${project.id}/milestones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: inlineName.trim(),
+        description: null,
+        color: inlineColor,
+        startDate: inlineStartDate || null,
+        endDate: inlineEndDate || null,
+      }),
+    })
+    if (res.ok) {
+      const created = await res.json()
+      setProject(prev => ({
+        ...prev,
+        milestones: [...prev.milestones, { ...created, activities: created.activities ?? [] }],
+      }))
+      resetInlineForm()
+      // Pre-select next color for the next milestone
+      setInlineColor(getColor(MILESTONE_COLORS, project.milestones.length + 1))
+    }
+    setInlineSaving(false)
+  }, [project.id, project.milestones.length, inlineName, inlineColor, inlineStartDate, inlineEndDate, resetInlineForm])
+
   const sm = STATUS_META[project.status] ?? STATUS_META.PLANNING
 
   return (
@@ -284,7 +327,10 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
         <GanttToolbar
           viewMode={viewMode}
           onViewModeChange={setViewMode}
-          onAddMilestone={() => setMilestoneModal({ open: true })}
+          onAddMilestone={() => {
+            setInlineColor(getColor(MILESTONE_COLORS, project.milestones.length))
+            setShowInlineForm(true)
+          }}
           onCollapseAll={collapseAll}
           onExpandAll={expandAll}
         />
@@ -302,14 +348,65 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
           onDeleteActivity={deleteActivity}
         />
 
+        {/* Inline milestone form */}
+        {showInlineForm && (
+          <div className="card p-3 mt-2 animate-fade-in">
+            <div className="flex items-center gap-2 mb-2">
+              <input
+                className="input flex-1"
+                placeholder="Milestone name"
+                autoFocus
+                value={inlineName}
+                onChange={e => setInlineName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(); if (e.key === 'Escape') resetInlineForm() }}
+              />
+              <div className="flex gap-1">
+                {MILESTONE_COLORS.map(c => (
+                  <button
+                    key={c}
+                    onClick={() => setInlineColor(c)}
+                    className="w-5 h-5 rounded-full border-2 transition-all"
+                    style={{
+                      background: c,
+                      borderColor: inlineColor === c ? c : 'transparent',
+                      transform: inlineColor === c ? 'scale(1.15)' : 'scale(1)',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                className="input w-32"
+                value={inlineStartDate}
+                onChange={e => setInlineStartDate(e.target.value)}
+              />
+              <span className="text-[10px] text-ink-faint">→</span>
+              <input
+                type="date"
+                className="input w-32"
+                value={inlineEndDate}
+                onChange={e => setInlineEndDate(e.target.value)}
+              />
+              <div className="flex-1" />
+              <Button variant="ghost" size="xs" onClick={resetInlineForm}>Cancel</Button>
+              <Button variant="primary" size="xs" onClick={handleInlineSave} loading={inlineSaving} disabled={!inlineName.trim()}>Add</Button>
+            </div>
+          </div>
+        )}
+
         {/* Milestone list fallback for empty state */}
-        {project.milestones.length === 0 && (
+        {project.milestones.length === 0 && !showInlineForm && (
           <div className="card p-8 text-center mt-4">
             <div className="text-2xl mb-2">📋</div>
             <div className="text-[13px] font-semibold text-ink mb-1">No milestones yet</div>
             <div className="text-xs text-ink-faint mb-4">Add milestones and activities to build your project timeline.</div>
             <Button variant="primary" size="sm" icon={<Plus className="w-3.5 h-3.5" />}
-              onClick={() => setMilestoneModal({ open: true })}>
+              onClick={() => {
+                setInlineColor(getColor(MILESTONE_COLORS, project.milestones.length))
+                setShowInlineForm(true)
+              }}>
               Add Milestone
             </Button>
           </div>
@@ -334,7 +431,7 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
         />
       )}
 
-      {milestoneModal.open && (
+      {milestoneModal.open && milestoneModal.milestone && (
         <MilestoneModal
           milestone={milestoneModal.milestone}
           onSave={saveMilestone}

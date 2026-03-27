@@ -1,7 +1,7 @@
 // src/components/projects/ActivityModal.tsx
 'use client'
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { X, CheckCircle2, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 
 const STATUS_OPTIONS = [
@@ -40,7 +40,38 @@ export default function ActivityModal({ activity, milestoneId, teams, assets, on
   const [startTime, setStartTime] = useState(activity?.startTime ?? '')
   const [endTime, setEndTime] = useState(activity?.endTime ?? '')
   const [selectedAssets, setSelectedAssets] = useState<string[]>(activity?.assetIds ?? [])
+  const [skills, setSkills] = useState<string[]>(activity?.skills ?? [])
+  const [skillInput, setSkillInput] = useState('')
+  const [outputs, setOutputs] = useState<string[]>(activity?.requiredOutput ?? [])
+  const [outputInput, setOutputInput] = useState('')
   const [saving, setSaving] = useState(false)
+
+  const handleStatusChange = (newStatus: string) => {
+    setStatus(newStatus)
+    if (newStatus === 'COMPLETED') setProgress(100)
+  }
+
+  const handleProgressChange = (newProgress: number) => {
+    setProgress(newProgress)
+    if (newProgress === 100) setStatus('COMPLETED')
+    else if (status === 'COMPLETED') setStatus('IN_PROGRESS')
+  }
+
+  const addSkill = () => {
+    const v = skillInput.trim()
+    if (v && !skills.includes(v)) setSkills(prev => [...prev, v])
+    setSkillInput('')
+  }
+
+  const removeSkill = (s: string) => setSkills(prev => prev.filter(x => x !== s))
+
+  const addOutput = () => {
+    const v = outputInput.trim()
+    if (v && !outputs.includes(v)) setOutputs(prev => [...prev, v])
+    setOutputInput('')
+  }
+
+  const removeOutput = (o: string) => setOutputs(prev => prev.filter(x => x !== o))
 
   const handleSave = async () => {
     if (!name.trim()) return
@@ -59,6 +90,8 @@ export default function ActivityModal({ activity, milestoneId, teams, assets, on
       startTime: isWithinDay ? startTime || null : null,
       endTime: isWithinDay ? endTime || null : null,
       assetIds: selectedAssets,
+      skills,
+      requiredOutput: outputs,
     })
     setSaving(false)
   }
@@ -91,7 +124,7 @@ export default function ActivityModal({ activity, milestoneId, teams, assets, on
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label mb-1">Status</label>
-              <select className="input w-full" value={status} onChange={e => setStatus(e.target.value)}>
+              <select className="input w-full" value={status} onChange={e => handleStatusChange(e.target.value)}>
                 {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
@@ -99,10 +132,12 @@ export default function ActivityModal({ activity, milestoneId, teams, assets, on
               <label className="label mb-1">Progress</label>
               <div className="flex items-center gap-2">
                 <input type="range" min={0} max={100} value={progress}
-                  onChange={e => setProgress(Number(e.target.value))}
+                  onChange={e => handleProgressChange(Number(e.target.value))}
                   className="flex-1" />
                 <span className="text-[10px] font-mono text-ink-muted w-8">{progress}%</span>
+                {progress === 100 && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />}
               </div>
+              <p className="text-[10px] text-ink-faint mt-0.5">Only the assignee or PM can mark 100%</p>
             </div>
           </div>
           <div>
@@ -181,13 +216,57 @@ export default function ActivityModal({ activity, milestoneId, teams, assets, on
               <div className="flex flex-wrap gap-1.5">
                 {assets.map(a => (
                   <button key={a.id} onClick={() => toggleAsset(a.id)}
-                    className={`filter-pill ${selectedAssets.includes(a.id) ? 'active' : ''}`}>
+                    className={`filter-pill ${selectedAssets.includes(a.id) ? 'active' : ''} ${a.isAvailable === false ? 'border-red-400' : ''}`}>
                     {a.name}
+                    {a.isAvailable === false && (
+                      <span className="ml-1 text-[10px] text-red-500 font-medium">Unavailable</span>
+                    )}
                   </button>
                 ))}
               </div>
             </div>
           )}
+
+          {/* Requirements — Skills */}
+          <div>
+            <label className="label mb-1">Skill Requirements</label>
+            <div className="flex flex-wrap gap-1.5 mb-1.5">
+              {skills.map(s => (
+                <span key={s} className="inline-flex items-center gap-1 bg-surface-100 border border-surface-200 rounded-full px-2 py-0.5 text-[10px] text-ink-muted">
+                  {s}
+                  <button onClick={() => removeSkill(s)} className="text-ink-faint hover:text-ink"><X className="w-3 h-3" /></button>
+                </span>
+              ))}
+            </div>
+            <input
+              className="input w-full"
+              value={skillInput}
+              onChange={e => setSkillInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSkill() } }}
+              placeholder="Type a skill and press Enter"
+            />
+          </div>
+
+          {/* Required Output */}
+          <div>
+            <label className="label mb-1">Required Output</label>
+            <div className="flex flex-wrap gap-1.5 mb-1.5">
+              {outputs.map(o => (
+                <span key={o} className="inline-flex items-center gap-1 bg-surface-100 border border-surface-200 rounded-full px-2 py-0.5 text-[10px] text-ink-muted">
+                  <FileText className="w-3 h-3 shrink-0" />
+                  {o}
+                  <button onClick={() => removeOutput(o)} className="text-ink-faint hover:text-ink"><X className="w-3 h-3" /></button>
+                </span>
+              ))}
+            </div>
+            <input
+              className="input w-full"
+              value={outputInput}
+              onChange={e => setOutputInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addOutput() } }}
+              placeholder="e.g. Site photo, Inspection report"
+            />
+          </div>
         </div>
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-surface-200">
           <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
