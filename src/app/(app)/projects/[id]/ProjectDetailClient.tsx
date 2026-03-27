@@ -23,11 +23,13 @@ type Activity = {
   sortOrder: number; assetIds: string[]
   skills?: string[]; requiredOutput: string[]
   estimatedHours?: number | null
+  icon?: string | null
 }
 type Milestone = {
   id: string; name: string; description?: string | null
   color: string; startDate?: string | null; endDate?: string | null
   sortOrder: number; activities: Activity[]
+  icon?: string | null
 }
 type Project = {
   id: string; name: string; clientName?: string | null
@@ -62,16 +64,32 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
   const [editingId, setEditingId] = useState<string | null>(null)
   const [newRow, setNewRow] = useState<{ type: 'milestone' | 'activity'; milestoneId?: string } | null>(null)
 
-  /* ── PM Indicators ── */
+  /* ── PM Indicators (duration-weighted progress) ── */
   const allActivities = useMemo(() => project.milestones.flatMap(m => m.activities), [project])
   const totalActivities = allActivities.length
-  const completedActivities = allActivities.filter(a => a.status === 'COMPLETED').length
   const overdueActivities = allActivities.filter(a => {
     if (a.status === 'COMPLETED') return false
     if (!a.endDate) return false
     return new Date(a.endDate) < new Date()
   }).length
-  const progressPct = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0
+
+  // Weighted progress: longer activities contribute more to overall %
+  const progressPct = useMemo(() => {
+    if (allActivities.length === 0) return 0
+    let totalWeight = 0
+    let weightedProgress = 0
+    allActivities.forEach(a => {
+      // Weight = duration in days (min 1). Activities without dates get weight 1.
+      let duration = 1
+      if (a.startDate && a.endDate) {
+        duration = Math.max(differenceInDays(new Date(a.endDate), new Date(a.startDate)) + 1, 1)
+      }
+      totalWeight += duration
+      weightedProgress += duration * (a.progress / 100)
+    })
+    return totalWeight > 0 ? Math.round((weightedProgress / totalWeight) * 100) : 0
+  }, [allActivities])
+
   const milestoneDone = project.milestones.filter(m =>
     m.activities.length > 0 && m.activities.every(a => a.status === 'COMPLETED')
   ).length
@@ -136,6 +154,32 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
     setNewRow(null)
   }, [project.id])
 
+  // Auto-fill milestone start/end dates from its activities
+  const autoFillMilestoneDates = useCallback(async (milestoneId: string, activities: Activity[]) => {
+    const dates = activities
+      .flatMap(a => [a.startDate, a.endDate])
+      .filter(Boolean)
+      .map(d => new Date(d!))
+    if (dates.length === 0) return
+    const earliest = new Date(Math.min(...dates.map(d => d.getTime())))
+    const latest = new Date(Math.max(...dates.map(d => d.getTime())))
+    const mStart = format(earliest, 'yyyy-MM-dd')
+    const mEnd = format(latest, 'yyyy-MM-dd')
+    // Silently update milestone dates on server
+    const res = await fetch(`/api/projects/${project.id}/milestones/${milestoneId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ startDate: mStart, endDate: mEnd }),
+    })
+    if (!res.ok) return
+    setProject(prev => ({
+      ...prev,
+      milestones: prev.milestones.map(m =>
+        m.id === milestoneId ? { ...m, startDate: mStart, endDate: mEnd } : m
+      ),
+    }))
+  }, [project.id])
+
   const saveActivity = useCallback(async (milestoneId: string, data: any, existingId?: string) => {
     if (existingId) {
       const res = await fetch(`/api/projects/${project.id}/milestones/${milestoneId}/activities/${existingId}`, {
@@ -145,14 +189,17 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
       })
       if (!res.ok) return
       const updated = await res.json()
-      setProject(prev => ({
-        ...prev,
-        milestones: prev.milestones.map(m =>
+      setProject(prev => {
+        const newMilestones = prev.milestones.map(m =>
           m.id === milestoneId
             ? { ...m, activities: m.activities.map(a => a.id === existingId ? { ...a, ...updated } : a) }
             : m
-        ),
-      }))
+        )
+        // Auto-fill milestone dates from updated activities
+        const milestone = newMilestones.find(m => m.id === milestoneId)
+        if (milestone) autoFillMilestoneDates(milestoneId, milestone.activities)
+        return { ...prev, milestones: newMilestones }
+      })
     } else {
       const res = await fetch(`/api/projects/${project.id}/milestones/${milestoneId}/activities`, {
         method: 'POST',
@@ -161,18 +208,20 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
       })
       if (!res.ok) return
       const created = await res.json()
-      setProject(prev => ({
-        ...prev,
-        milestones: prev.milestones.map(m =>
+      setProject(prev => {
+        const newMilestones = prev.milestones.map(m =>
           m.id === milestoneId
             ? { ...m, activities: [...m.activities, created] }
             : m
-        ),
-      }))
+        )
+        const milestone = newMilestones.find(m => m.id === milestoneId)
+        if (milestone) autoFillMilestoneDates(milestoneId, milestone.activities)
+        return { ...prev, milestones: newMilestones }
+      })
     }
     setEditingId(null)
     setNewRow(null)
-  }, [project.id])
+  }, [project.id, autoFillMilestoneDates])
 
   const deleteMilestone = useCallback(async (milestoneId: string) => {
     await fetch(`/api/projects/${project.id}/milestones/${milestoneId}`, { method: 'DELETE' })

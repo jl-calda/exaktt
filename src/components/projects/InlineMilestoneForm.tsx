@@ -3,7 +3,7 @@
 import { useState, useRef, KeyboardEvent } from 'react'
 import { Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { MILESTONE_COLORS } from '@/components/projects/colors'
+import InlineEmojiPicker from './InlineEmojiPicker'
 
 /** Shift a YYYY-MM-DD date string by +/- days */
 function shiftDate(dateStr: string, days: number): string {
@@ -17,21 +17,24 @@ interface InlineMilestoneFormProps {
   milestone?: {
     id: string; name: string; description?: string | null
     color: string; startDate?: string | null; endDate?: string | null
+    icon?: string | null
   }
   defaultColor: string
+  defaultIcon: string
   onSave: (data: {
     name: string; description: string | null; color: string
     startDate: string | null; endDate: string | null
+    icon: string
   }) => Promise<void>
   onCancel: () => void
 }
 
 export default function InlineMilestoneForm({
-  milestone, defaultColor, onSave, onCancel,
+  milestone, defaultColor, defaultIcon, onSave, onCancel,
 }: InlineMilestoneFormProps) {
   const [name, setName] = useState(milestone?.name ?? '')
   const [description, setDescription] = useState(milestone?.description ?? '')
-  const [color, setColor] = useState(milestone?.color ?? defaultColor)
+  const [icon, setIcon] = useState(milestone?.icon ?? defaultIcon)
   const [startDate, setStartDate] = useState(
     milestone?.startDate ? new Date(milestone.startDate).toISOString().split('T')[0] : ''
   )
@@ -41,6 +44,9 @@ export default function InlineMilestoneForm({
   const [saving, setSaving] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
 
+  // Color is auto-assigned, stored but not user-selectable
+  const color = milestone?.color ?? defaultColor
+
   const handleSave = async () => {
     if (!name.trim() || saving) return
     setSaving(true)
@@ -49,6 +55,7 @@ export default function InlineMilestoneForm({
         name: name.trim(),
         description: description.trim() || null,
         color,
+        icon,
         startDate: startDate || null,
         endDate: endDate || null,
       })
@@ -74,8 +81,10 @@ export default function InlineMilestoneForm({
 
   return (
     <div className="animate-fade-in flex flex-col gap-1.5 py-1.5 px-2" onKeyDown={handleKeyDown}>
-      {/* Row 1: Name + Save + Cancel */}
+      {/* Row 1: Icon + Name + Save + Cancel */}
       <div className="flex items-center gap-1.5">
+        <InlineEmojiPicker value={icon} onChange={setIcon} />
+        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} title={`Auto color: ${color}`} />
         <input
           ref={nameRef}
           autoFocus
@@ -99,24 +108,8 @@ export default function InlineMilestoneForm({
         </Button>
       </div>
 
-      {/* Row 2: Color dots + Description */}
+      {/* Row 2: Description */}
       <div className="flex items-center gap-1.5">
-        <div className="flex items-center gap-1 shrink-0">
-          {MILESTONE_COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              className="w-4 h-4 rounded-full border-2 transition-all duration-150"
-              style={{
-                backgroundColor: c,
-                borderColor: color === c ? 'var(--color-ink)' : 'transparent',
-                transform: color === c ? 'scale(1.15)' : 'scale(1)',
-              }}
-              onClick={() => setColor(c)}
-              title={c}
-            />
-          ))}
-        </div>
         <input
           className="input flex-1 h-7 text-xs min-w-0"
           placeholder="Description (optional)"
@@ -127,6 +120,7 @@ export default function InlineMilestoneForm({
 
       {/* Row 3: Date inputs with arrow key adjustment */}
       <div className="flex items-center gap-1.5 text-xs text-ink-faint">
+        <span className="text-[10px] text-ink-faint shrink-0">Dates</span>
         <input
           type="date"
           className="input h-6 text-[11px] w-[110px]"
@@ -144,6 +138,7 @@ export default function InlineMilestoneForm({
           onKeyDown={(e) => handleDateKey(e, endDate, setEndDate)}
           title="Arrow Up/Down to adjust date"
         />
+        <span className="text-[10px] text-ink-faint italic">Auto-filled from activities</span>
       </div>
     </div>
   )
