@@ -12,10 +12,8 @@ import InlineMilestoneForm from './InlineMilestoneForm'
 import InlineActivityForm from './InlineActivityForm'
 
 const ROW_H = 32
-const EDIT_MILESTONE_H = 120
-const EDIT_ACTIVITY_H = 180
 const LABEL_W = 220
-const EDIT_LABEL_W = 420
+const EDIT_LABEL_W = 460
 const COL_WIDTHS = { days: 40, weeks: 120, months: 200 }
 
 type Activity = {
@@ -63,11 +61,8 @@ export default function GanttChart({
   onAddMilestone, onAddActivity, onDeleteMilestone, onDeleteActivity,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
-
-  // Any row being edited?
   const hasEditing = editingId !== null || newRow !== null
 
-  // Compute date range from all items
   const { rangeStart, rangeEnd, columns } = useMemo(() => {
     const allDates: Date[] = []
     if (project.startDate) allDates.push(new Date(project.startDate))
@@ -109,7 +104,6 @@ export default function GanttChart({
   const colW = COL_WIDTHS[viewMode]
   const totalW = columns.length * colW
 
-  // Compute bar position
   const getBarPos = (start: string | null | undefined, end: string | null | undefined) => {
     if (!start) return null
     const s = startOfDay(new Date(start))
@@ -120,7 +114,6 @@ export default function GanttChart({
     return { left, width }
   }
 
-  // Today line position
   const today = startOfDay(new Date())
   const todayPos = (() => {
     const totalDays = differenceInDays(rangeEnd, rangeStart) || 1
@@ -129,7 +122,7 @@ export default function GanttChart({
     return pos
   })()
 
-  // Build rows with editing support
+  // Build rows
   type Row = {
     type: 'milestone' | 'activity' | 'new-milestone' | 'new-activity'
     id: string
@@ -152,25 +145,22 @@ export default function GanttChart({
   const rows: Row[] = []
   project.milestones.forEach(m => {
     const mBar = getBarPos(m.startDate, m.endDate)
-    const isEditingThis = editingId === m.id
     rows.push({
       type: 'milestone', id: m.id, label: m.name, color: m.color,
-      bar: mBar, isCollapsed: collapsed.has(m.id), isEditing: isEditingThis, data: m,
+      bar: mBar, isCollapsed: collapsed.has(m.id), isEditing: editingId === m.id, data: m,
     })
     if (!collapsed.has(m.id)) {
       m.activities.forEach(a => {
         const aBar = getBarPos(a.startDate, a.endDate)
-        const isEditingAct = editingId === a.id
         rows.push({
           type: 'activity', id: a.id, milestoneId: m.id,
           label: a.name, color: a.color, bar: aBar,
           progress: a.progress, team: a.team,
           assignee: a.assignee, assigneeName: a.assigneeName,
           isWithinDay: a.isWithinDay, startTime: a.startTime, endTime: a.endTime,
-          isEditing: isEditingAct, data: a,
+          isEditing: editingId === a.id, data: a,
         })
       })
-      // Insert new activity row at end of this milestone's activities
       if (newRow?.type === 'activity' && newRow.milestoneId === m.id) {
         rows.push({
           type: 'new-activity', id: `new-activity-${m.id}`, milestoneId: m.id,
@@ -179,7 +169,6 @@ export default function GanttChart({
       }
     }
   })
-  // Insert new milestone row at end
   if (newRow?.type === 'milestone') {
     rows.push({
       type: 'new-milestone', id: 'new-milestone',
@@ -187,135 +176,20 @@ export default function GanttChart({
     })
   }
 
-  // Compute row heights and cumulative tops
-  const rowHeights = rows.map(row => {
-    if (row.isEditing && row.type === 'milestone') return EDIT_MILESTONE_H
-    if (row.isEditing && row.type === 'activity') return EDIT_ACTIVITY_H
-    if (row.type === 'new-milestone') return EDIT_MILESTONE_H
-    if (row.type === 'new-activity') return EDIT_ACTIVITY_H
-    return ROW_H
-  })
-  const rowTops: number[] = []
-  let cumTop = 0
-  for (const h of rowHeights) {
-    rowTops.push(cumTop)
-    cumTop += h
-  }
-  const totalH = cumTop
-
   const labelW = hasEditing ? EDIT_LABEL_W : LABEL_W
 
   if (project.milestones.length === 0 && !newRow) return null
 
   return (
     <div className="card p-0 overflow-hidden mt-2">
-      <div className="flex">
-        {/* Left labels panel */}
-        <div className="shrink-0 border-r border-surface-200 transition-all duration-200" style={{ width: labelW }}>
-          {/* Header */}
-          <div className="h-10 flex items-center px-3 border-b border-surface-200 bg-surface-100/60">
-            <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Timeline</span>
-          </div>
-          {/* Rows */}
-          {rows.map((row, i) => {
-            const isEditRow = row.isEditing || row.type === 'new-milestone' || row.type === 'new-activity'
-
-            // Editing row — render inline form
-            if (isEditRow) {
-              const rowType = row.type === 'new-milestone' ? 'milestone'
-                            : row.type === 'new-activity' ? 'activity'
-                            : row.type
-              if (rowType === 'milestone') {
-                return (
-                  <div key={row.id} className="border-b border-surface-200 bg-surface-50"
-                    style={{ height: rowHeights[i] }}>
-                    <InlineMilestoneForm
-                      milestone={row.data}
-                      defaultColor={row.data?.color ?? '#3b82f6'}
-                      onSave={async (data) => {
-                        await onSaveMilestone(data, row.data?.id)
-                      }}
-                      onCancel={onCancelEdit}
-                    />
-                  </div>
-                )
-              }
-              return (
-                <div key={row.id} className="border-b border-surface-200 bg-surface-50"
-                  style={{ height: rowHeights[i] }}>
-                  <InlineActivityForm
-                    activity={row.data}
-                    defaultColor={row.data?.color ?? '#10b981'}
-                    teams={teams}
-                    assets={assets}
-                    onSave={async (data) => {
-                      await onSaveActivity(row.milestoneId!, data, row.data?.id)
-                    }}
-                    onCancel={onCancelEdit}
-                  />
-                </div>
-              )
-            }
-
-            // Display row
-            return (
-              <div key={row.id}
-                className="flex items-center gap-1.5 px-2 border-b border-surface-100 group/label hover:bg-surface-100/50"
-                style={{ height: ROW_H, paddingLeft: row.type === 'activity' ? 28 : 8 }}
-              >
-                {row.type === 'milestone' && (
-                  <button onClick={() => onToggleCollapse(row.id)} className="shrink-0 text-ink-faint hover:text-ink">
-                    {row.isCollapsed
-                      ? <ChevronRight className="w-3 h-3" />
-                      : <ChevronDown className="w-3 h-3" />
-                    }
-                  </button>
-                )}
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: row.color }} />
-                <span
-                  className={`text-[11px] truncate flex-1 cursor-pointer hover:text-primary ${
-                    row.type === 'milestone' ? 'font-semibold text-ink' : 'text-ink-muted'
-                  }`}
-                  onClick={() => onStartEdit(row.id)}
-                >
-                  {row.label}
-                </span>
-                {/* Team pill */}
-                {row.type === 'activity' && (row.team || row.assigneeName) && (
-                  <TeamPill team={row.team} assigneeName={row.assigneeName} assignee={row.assignee} />
-                )}
-                {/* Actions */}
-                <div className="opacity-0 group-hover/label:opacity-100 transition-opacity flex items-center gap-0.5">
-                  <button onClick={() => onStartEdit(row.id)} title="Edit"
-                    className="p-0.5 text-ink-faint hover:text-ink">
-                    <Pencil className="w-3 h-3" />
-                  </button>
-                  {row.type === 'milestone' && (
-                    <button onClick={() => onAddActivity(row.id)} title="Add activity"
-                      className="p-0.5 text-ink-faint hover:text-emerald-600">
-                      <Plus className="w-3 h-3" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      if (row.type === 'milestone') onDeleteMilestone(row.id)
-                      else onDeleteActivity(row.milestoneId!, row.id)
-                    }}
-                    title="Delete"
-                    className="p-0.5 text-ink-faint hover:text-red-500"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+      {/* Header row */}
+      <div className="flex border-b border-surface-200 bg-surface-100/60">
+        <div className="shrink-0 h-10 flex items-center px-3 border-r border-surface-200 transition-all duration-200"
+          style={{ width: labelW }}>
+          <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Timeline</span>
         </div>
-
-        {/* Right scrollable chart */}
         <div className="flex-1 overflow-x-auto" ref={scrollRef}>
-          {/* Column headers */}
-          <div className="flex border-b border-surface-200 bg-surface-100/60" style={{ height: 40, width: totalW }}>
+          <div className="flex" style={{ width: totalW, height: 40 }}>
             {columns.map((col, i) => (
               <div key={i} className="shrink-0 flex flex-col items-center justify-center border-r border-surface-100"
                 style={{ width: colW }}>
@@ -324,91 +198,152 @@ export default function GanttChart({
               </div>
             ))}
           </div>
+        </div>
+      </div>
 
-          {/* Chart body */}
-          <div className="relative" style={{ width: totalW, height: totalH }}>
-            {/* Grid lines */}
-            {columns.map((_, i) => (
-              <div key={i} className="absolute top-0 bottom-0 border-r border-surface-100"
-                style={{ left: i * colW, width: colW }} />
-            ))}
+      {/* Data rows — each row is a flex container so left and right heights auto-sync */}
+      {rows.map((row) => {
+        const isEditRow = row.isEditing || row.type === 'new-milestone' || row.type === 'new-activity'
 
-            {/* Today line */}
-            {todayPos !== null && (
-              <div className="absolute top-0 bottom-0 w-px bg-red-400 z-10" style={{ left: todayPos }}>
-                <div className="absolute -top-0 left-1/2 -translate-x-1/2 bg-red-400 text-white text-[8px] px-1 rounded-b">
-                  Today
-                </div>
-              </div>
-            )}
-
-            {/* Row backgrounds + bars */}
-            {rows.map((row, i) => {
-              const isEditRow = row.isEditing || row.type === 'new-milestone' || row.type === 'new-activity'
-
-              return (
-                <div key={row.id} className="absolute left-0 right-0 border-b border-surface-100"
-                  style={{ top: rowTops[i], height: rowHeights[i] }}>
-                  {/* For editing rows, show a subtle background */}
-                  {isEditRow && (
-                    <div className="absolute inset-0 bg-primary/[0.03]" />
-                  )}
-                  {/* Bar */}
-                  {row.bar && !isEditRow && (
-                    <div
-                      className="absolute top-1.5 rounded cursor-pointer hover:brightness-95 transition-all"
-                      style={{
-                        left: row.bar.left,
-                        width: row.bar.width,
-                        height: row.type === 'milestone' ? ROW_H - 12 : ROW_H - 14,
-                        background: row.type === 'milestone'
-                          ? `${row.color}30`
-                          : `${row.color}25`,
-                        border: `1px solid ${row.color}50`,
-                        borderRadius: row.type === 'milestone' ? 6 : 4,
-                      }}
-                      onClick={() => onStartEdit(row.id)}
-                    >
-                      {/* Progress fill for activities */}
-                      {row.type === 'activity' && row.progress != null && row.progress > 0 && (
-                        <div className="absolute inset-0 rounded"
-                          style={{
-                            width: `${row.progress}%`,
-                            background: `${row.color}50`,
-                            borderRadius: 'inherit',
-                          }}
-                        />
-                      )}
-                      {/* Time label for within-day */}
-                      {row.isWithinDay && row.startTime && (
-                        <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[8px] font-mono whitespace-nowrap"
-                          style={{ color: row.color }}>
-                          {row.startTime}{row.endTime ? `\u2013${row.endTime}` : ''}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {/* For editing rows, show the bar if it exists (dimmed) */}
-                  {row.bar && isEditRow && (
-                    <div
-                      className="absolute rounded opacity-40"
-                      style={{
-                        left: row.bar.left,
-                        width: row.bar.width,
-                        top: 4,
-                        height: rowHeights[i] - 8,
-                        background: `${row.color}20`,
-                        border: `1px dashed ${row.color}60`,
-                        borderRadius: 6,
-                      }}
+        return (
+          <div key={row.id} className="flex border-b border-surface-100">
+            {/* Left label / form */}
+            <div className="shrink-0 border-r border-surface-200 transition-all duration-200"
+              style={{ width: labelW }}>
+              {isEditRow ? (
+                <div className="bg-surface-50">
+                  {(row.type === 'milestone' || row.type === 'new-milestone') ? (
+                    <InlineMilestoneForm
+                      milestone={row.data}
+                      defaultColor={row.data?.color ?? '#3b82f6'}
+                      onSave={async (data) => { await onSaveMilestone(data, row.data?.id) }}
+                      onCancel={onCancelEdit}
+                    />
+                  ) : (
+                    <InlineActivityForm
+                      activity={row.data}
+                      defaultColor={row.data?.color ?? '#10b981'}
+                      teams={teams}
+                      assets={assets}
+                      onSave={async (data) => { await onSaveActivity(row.milestoneId!, data, row.data?.id) }}
+                      onCancel={onCancelEdit}
                     />
                   )}
                 </div>
-              )
-            })}
+              ) : (
+                <div
+                  className="flex items-center gap-1.5 px-2 group/label hover:bg-surface-100/50"
+                  style={{ height: ROW_H, paddingLeft: row.type === 'activity' ? 28 : 8 }}
+                >
+                  {row.type === 'milestone' && (
+                    <button onClick={() => onToggleCollapse(row.id)} className="shrink-0 text-ink-faint hover:text-ink">
+                      {row.isCollapsed
+                        ? <ChevronRight className="w-3 h-3" />
+                        : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                  )}
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: row.color }} />
+                  <span
+                    className={`text-[11px] truncate flex-1 cursor-pointer hover:text-primary ${
+                      row.type === 'milestone' ? 'font-semibold text-ink' : 'text-ink-muted'
+                    }`}
+                    onClick={() => onStartEdit(row.id)}
+                  >
+                    {row.label}
+                  </span>
+                  {row.type === 'activity' && (row.team || row.assigneeName) && (
+                    <TeamPill team={row.team} assigneeName={row.assigneeName} assignee={row.assignee} />
+                  )}
+                  <div className="opacity-0 group-hover/label:opacity-100 transition-opacity flex items-center gap-0.5">
+                    <button onClick={() => onStartEdit(row.id)} title="Edit"
+                      className="p-0.5 text-ink-faint hover:text-ink">
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                    {row.type === 'milestone' && (
+                      <button onClick={() => onAddActivity(row.id)} title="Add activity"
+                        className="p-0.5 text-ink-faint hover:text-emerald-600">
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        if (row.type === 'milestone') onDeleteMilestone(row.id)
+                        else onDeleteActivity(row.milestoneId!, row.id)
+                      }}
+                      title="Delete"
+                      className="p-0.5 text-ink-faint hover:text-red-500"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right chart area */}
+            <div className="flex-1 overflow-hidden">
+              <div className="relative" style={{ width: totalW, minHeight: isEditRow ? undefined : ROW_H, height: isEditRow ? '100%' : ROW_H }}>
+                {/* Grid lines */}
+                {columns.map((_, ci) => (
+                  <div key={ci} className="absolute top-0 bottom-0 border-r border-surface-100"
+                    style={{ left: ci * colW, width: colW }} />
+                ))}
+
+                {/* Today line */}
+                {todayPos !== null && (
+                  <div className="absolute top-0 bottom-0 w-px bg-red-400 z-10" style={{ left: todayPos }} />
+                )}
+
+                {/* Editing row background */}
+                {isEditRow && (
+                  <div className="absolute inset-0 bg-primary/[0.03]" />
+                )}
+
+                {/* Bar */}
+                {row.bar && !isEditRow && (
+                  <div
+                    className="absolute top-1.5 rounded cursor-pointer hover:brightness-95 transition-all"
+                    style={{
+                      left: row.bar.left,
+                      width: row.bar.width,
+                      height: row.type === 'milestone' ? ROW_H - 12 : ROW_H - 14,
+                      background: row.type === 'milestone' ? `${row.color}30` : `${row.color}25`,
+                      border: `1px solid ${row.color}50`,
+                      borderRadius: row.type === 'milestone' ? 6 : 4,
+                    }}
+                    onClick={() => onStartEdit(row.id)}
+                  >
+                    {row.type === 'activity' && row.progress != null && row.progress > 0 && (
+                      <div className="absolute inset-0 rounded"
+                        style={{ width: `${row.progress}%`, background: `${row.color}50`, borderRadius: 'inherit' }} />
+                    )}
+                    {row.isWithinDay && row.startTime && (
+                      <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[8px] font-mono whitespace-nowrap"
+                        style={{ color: row.color }}>
+                        {row.startTime}{row.endTime ? `\u2013${row.endTime}` : ''}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Dimmed bar for editing rows */}
+                {row.bar && isEditRow && (
+                  <div
+                    className="absolute rounded opacity-40"
+                    style={{
+                      left: row.bar.left, width: row.bar.width,
+                      top: 4, bottom: 4,
+                      background: `${row.color}20`,
+                      border: `1px dashed ${row.color}60`,
+                      borderRadius: 6,
+                    }}
+                  />
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        )
+      })}
     </div>
   )
 }
