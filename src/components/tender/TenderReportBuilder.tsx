@@ -14,6 +14,7 @@ import { Button, Input, Select } from '@/components/ui'
 import { NumberInput } from '@/components/ui/Input'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import CalculatorTab from '@/components/calculator/CalculatorTab'
+import CreateProjectFromTenderModal from '@/components/projects/CreateProjectFromTenderModal'
 import { computeMultiRun } from '@/lib/engine/compute'
 import { useCalcStore } from '@/store'
 import type {
@@ -148,6 +149,8 @@ export default function TenderReportBuilder({
   const tenderMeta = TENDER_STATUS_META[tenderStatus] ?? TENDER_STATUS_META.DRAFT
   const tenderTransitions = TENDER_TRANSITIONS[tenderStatus] ?? []
 
+  const [showCreateProject, setShowCreateProject] = useState(false)
+
   const handleTenderStatusChange = async (newStatus: TenderStatus) => {
     setShowTenderStatusMenu(false)
     const res = await fetch(`/api/tenders/${tender.id}`, {
@@ -156,7 +159,10 @@ export default function TenderReportBuilder({
       body: JSON.stringify({ status: newStatus }),
     })
     const { data } = await res.json()
-    if (data) setTenderStatus(newStatus)
+    if (data) {
+      setTenderStatus(newStatus)
+      if (newStatus === 'WON') setShowCreateProject(true)
+    }
   }
 
   /* ── Calculator tab state ────────────────────────────────────────────── */
@@ -1563,6 +1569,15 @@ export default function TenderReportBuilder({
           </div>
         </div>
       )}
+
+      {/* Create Project from Won tender */}
+      <CreateProjectFromTenderModal
+        open={showCreateProject}
+        tender={tender}
+        report={{ id: existingReport?.id, clientName, reference }}
+        grandTotal={grandTotal}
+        onClose={() => setShowCreateProject(false)}
+      />
     </div>
   )
 }

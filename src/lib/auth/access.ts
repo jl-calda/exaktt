@@ -6,7 +6,7 @@ import type { CompanyRole } from '@prisma/client'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type Module = 'systems' | 'library' | 'reports' | 'logistics' | 'tenders'
+export type Module = 'systems' | 'library' | 'reports' | 'logistics' | 'tenders' | 'projects'
 export type Permission = 'write' | 'read' | 'none'
 export type Action = 'read' | 'write'
 
@@ -19,13 +19,13 @@ export interface AccessContext {
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
-const ALL_MODULES: Module[] = ['systems', 'library', 'reports', 'logistics', 'tenders']
+const ALL_MODULES: Module[] = ['systems', 'library', 'reports', 'logistics', 'tenders', 'projects']
 
 export const DEFAULT_PERMISSIONS: Record<CompanyRole, Record<Module, Permission>> = {
-  OWNER:  { systems: 'write', library: 'write', reports: 'write', logistics: 'write', tenders: 'write' },
-  ADMIN:  { systems: 'write', library: 'write', reports: 'write', logistics: 'write', tenders: 'write' },
-  MEMBER: { systems: 'write', library: 'write', reports: 'write', logistics: 'write', tenders: 'write' },
-  VIEWER: { systems: 'read',  library: 'read',  reports: 'read',  logistics: 'read',  tenders: 'read' },
+  OWNER:  { systems: 'write', library: 'write', reports: 'write', logistics: 'write', tenders: 'write', projects: 'write' },
+  ADMIN:  { systems: 'write', library: 'write', reports: 'write', logistics: 'write', tenders: 'write', projects: 'write' },
+  MEMBER: { systems: 'write', library: 'write', reports: 'write', logistics: 'write', tenders: 'write', projects: 'write' },
+  VIEWER: { systems: 'read',  library: 'read',  reports: 'read',  logistics: 'read',  tenders: 'read',  projects: 'read' },
 }
 
 /** Build a valid permissions object from role defaults + any stored overrides */

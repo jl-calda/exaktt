@@ -1278,3 +1278,273 @@ export class LimitError extends Error {
     this.name    = 'LimitError'
   }
 }
+
+// ─── Projects ───────────────────────────────────────────────────────────────
+
+export async function getProjects(companyId: string) {
+  return prisma.project.findMany({
+    where: { companyId, isArchived: false },
+    include: {
+      milestones: {
+        include: { activities: true },
+        orderBy: { sortOrder: 'asc' },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+export async function getProject(id: string, companyId: string) {
+  return prisma.project.findFirst({
+    where: { id, companyId },
+    include: {
+      milestones: {
+        include: {
+          activities: {
+            include: { team: { include: { members: true } }, assignee: true },
+            orderBy: { sortOrder: 'asc' },
+          },
+        },
+        orderBy: { sortOrder: 'asc' },
+      },
+    },
+  })
+}
+
+export async function createProject(companyId: string, userId: string, data: {
+  name: string
+  address?: string | null
+  longitude?: number | null
+  latitude?: number | null
+  managerId?: string | null
+  managerName?: string | null
+  startDate?: Date | null
+  endDate?: Date | null
+  clientName?: string | null
+  contractValue?: number
+  status?: 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED'
+  tenderId?: string | null
+  reportId?: string | null
+  quotationNo?: string | null
+  systemIds?: string[]
+}) {
+  return prisma.project.create({
+    data: {
+      companyId,
+      createdById: userId,
+      ...data,
+    },
+  })
+}
+
+export async function updateProject(id: string, companyId: string, data: Record<string, any>) {
+  await verifyOwnership(prisma.project, id, companyId, 'Project')
+  const { id: _, companyId: __, createdById: ___, createdAt: ____, ...safe } = data
+  if (safe.startDate) safe.startDate = new Date(safe.startDate)
+  if (safe.endDate) safe.endDate = new Date(safe.endDate)
+  return prisma.project.update({ where: { id }, data: safe })
+}
+
+export async function archiveProject(id: string, companyId: string) {
+  await verifyOwnership(prisma.project, id, companyId, 'Project')
+  return prisma.project.update({ where: { id }, data: { isArchived: true } })
+}
+
+// ─── Project Milestones ─────────────────────────────────────────────────────
+
+export async function createMilestone(projectId: string, companyId: string, data: {
+  name: string
+  description?: string | null
+  color?: string
+  startDate?: Date | null
+  endDate?: Date | null
+  sortOrder?: number
+}) {
+  await verifyOwnership(prisma.project, projectId, companyId, 'Project')
+  return prisma.projectMilestone.create({
+    data: { projectId, ...data },
+    include: { activities: true },
+  })
+}
+
+export async function updateMilestone(milestoneId: string, companyId: string, data: Record<string, any>) {
+  const milestone = await prisma.projectMilestone.findFirst({
+    where: { id: milestoneId },
+    include: { project: { select: { companyId: true } } },
+  })
+  if (!milestone || milestone.project.companyId !== companyId) throw new Error('Milestone not found')
+  const { id: _, projectId: __, createdAt: ___, project: ____, ...safe } = data
+  if (safe.startDate) safe.startDate = new Date(safe.startDate)
+  if (safe.endDate) safe.endDate = new Date(safe.endDate)
+  return prisma.projectMilestone.update({ where: { id: milestoneId }, data: safe })
+}
+
+export async function deleteMilestone(milestoneId: string, companyId: string) {
+  const milestone = await prisma.projectMilestone.findFirst({
+    where: { id: milestoneId },
+    include: { project: { select: { companyId: true } } },
+  })
+  if (!milestone || milestone.project.companyId !== companyId) throw new Error('Milestone not found')
+  return prisma.projectMilestone.delete({ where: { id: milestoneId } })
+}
+
+// ─── Project Activities ─────────────────────────────────────────────────────
+
+export async function createActivity(milestoneId: string, companyId: string, data: {
+  name: string
+  description?: string | null
+  assigneeId?: string | null
+  assigneeName?: string | null
+  teamId?: string | null
+  requiredOutput?: string[]
+  startDate?: Date | null
+  endDate?: Date | null
+  isWithinDay?: boolean
+  startTime?: string | null
+  endTime?: string | null
+  status?: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED'
+  progress?: number
+  color?: string
+  sortOrder?: number
+  assetIds?: string[]
+}) {
+  const milestone = await prisma.projectMilestone.findFirst({
+    where: { id: milestoneId },
+    include: { project: { select: { companyId: true } } },
+  })
+  if (!milestone || milestone.project.companyId !== companyId) throw new Error('Milestone not found')
+  return prisma.projectActivity.create({
+    data: { milestoneId, ...data },
+    include: { team: { include: { members: true } }, assignee: true },
+  })
+}
+
+export async function updateActivity(activityId: string, companyId: string, data: Record<string, any>) {
+  const activity = await prisma.projectActivity.findFirst({
+    where: { id: activityId },
+    include: { milestone: { include: { project: { select: { companyId: true } } } } },
+  })
+  if (!activity || activity.milestone.project.companyId !== companyId) throw new Error('Activity not found')
+  const { id: _, milestoneId: __, createdAt: ___, milestone: ____, ...safe } = data
+  if (safe.startDate) safe.startDate = new Date(safe.startDate)
+  if (safe.endDate) safe.endDate = new Date(safe.endDate)
+  return prisma.projectActivity.update({
+    where: { id: activityId },
+    data: safe,
+    include: { team: { include: { members: true } }, assignee: true },
+  })
+}
+
+export async function deleteActivity(activityId: string, companyId: string) {
+  const activity = await prisma.projectActivity.findFirst({
+    where: { id: activityId },
+    include: { milestone: { include: { project: { select: { companyId: true } } } } },
+  })
+  if (!activity || activity.milestone.project.companyId !== companyId) throw new Error('Activity not found')
+  return prisma.projectActivity.delete({ where: { id: activityId } })
+}
+
+// ─── Work Teams ─────────────────────────────────────────────────────────────
+
+export async function getWorkTeams(companyId: string) {
+  return prisma.workTeam.findMany({
+    where: { companyId },
+    include: { members: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } } },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+export async function getWorkTeam(id: string, companyId: string) {
+  return prisma.workTeam.findFirst({
+    where: { id, companyId },
+    include: {
+      members: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
+      activities: {
+        include: { milestone: { include: { project: true } } },
+      },
+    },
+  })
+}
+
+export async function createWorkTeam(companyId: string, data: { name: string }) {
+  return prisma.workTeam.create({
+    data: { companyId, ...data },
+    include: { members: true },
+  })
+}
+
+export async function updateWorkTeam(id: string, companyId: string, data: { name?: string }) {
+  await verifyOwnership(prisma.workTeam, id, companyId, 'Work team')
+  return prisma.workTeam.update({ where: { id }, data })
+}
+
+export async function deleteWorkTeam(id: string, companyId: string) {
+  await verifyOwnership(prisma.workTeam, id, companyId, 'Work team')
+  return prisma.workTeam.delete({ where: { id } })
+}
+
+// ─── Work Team Members ──────────────────────────────────────────────────────
+
+export async function addTeamMember(teamId: string, companyId: string, data: {
+  userId?: string | null
+  name?: string | null
+  avatarUrl?: string | null
+  skills?: string[]
+}) {
+  await verifyOwnership(prisma.workTeam, teamId, companyId, 'Work team')
+  return prisma.workTeamMember.create({
+    data: { teamId, ...data },
+    include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+  })
+}
+
+export async function updateTeamMember(memberId: string, companyId: string, data: Record<string, any>) {
+  const member = await prisma.workTeamMember.findFirst({
+    where: { id: memberId },
+    include: { team: { select: { companyId: true } } },
+  })
+  if (!member || member.team.companyId !== companyId) throw new Error('Member not found')
+  const { id: _, teamId: __, team: ___, ...safe } = data
+  return prisma.workTeamMember.update({ where: { id: memberId }, data: safe })
+}
+
+export async function deleteTeamMember(memberId: string, companyId: string) {
+  const member = await prisma.workTeamMember.findFirst({
+    where: { id: memberId },
+    include: { team: { select: { companyId: true } } },
+  })
+  if (!member || member.team.companyId !== companyId) throw new Error('Member not found')
+  return prisma.workTeamMember.delete({ where: { id: memberId } })
+}
+
+// ─── Project Assets ─────────────────────────────────────────────────────────
+
+export async function getProjectAssets(companyId: string) {
+  return prisma.projectAsset.findMany({
+    where: { companyId },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+export async function createProjectAsset(companyId: string, data: {
+  name: string
+  category?: string | null
+  description?: string | null
+  location?: string | null
+  isAvailable?: boolean
+}) {
+  return prisma.projectAsset.create({
+    data: { companyId, ...data },
+  })
+}
+
+export async function updateProjectAsset(id: string, companyId: string, data: Record<string, any>) {
+  await verifyOwnership(prisma.projectAsset, id, companyId, 'Asset')
+  const { id: _, companyId: __, createdAt: ___, ...safe } = data
+  return prisma.projectAsset.update({ where: { id }, data: safe })
+}
+
+export async function deleteProjectAsset(id: string, companyId: string) {
+  await verifyOwnership(prisma.projectAsset, id, companyId, 'Asset')
+  return prisma.projectAsset.delete({ where: { id } })
+}
