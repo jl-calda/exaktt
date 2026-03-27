@@ -2,7 +2,7 @@
 // Full library inline component — used inside MaterialsTab > Library sub-tab
 'use client'
 import { useState, useEffect, useMemo } from 'react'
-import { Search, Plus, Trash2, Edit3, Check, X, Package } from 'lucide-react'
+import { Search, Plus, Trash2, Edit3, Check, X } from 'lucide-react'
 import type { LibraryItem, LibraryItemSpec, GlobalTag } from '@/types'
 import type { Plan } from '@prisma/client'
 import { getLimits } from '@/lib/limits'
