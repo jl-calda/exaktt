@@ -77,6 +77,7 @@ export default function OverviewClient({ projects }: Props) {
 
   // No-op handlers for overview (read-only)
   const noop = useCallback(() => {}, [])
+  const noopAsync = useCallback(async () => {}, [])
 
   return (
     <div className="min-h-full">
@@ -165,9 +166,16 @@ export default function OverviewClient({ projects }: Props) {
                         project={project}
                         viewMode={viewMode}
                         collapsed={collapsedItems}
+                        editingId={null}
+                        newRow={null}
+                        teams={[]}
+                        assets={[]}
                         onToggleCollapse={toggleItem}
-                        onClickMilestone={noop}
-                        onClickActivity={noop}
+                        onStartEdit={noop}
+                        onCancelEdit={noop}
+                        onSaveMilestone={noopAsync}
+                        onSaveActivity={noopAsync}
+                        onAddMilestone={noop}
                         onAddActivity={noop}
                         onDeleteMilestone={noop}
                         onDeleteActivity={noop}

@@ -4,16 +4,13 @@ import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, differenceInDays } from 'date-fns'
 import {
-  ArrowLeft, Plus, ChevronDown, ChevronRight, Calendar,
-  AlertTriangle, CheckCircle2, Clock, MoreHorizontal, Trash2, Pencil,
+  ArrowLeft, Plus, ChevronDown, Calendar,
+  AlertTriangle, CheckCircle2, Clock, Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import GanttChart from '@/components/projects/GanttChart'
 import GanttToolbar from '@/components/projects/GanttToolbar'
-import MilestoneModal from '@/components/projects/MilestoneModal'
-import ActivityModal from '@/components/projects/ActivityModal'
 import ProjectFormModal from '@/components/projects/ProjectFormModal'
-import { MILESTONE_COLORS, getColor } from '@/components/projects/colors'
 
 /* ── Types ── */
 type Activity = {
@@ -24,7 +21,7 @@ type Activity = {
   isWithinDay?: boolean; startTime?: string | null; endTime?: string | null
   status: string; progress: number; color: string
   sortOrder: number; assetIds: string[]
-  requiredOutput: string[]
+  skills?: string[]; requiredOutput: string[]
 }
 type Milestone = {
   id: string; name: string; description?: string | null
@@ -56,19 +53,13 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
   const [viewMode, setViewMode] = useState<'days' | 'weeks' | 'months'>('weeks')
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
-  // Modals
+  // Project edit modal (only project-level uses a modal)
   const [editProject, setEditProject] = useState(false)
-  const [milestoneModal, setMilestoneModal] = useState<{ open: boolean; milestone?: Milestone }>({ open: false })
-  const [activityModal, setActivityModal] = useState<{ open: boolean; milestoneId?: string; activity?: Activity }>({ open: false })
   const [showStatusMenu, setShowStatusMenu] = useState(false)
 
-  // Inline milestone form
-  const [showInlineForm, setShowInlineForm] = useState(false)
-  const [inlineName, setInlineName] = useState('')
-  const [inlineColor, setInlineColor] = useState(() => getColor(MILESTONE_COLORS, project.milestones.length))
-  const [inlineStartDate, setInlineStartDate] = useState('')
-  const [inlineEndDate, setInlineEndDate] = useState('')
-  const [inlineSaving, setInlineSaving] = useState(false)
+  // Inline editing state
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [newRow, setNewRow] = useState<{ type: 'milestone' | 'activity'; milestoneId?: string } | null>(null)
 
   /* ── PM Indicators ── */
   const allActivities = useMemo(() => project.milestones.flatMap(m => m.activities), [project])
@@ -114,10 +105,9 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
     setShowStatusMenu(false)
   }, [project.id])
 
-  const saveMilestone = useCallback(async (data: any) => {
-    const editing = milestoneModal.milestone
-    if (editing) {
-      const res = await fetch(`/api/projects/${project.id}/milestones/${editing.id}`, {
+  const saveMilestone = useCallback(async (data: any, existingId?: string) => {
+    if (existingId) {
+      const res = await fetch(`/api/projects/${project.id}/milestones/${existingId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -126,7 +116,7 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
       const updated = await res.json()
       setProject(prev => ({
         ...prev,
-        milestones: prev.milestones.map(m => m.id === editing.id ? { ...m, ...updated } : m),
+        milestones: prev.milestones.map(m => m.id === existingId ? { ...m, ...updated } : m),
       }))
     } else {
       const res = await fetch(`/api/projects/${project.id}/milestones`, {
@@ -141,21 +131,13 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
         milestones: [...prev.milestones, { ...created, activities: created.activities ?? [] }],
       }))
     }
-    setMilestoneModal({ open: false })
-  }, [project.id, milestoneModal.milestone])
-
-  const deleteMilestone = useCallback(async (milestoneId: string) => {
-    await fetch(`/api/projects/${project.id}/milestones/${milestoneId}`, { method: 'DELETE' })
-    setProject(prev => ({
-      ...prev,
-      milestones: prev.milestones.filter(m => m.id !== milestoneId),
-    }))
+    setEditingId(null)
+    setNewRow(null)
   }, [project.id])
 
-  const saveActivity = useCallback(async (milestoneId: string, data: any) => {
-    const editing = activityModal.activity
-    if (editing) {
-      const res = await fetch(`/api/projects/${project.id}/milestones/${milestoneId}/activities/${editing.id}`, {
+  const saveActivity = useCallback(async (milestoneId: string, data: any, existingId?: string) => {
+    if (existingId) {
+      const res = await fetch(`/api/projects/${project.id}/milestones/${milestoneId}/activities/${existingId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -166,7 +148,7 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
         ...prev,
         milestones: prev.milestones.map(m =>
           m.id === milestoneId
-            ? { ...m, activities: m.activities.map(a => a.id === editing.id ? { ...a, ...updated } : a) }
+            ? { ...m, activities: m.activities.map(a => a.id === existingId ? { ...a, ...updated } : a) }
             : m
         ),
       }))
@@ -187,8 +169,17 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
         ),
       }))
     }
-    setActivityModal({ open: false })
-  }, [project.id, activityModal.activity])
+    setEditingId(null)
+    setNewRow(null)
+  }, [project.id])
+
+  const deleteMilestone = useCallback(async (milestoneId: string) => {
+    await fetch(`/api/projects/${project.id}/milestones/${milestoneId}`, { method: 'DELETE' })
+    setProject(prev => ({
+      ...prev,
+      milestones: prev.milestones.filter(m => m.id !== milestoneId),
+    }))
+  }, [project.id])
 
   const deleteActivity = useCallback(async (milestoneId: string, activityId: string) => {
     await fetch(`/api/projects/${project.id}/milestones/${milestoneId}/activities/${activityId}`, { method: 'DELETE' })
@@ -202,39 +193,10 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
     }))
   }, [project.id])
 
-  const resetInlineForm = useCallback(() => {
-    setShowInlineForm(false)
-    setInlineName('')
-    setInlineStartDate('')
-    setInlineEndDate('')
+  const cancelEdit = useCallback(() => {
+    setEditingId(null)
+    setNewRow(null)
   }, [])
-
-  const handleInlineSave = useCallback(async () => {
-    if (!inlineName.trim()) return
-    setInlineSaving(true)
-    const res = await fetch(`/api/projects/${project.id}/milestones`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: inlineName.trim(),
-        description: null,
-        color: inlineColor,
-        startDate: inlineStartDate || null,
-        endDate: inlineEndDate || null,
-      }),
-    })
-    if (res.ok) {
-      const created = await res.json()
-      setProject(prev => ({
-        ...prev,
-        milestones: [...prev.milestones, { ...created, activities: created.activities ?? [] }],
-      }))
-      resetInlineForm()
-      // Pre-select next color for the next milestone
-      setInlineColor(getColor(MILESTONE_COLORS, project.milestones.length + 1))
-    }
-    setInlineSaving(false)
-  }, [project.id, project.milestones.length, inlineName, inlineColor, inlineStartDate, inlineEndDate, resetInlineForm])
 
   const sm = STATUS_META[project.status] ?? STATUS_META.PLANNING
 
@@ -282,7 +244,7 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
             <span className="text-[10px] text-ink-faint flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {format(new Date(project.startDate), 'd MMM yy')}
-              {project.endDate && ` → ${format(new Date(project.endDate), 'd MMM yy')}`}
+              {project.endDate && ` \u2192 ${format(new Date(project.endDate), 'd MMM yy')}`}
             </span>
           )}
           {project.contractValue > 0 && (
@@ -328,92 +290,48 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           onAddMilestone={() => {
-            setInlineColor(getColor(MILESTONE_COLORS, project.milestones.length))
-            setShowInlineForm(true)
+            setEditingId(null)
+            setNewRow({ type: 'milestone' })
           }}
           onCollapseAll={collapseAll}
           onExpandAll={expandAll}
         />
 
-        {/* Gantt chart */}
+        {/* Gantt chart with inline editing */}
         <GanttChart
           project={project}
           viewMode={viewMode}
           collapsed={collapsed}
+          editingId={editingId}
+          newRow={newRow}
+          teams={teams}
+          assets={assets}
           onToggleCollapse={toggleCollapse}
-          onClickMilestone={(m) => setMilestoneModal({ open: true, milestone: m })}
-          onClickActivity={(a, milestoneId) => setActivityModal({ open: true, milestoneId, activity: a })}
-          onAddActivity={(milestoneId) => setActivityModal({ open: true, milestoneId })}
+          onStartEdit={(id) => { setNewRow(null); setEditingId(id) }}
+          onCancelEdit={cancelEdit}
+          onSaveMilestone={saveMilestone}
+          onSaveActivity={saveActivity}
+          onAddMilestone={() => { setEditingId(null); setNewRow({ type: 'milestone' }) }}
+          onAddActivity={(milestoneId) => { setEditingId(null); setNewRow({ type: 'activity', milestoneId }) }}
           onDeleteMilestone={deleteMilestone}
           onDeleteActivity={deleteActivity}
         />
 
-        {/* Inline milestone form */}
-        {showInlineForm && (
-          <div className="card p-3 mt-2 animate-fade-in">
-            <div className="flex items-center gap-2 mb-2">
-              <input
-                className="input flex-1"
-                placeholder="Milestone name"
-                autoFocus
-                value={inlineName}
-                onChange={e => setInlineName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(); if (e.key === 'Escape') resetInlineForm() }}
-              />
-              <div className="flex gap-1">
-                {MILESTONE_COLORS.map(c => (
-                  <button
-                    key={c}
-                    onClick={() => setInlineColor(c)}
-                    className="w-5 h-5 rounded-full border-2 transition-all"
-                    style={{
-                      background: c,
-                      borderColor: inlineColor === c ? c : 'transparent',
-                      transform: inlineColor === c ? 'scale(1.15)' : 'scale(1)',
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                className="input w-32"
-                value={inlineStartDate}
-                onChange={e => setInlineStartDate(e.target.value)}
-              />
-              <span className="text-[10px] text-ink-faint">→</span>
-              <input
-                type="date"
-                className="input w-32"
-                value={inlineEndDate}
-                onChange={e => setInlineEndDate(e.target.value)}
-              />
-              <div className="flex-1" />
-              <Button variant="ghost" size="xs" onClick={resetInlineForm}>Cancel</Button>
-              <Button variant="primary" size="xs" onClick={handleInlineSave} loading={inlineSaving} disabled={!inlineName.trim()}>Add</Button>
-            </div>
-          </div>
-        )}
-
-        {/* Milestone list fallback for empty state */}
-        {project.milestones.length === 0 && !showInlineForm && (
+        {/* Empty state */}
+        {project.milestones.length === 0 && !newRow && (
           <div className="card p-8 text-center mt-4">
             <div className="text-2xl mb-2">📋</div>
             <div className="text-[13px] font-semibold text-ink mb-1">No milestones yet</div>
             <div className="text-xs text-ink-faint mb-4">Add milestones and activities to build your project timeline.</div>
             <Button variant="primary" size="sm" icon={<Plus className="w-3.5 h-3.5" />}
-              onClick={() => {
-                setInlineColor(getColor(MILESTONE_COLORS, project.milestones.length))
-                setShowInlineForm(true)
-              }}>
+              onClick={() => setNewRow({ type: 'milestone' })}>
               Add Milestone
             </Button>
           </div>
         )}
       </main>
 
-      {/* Modals */}
+      {/* Only project-level editing uses a modal */}
       {editProject && (
         <ProjectFormModal
           initial={{
@@ -428,25 +346,6 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
           }}
           onSave={updateProject}
           onClose={() => setEditProject(false)}
-        />
-      )}
-
-      {milestoneModal.open && milestoneModal.milestone && (
-        <MilestoneModal
-          milestone={milestoneModal.milestone}
-          onSave={saveMilestone}
-          onClose={() => setMilestoneModal({ open: false })}
-        />
-      )}
-
-      {activityModal.open && activityModal.milestoneId && (
-        <ActivityModal
-          activity={activityModal.activity}
-          milestoneId={activityModal.milestoneId}
-          teams={teams}
-          assets={assets}
-          onSave={(data) => saveActivity(activityModal.milestoneId!, data)}
-          onClose={() => setActivityModal({ open: false })}
         />
       )}
     </div>
