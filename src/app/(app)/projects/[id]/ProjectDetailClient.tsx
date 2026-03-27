@@ -22,6 +22,7 @@ type Activity = {
   status: string; progress: number; color: string
   sortOrder: number; assetIds: string[]
   skills?: string[]; requiredOutput: string[]
+  estimatedHours?: number | null
 }
 type Milestone = {
   id: string; name: string; description?: string | null
@@ -202,7 +203,7 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
 
   return (
     <div className="min-h-full">
-      <main className="px-4 py-4 md:px-6 md:py-5 max-w-7xl">
+      <main className="px-4 py-4 md:px-6 md:py-5">
         {/* Back + title */}
         <div className="flex items-center gap-3 mb-4">
           <button onClick={() => router.push('/projects')} className="text-ink-faint hover:text-ink">

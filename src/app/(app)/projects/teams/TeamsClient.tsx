@@ -148,7 +148,7 @@ export default function TeamsClient({ initialTeams, companyUsers }: Props) {
 
   return (
     <div className="min-h-full">
-      <main className="px-4 py-4 md:px-6 md:py-5 max-w-5xl">
+      <main className="px-4 py-4 md:px-6 md:py-5">
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-semibold text-base text-ink">Work Teams</h1>
           <Button variant="primary" size="sm" icon={<Plus className="w-3.5 h-3.5" />}

@@ -59,7 +59,7 @@ export default function DashboardClient({
 
   return (
     <div className="min-h-full">
-      <main className="px-4 py-4 md:px-6 md:py-5 max-w-6xl">
+      <main className="px-4 py-4 md:px-6 md:py-5">
 
         {/* Greeting */}
         <div className="flex items-baseline justify-between mb-6">

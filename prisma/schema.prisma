@@ -1092,6 +1092,8 @@ model ProjectActivity {
   assigneeName   String?
   teamId         String?
   requiredOutput String[]       @default([])
+  skills         String[]       @default([])
+  estimatedHours Float?
   startDate      DateTime?
   endDate        DateTime?
   isWithinDay    Boolean        @default(false)

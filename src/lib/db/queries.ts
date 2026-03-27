@@ -1397,6 +1397,8 @@ export async function createActivity(milestoneId: string, companyId: string, dat
   assigneeName?: string | null
   teamId?: string | null
   requiredOutput?: string[]
+  skills?: string[]
+  estimatedHours?: number | null
   startDate?: Date | null
   endDate?: Date | null
   isWithinDay?: boolean

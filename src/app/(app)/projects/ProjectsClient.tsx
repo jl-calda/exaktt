@@ -162,7 +162,7 @@ export default function ProjectsClient({ initialProjects, teams }: Props) {
 
   return (
     <div className="min-h-full">
-      <main className="px-4 py-4 md:px-6 md:py-5 max-w-6xl">
+      <main className="px-4 py-4 md:px-6 md:py-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-semibold text-base text-ink">Projects</h1>

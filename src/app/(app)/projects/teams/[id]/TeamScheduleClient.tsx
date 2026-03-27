@@ -82,7 +82,7 @@ export default function TeamScheduleClient({ team }: Props) {
 
   return (
     <div className="min-h-full">
-      <main className="px-4 py-4 md:px-6 md:py-5 max-w-7xl">
+      <main className="px-4 py-4 md:px-6 md:py-5">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           <button onClick={() => router.push('/projects/teams')} className="text-ink-faint hover:text-ink">

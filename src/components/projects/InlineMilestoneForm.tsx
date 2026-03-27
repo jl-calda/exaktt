@@ -5,6 +5,14 @@ import { Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { MILESTONE_COLORS } from '@/components/projects/colors'
 
+/** Shift a YYYY-MM-DD date string by +/- days */
+function shiftDate(dateStr: string, days: number): string {
+  if (!dateStr) return dateStr
+  const d = new Date(dateStr)
+  d.setDate(d.getDate() + days)
+  return d.toISOString().split('T')[0]
+}
+
 interface InlineMilestoneFormProps {
   milestone?: {
     id: string; name: string; description?: string | null
@@ -54,6 +62,16 @@ export default function InlineMilestoneForm({
     if (e.key === 'Escape') { e.preventDefault(); onCancel() }
   }
 
+  /** Arrow up/down on date inputs to shift by 1 day */
+  const handleDateKey = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    value: string,
+    setter: (v: string) => void,
+  ) => {
+    if (e.key === 'ArrowUp' && value) { e.preventDefault(); setter(shiftDate(value, -1)) }
+    if (e.key === 'ArrowDown' && value) { e.preventDefault(); setter(shiftDate(value, 1)) }
+  }
+
   return (
     <div className="animate-fade-in flex flex-col gap-1.5 py-1.5 px-2" onKeyDown={handleKeyDown}>
       {/* Row 1: Name + Save + Cancel */}
@@ -62,7 +80,7 @@ export default function InlineMilestoneForm({
           ref={nameRef}
           autoFocus
           className="input flex-1 h-7 text-xs min-w-0"
-          placeholder="Milestone name…"
+          placeholder="Milestone name..."
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
@@ -76,7 +94,7 @@ export default function InlineMilestoneForm({
         >
           Save
         </Button>
-        <Button variant="ghost" size="xs" onClick={onCancel} title="Cancel">
+        <Button variant="ghost" size="xs" onClick={onCancel} title="Cancel (Esc)">
           <X className="w-3.5 h-3.5" />
         </Button>
       </div>
@@ -107,20 +125,24 @@ export default function InlineMilestoneForm({
         />
       </div>
 
-      {/* Row 3: Date inputs (secondary — primary method is timeline clicks) */}
+      {/* Row 3: Date inputs with arrow key adjustment */}
       <div className="flex items-center gap-1.5 text-xs text-ink-faint">
         <input
           type="date"
-          className="input h-6 text-[11px] w-28"
+          className="input h-6 text-[11px] w-[110px]"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
+          onKeyDown={(e) => handleDateKey(e, startDate, setStartDate)}
+          title="Arrow Up/Down to adjust date"
         />
-        <span className="text-ink-faint">→</span>
+        <span className="text-ink-faint">&rarr;</span>
         <input
           type="date"
-          className="input h-6 text-[11px] w-28"
+          className="input h-6 text-[11px] w-[110px]"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
+          onKeyDown={(e) => handleDateKey(e, endDate, setEndDate)}
+          title="Arrow Up/Down to adjust date"
         />
       </div>
     </div>
