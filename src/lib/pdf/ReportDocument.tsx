@@ -101,7 +101,7 @@ export function ReportDocument({ report, results, specs }: ReportDocumentProps) 
   let grandCost = 0
 
   return (
-    <Document title={report.title} author={report.preparedBy ?? 'MaterialMTO'}>
+    <Document title={report.title} author={report.preparedBy ?? 'Exaktt'}>
       <Page size="A4" style={S.page}>
 
         {/* ── HEADER ── */}
@@ -255,13 +255,13 @@ export function ReportDocument({ report, results, specs }: ReportDocumentProps) 
         {/* ── WATERMARK (Free plan) ── */}
         {report.companyLogo === null && !report.companyName && (
           <Text style={S.watermark}>
-            Generated with MaterialMTO Free Plan · Upgrade to Pro to remove this watermark
+            Generated with Exaktt Free Plan · Upgrade to Pro to remove this watermark
           </Text>
         )}
 
         {/* ── FOOTER ── */}
         <View style={S.footer} fixed>
-          <Text style={S.footerTx}>MaterialMTO · materialmto.com</Text>
+          <Text style={S.footerTx}>Exaktt · exaktt.com</Text>
           <Text style={S.footerTx}>
             {report.title} · Rev {report.revisionNo} · {formatDate(report.reportDate)}
           </Text>

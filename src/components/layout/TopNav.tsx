@@ -29,7 +29,7 @@ export default function TopNav({ userName, userEmail, plan }: Props) {
 
   const title = Object.entries(TITLES)
     .filter(([key]) => pathname.startsWith(key))
-    .sort((a, b) => b[0].length - a[0].length)[0]?.[1] ?? 'Exakt'
+    .sort((a, b) => b[0].length - a[0].length)[0]?.[1] ?? 'Exaktt'
 
   const initials = userName
     ? userName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
