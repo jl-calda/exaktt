@@ -75,10 +75,9 @@ export default function MaterialsTab({ sys, onUpdate, globalTags, plan = 'FREE',
             const active = tagFilter.includes(tag.id)
             return (
               <button key={tag.id} onClick={() => toggleTag(tag.id)}
-                className={`filter-pill ${active ? 'active !text-white shadow-sm' : ''}`}
-                style={active ? { background: tag.color ?? '#64748b', borderColor: 'transparent' } : {}}>
+                className={`filter-pill ${active ? 'active' : ''}`}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ background: active ? 'rgba(255,255,255,0.6)' : (tag.color ?? '#94a3b8') }} />
+                  style={{ background: tag.color ?? '#94a3b8' }} />
                 {tag.name}
               </button>
             )

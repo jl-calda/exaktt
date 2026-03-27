@@ -574,8 +574,7 @@ export default function CustomDimsPanel({ customDims, onChange, sysMats, sys }: 
           return (
             <div key={cd.id} className={isEd ? 'bg-primary/5' : ''}>
               <div className="px-5 py-3 flex items-start gap-3">
-                <div className="w-9 h-9 flex items-center justify-center text-lg flex-shrink-0"
-                  style={{ background: cd.color + '18', border: '1.5px solid ' + cd.color + '30', borderRadius: 'var(--radius-card)' }}>
+                <div className="w-9 h-9 flex items-center justify-center text-lg flex-shrink-0 rounded-xl bg-surface-200/40">
                   {cd.icon}
                 </div>
                 <div className="flex-1 min-w-0">

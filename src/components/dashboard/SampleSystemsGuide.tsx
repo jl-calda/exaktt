@@ -121,8 +121,7 @@ export default function SampleSystemsGuide({ onCreated, atLimit }: Props) {
                   <div className="p-5 flex flex-col gap-3 flex-1">
                     {/* Header */}
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                        style={{ background: (s.template.color ?? '#7917de') + '18', border: `1.5px solid ${s.template.color ?? '#7917de'}30` }}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 bg-surface-200/40">
                         {s.template.icon}
                       </div>
                       <div className="min-w-0">

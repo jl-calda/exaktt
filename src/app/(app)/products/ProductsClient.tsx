@@ -275,8 +275,7 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
               <div key={sys.id} className="card p-4 text-left hover:shadow-panel hover:-translate-y-0.5 transition-all group relative">
                 <button className="absolute inset-0 rounded-2xl" onClick={() => router.push('/products/' + sys.id)} />
                 <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0 shadow-sm"
-                    style={{ background: sys.color + '15', border: `1px solid ${sys.color}20` }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0 shadow-sm bg-surface-200/40">
                     {sys.icon}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -413,10 +412,9 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
               disabled={sampLoading === s.key || systemsAtLimit}
               className="card overflow-hidden flex flex-row w-full hover:shadow-panel hover:-translate-y-0.5 transition-all group disabled:opacity-50 p-0 text-left">
               {/* Left colour strip */}
-              <div className="w-1 shrink-0" style={{ background: s.template.color ?? '#7917de' }} />
+              <div className="w-1 shrink-0 bg-surface-300" />
               {/* Icon */}
-              <div className="flex items-center justify-center px-2.5 shrink-0"
-                style={{ background: (s.template.color ?? '#7917de') + '10' }}>
+              <div className="flex items-center justify-center px-2.5 shrink-0 bg-surface-100">
                 <span className="text-lg">{s.template.icon}</span>
               </div>
               {/* Text */}

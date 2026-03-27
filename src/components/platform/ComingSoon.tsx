@@ -13,8 +13,8 @@ export default function ComingSoon({ module, emoji, description, color }: Props)
         <div className="text-7xl mb-6">{emoji}</div>
         <h1 className="font-display font-black text-3xl text-ink tracking-tight mb-3">{module}</h1>
         <p className="text-ink-muted text-base max-w-md mb-8">{description}</p>
-        <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold"
-          style={{ background: color + '18', color, border: `1.5px solid ${color}30` }}>
+        <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold bg-surface-100 border border-surface-200"
+          style={{ color }}>
           This module is in development — stay tuned.
         </div>
       </main>

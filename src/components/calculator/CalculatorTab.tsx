@@ -379,8 +379,8 @@ function VariantSelector({ sys, run, onUpdate }: { sys: MtoSystem; run: Run; onU
               {leaves.map(leaf => (
                 <button key={leaf.key}
                   onClick={() => onUpdate({ variantState: { ...(run.variantState ?? {}), [v.id]: current === leaf.key ? '' : leaf.key } })}
-                  className={"text-[10px] px-2 py-0.5 border transition-all " + (current !== leaf.key ? 'bg-surface-50 border-surface-200 text-ink-muted' : '')}
-                  style={{ borderRadius: 'var(--radius)', ...(current === leaf.key ? { background: v.color + '20', borderColor: v.color + '60', color: v.color, fontWeight: 600 } : {}) }}>
+                  className={"text-[10px] px-2 py-0.5 border transition-all " + (current === leaf.key ? 'bg-surface-50 border-primary shadow-sm font-semibold text-ink' : 'bg-surface-50 border-surface-200 text-ink-muted')}
+                  style={{ borderRadius: 'var(--radius)' }}>
                   {leaf.label}
                 </button>
               ))}
@@ -414,11 +414,10 @@ function PhaseCard({ phase, results, showCost, currency }: {
   return (
     <div className="card overflow-hidden">
       <button type="button" onClick={() => setOpen(v => !v)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:opacity-90 transition-opacity"
-        style={{ background: info.color + '12' }}>
+        className="w-full px-4 py-3 flex items-center justify-between hover:opacity-90 transition-opacity bg-surface-100/60">
         <div className="flex items-center gap-2">
           <span className="text-base leading-none">{info.icon}</span>
-          <span className="font-semibold text-sm" style={{ color: info.color }}>{info.label}</span>
+          <span className="font-semibold text-sm text-ink">{info.label}</span>
           <span className="text-xs font-semibold text-ink-muted">
             {phaseHours.toFixed(1)} hrs
             {phaseCost != null && phaseCost > 0 && ` · ${currency}${phaseCost.toFixed(0)}`}
@@ -866,8 +865,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                               </div>
                               <button
                                 onClick={() => calc.updateRun(run.id, { criteriaState: { ...(run.criteriaState ?? {}), [cr.key]: !isOn } })}
-                                style={{ background: isOn ? cr.color : undefined }}
-                                className={"relative w-10 h-5 rounded-full transition-colors flex-shrink-0 border " + (isOn ? 'border-transparent' : 'bg-surface-200 border-surface-300')}>
+                                className={"relative w-10 h-5 rounded-full transition-colors flex-shrink-0 border " + (isOn ? 'bg-primary border-transparent' : 'bg-surface-200 border-surface-300')}>
                                 <span className={"absolute top-0.5 w-4 h-4 rounded-full bg-surface-50 shadow-sm transition-all " + (isOn ? 'left-[22px]' : 'left-0.5')} />
                               </button>
                             </div>

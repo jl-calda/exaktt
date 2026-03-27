@@ -250,8 +250,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
                         {item.system && (
-                          <span className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0"
-                            style={{ background: (item.system.color ?? '#7917de') + '18' }}>
+                          <span className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0 bg-surface-200/40">
                             {item.system.icon ?? '📦'}
                           </span>
                         )}

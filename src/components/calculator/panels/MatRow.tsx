@@ -185,10 +185,9 @@ function DependencyChain({ mat, ruleSet, criteriaKeys, customDims, customCriteri
   const hasConditions = conditionCriteriaKeys.size > 0
   const hasVariants  = Object.values(variantTags).some(Boolean)
 
-  const ChipStyle = (color: string) => ({
-    background: color + '14',
-    borderColor: color + '40',
-    color,
+  const ChipStyle = (_color: string) => ({
+    background: 'var(--color-surface-100)',
+    borderColor: 'color-mix(in srgb, var(--color-surface-200) 60%, transparent)',
   })
 
   const Section = ({ title }: { title: string }) => (
@@ -397,8 +396,7 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
                       {idx === 0 ? 'Rule' : 'Else if'}
                     </span>
                     {condCr && (
-                      <span className="text-[10px] font-semibold rounded px-1.5 py-0.5"
-                        style={{ background: (condCr.color ?? '#0891b2') + '18', color: condCr.color ?? '#0891b2' }}>
+                      <span className="text-[10px] font-semibold rounded px-1.5 py-0.5 bg-surface-100 text-ink">
                         {condCr.icon} {condCr.name} = {row.condition?.whenValue ? 'ON' : 'OFF'}
                       </span>
                     )}
@@ -491,7 +489,7 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
                     <div className="px-4 py-2.5 flex flex-col gap-1 bg-surface-100 border-t border-surface-200">
                       {grp && (
                         <div className="flex items-center gap-2">
-                          <span className="badge text-[10px] font-bold" style={{ background: grp.bg, color: grp.color, borderColor: grp.color + '30' }}>{grp.icon} {grp.label}</span>
+                          <span className="badge text-[10px] font-bold" style={{ background: grp.bg, color: grp.color }}>{grp.icon} {grp.label}</span>
                         </div>
                       )}
                       {desc && (
@@ -526,8 +524,7 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
                   return (
                     <button key={cr.key} type="button"
                       onClick={() => setCriteriaKeys(ks => active ? ks.filter(k => k !== cr.key) : [...ks, cr.key])}
-                      style={active ? { background: (cr.color ?? '#0891b2') + '14', color: cr.color ?? '#0891b2', borderColor: (cr.color ?? '#0891b2') + '40' } : undefined}
-                      className="badge border border-surface-300 text-ink-muted px-3 py-1.5 cursor-pointer transition-all">
+                      className={"badge border px-3 py-1.5 cursor-pointer transition-all " + (active ? 'bg-surface-50 border-primary shadow-sm text-ink font-semibold' : 'border-surface-300 text-ink-muted')}>
                       {cr.icon} {cr.name}
                     </button>
                   )
@@ -723,8 +720,8 @@ export default function MatRow({ mat, rowIndex, inputModel, onSave, onDelete, cu
                 {(mat.tags ?? []).map(tid => {
                   const t = globalTags.find((x: any) => x.id === tid)
                   return t ? (
-                    <span key={tid} style={{ background: t.color + '18', color: t.color }}
-                      className="badge text-[10px] px-2 font-bold">{t.name}</span>
+                    <span key={tid}
+                      className="badge text-[10px] px-2 font-bold bg-surface-100 border border-surface-200/60 text-ink">{t.name}</span>
                   ) : null
                 })}
               </div>
