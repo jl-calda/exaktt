@@ -605,7 +605,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
               <div className="px-4 py-2.5 flex items-center gap-2"
                 style={{ borderLeft: `3px solid ${PHASE_COLORS[phase]}` }}>
                 <Chevron className="w-3.5 h-3.5 flex-shrink-0" style={{ color: PHASE_COLORS[phase] }} />
-                <span className="text-sm flex-shrink-0">{phaseInfo.icon}</span>
+                <span className="w-6 h-6 rounded-md flex items-center justify-center text-sm flex-shrink-0" style={{ background: PHASE_COLORS[phase] + '15' }}>{phaseInfo.icon}</span>
                 <span className="font-semibold text-xs" style={{ color: PHASE_COLORS[phase] }}>{phaseInfo.label}</span>
                 <span className="text-[10px] text-ink-faint">({count})</span>
                 <span className="text-[10px] text-ink-faint ml-1">{phaseInfo.desc}</span>
@@ -630,7 +630,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
                   return (
                     <div key={act.id} className={isEd ? 'bg-primary/5' : 'hover:bg-surface-100/50 transition-colors'}>
                       <div className="px-5 py-3 flex items-start gap-3">
-                        <span className="text-lg flex-shrink-0 mt-0.5">{act.icon || phaseInfo.icon}</span>
+                        <span className="w-8 h-8 rounded-lg bg-surface-200/40 flex items-center justify-center text-base flex-shrink-0">{act.icon || phaseInfo.icon}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-sm text-ink">{act.name}</span>

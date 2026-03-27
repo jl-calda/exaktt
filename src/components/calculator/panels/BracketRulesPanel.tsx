@@ -336,7 +336,7 @@ export default function BracketRulesPanel({ templates, setupBrackets, materials,
                 onClick={() => setExpandedId(isExp ? null : template.id)}
                 className="w-full px-5 py-3 pr-10 flex items-center gap-3 text-left hover:bg-surface-100 transition-colors"
               >
-                <span className="text-lg flex-shrink-0">{template.icon}</span>
+                <span className="w-8 h-8 rounded-lg bg-surface-200/40 flex items-center justify-center text-base flex-shrink-0">{template.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-sm text-ink">{template.name}</span>

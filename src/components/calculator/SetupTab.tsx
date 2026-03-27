@@ -41,8 +41,8 @@ const STEPS = [
 function StepHeader({ step, children }: { step: typeof STEPS[number]; children: React.ReactNode }) {
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2 px-1">
-        <span className="text-sm flex-shrink-0">{step.icon}</span>
+      <div className="flex items-center gap-2.5 mb-2 px-1">
+        <span className="w-7 h-7 rounded-lg bg-surface-200/40 flex items-center justify-center text-sm flex-shrink-0">{step.icon}</span>
         <span className="text-xs font-semibold text-ink">{step.label}</span>
         <span className="text-xs text-ink-faint">— {step.desc}</span>
         <div className="flex-1 h-px bg-surface-200/60" />
@@ -100,7 +100,9 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, 
         }`} style={{ borderRadius: 'var(--radius-card)' }}>
           {isLocked ? (
             <>
-              <Lock className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <Lock className="w-3.5 h-3.5 text-emerald-600" />
+              </span>
               <span className="text-xs font-semibold text-emerald-800 flex-1">System is locked</span>
               {onUnlock && (
                 <button onClick={onUnlock}
@@ -112,7 +114,9 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, 
             </>
           ) : (
             <>
-              <Unlock className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <span className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <Unlock className="w-3.5 h-3.5 text-amber-600" />
+              </span>
               <span className="text-xs font-semibold text-amber-800 flex-1">System is unlocked — save and lock when done</span>
               {onLock && (
                 <button onClick={onLock}
@@ -132,8 +136,8 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, 
       {/* ── System Identity ── */}
       <div className="card overflow-hidden">
         <div className="card-header">
-          <div className="w-6 h-6 flex items-center justify-center text-base flex-shrink-0"
-            style={{ background: sys.color + '18', border: `1.5px solid ${sys.color}30`, borderRadius: 'var(--radius)' }}>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0 shadow-sm"
+            style={{ background: sys.color + '15', border: `1px solid ${sys.color}20` }}>
             {sys.icon}
           </div>
           <span className="text-xs font-semibold text-ink">{sys.name || 'System Identity'}</span>
@@ -163,7 +167,10 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, 
       <StepHeader step={STEPS[0]}>
         <div className="card overflow-hidden">
           <div className="card-header flex-col !items-start">
-            <h3 className="font-semibold text-sm text-ink">📐 Input Model</h3>
+            <h3 className="font-semibold text-sm text-ink flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-surface-200/40 flex items-center justify-center text-xs">📐</span>
+              Input Model
+            </h3>
             <p className="text-xs text-ink-muted mt-0.5">How dimensions are entered in the calculator.</p>
           </div>
           <div className="p-4">
@@ -178,7 +185,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, 
                       : 'border-surface-300 bg-surface-100 hover:border-surface-300 hover:bg-surface-100'
                   }`}
                   style={{ borderRadius: 'var(--radius-card)' }}>
-                  <div className="text-lg mb-1">{opt.icon}</div>
+                  <span className="w-8 h-8 rounded-lg bg-surface-200/30 flex items-center justify-center text-base mb-1">{opt.icon}</span>
                   <div className="font-semibold text-xs text-ink">{opt.label}</div>
                   <div className="text-[11px] text-ink-muted mt-0.5">{opt.desc}</div>
                 </button>
