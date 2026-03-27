@@ -344,7 +344,7 @@ export default function SystemGraphTab({ sys }: { sys: MtoSystem }) {
                     <div style={{
                       position: 'absolute', left: PAD_X, right: PAD_X,
                       top: levelBaseY[i] - ROW_GAP / 2, height: 1,
-                      background: '#f1f5f9', pointerEvents: 'none',
+                      background: '#e2e8f0', pointerEvents: 'none',
                       opacity: levelActive ? 1 : 0.15,
                       transition: 'opacity 0.15s',
                     }} />
