@@ -44,7 +44,7 @@ export default function TopNav({ userName, userEmail, plan }: Props) {
 
       <div className="flex items-center gap-1">
         <button onClick={toggle}
-          className="p-2 rounded-lg text-ink-faint hover:text-ink hover:bg-surface-100 transition-colors"
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-faint hover:text-ink hover:bg-surface-200/60 transition-colors"
           title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
           {isDark ? <Sun className="w-[15px] h-[15px]" /> : <Moon className="w-[15px] h-[15px]" />}
         </button>

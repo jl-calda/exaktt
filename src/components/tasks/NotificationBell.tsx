@@ -37,7 +37,7 @@ export default function NotificationBell() {
   return (
     <div className="relative" ref={ref}>
       <button onClick={() => setOpen(v => !v)}
-        className="p-1.5 rounded-md text-ink-faint hover:text-ink hover:bg-surface-100 transition-colors relative" title="Notifications">
+        className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-faint hover:text-ink hover:bg-surface-200/60 transition-colors relative" title="Notifications">
         <Bell className="w-[15px] h-[15px]" />
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center">

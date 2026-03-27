@@ -437,6 +437,13 @@
       font-weight: 600;
     }
   }
+
+  .icon-well {
+    display: flex; align-items: center; justify-content: center;
+    width: 1.75rem; height: 1.75rem; flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s var(--ease-spring), color 0.2s;
+  }
 }
 
 /* ─── Animations ──────────────────────────────────────────────────────────── */
