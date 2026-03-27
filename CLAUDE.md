@@ -64,6 +64,19 @@ Each preset overrides `--color-primary`, `--color-surface-*`, `--color-ink-*`, a
 - `.btn-secondary`: uses **surface colors** (NOT the `--color-secondary` token), subtle shadow on hover
 - `.btn-ghost`: transparent bg, hover fills with surface-100
 
+### Button Component Variants (`src/components/ui/Button.tsx`)
+| Variant | Use for | Style |
+|---------|---------|-------|
+| `primary` | Primary actions (Save, Submit, Create) | `bg-primary text-white` |
+| `secondary` | Secondary actions (Cancel, Change) | `border-surface-300 bg-surface-50` |
+| `ghost` | Tertiary/icon-only actions (Edit) | `text-ink-muted hover:bg-surface-100` |
+| `danger` | Confirm modal destructive buttons WITH text | `bg-red-50 border-red-200 text-red-600` |
+| `danger-ghost` | Icon-only delete buttons in tables/lists | `text-ink-faint hover:text-red-600 hover:bg-red-50` |
+| `success` | Positive actions (Delivered, Approve) | `bg-emerald-50 text-emerald-700` |
+
+- Use `danger-ghost` for all icon-only trash/delete buttons — neutral at rest, red on hover
+- Reserve `danger` for destructive confirm buttons that have text labels
+
 ### Toggle Switches
 - ON state: `bg-primary` (use the primary token, not dynamic colors)
 - OFF state: `bg-surface-200 border-surface-300`
@@ -90,6 +103,47 @@ Each preset overrides `--color-primary`, `--color-surface-*`, `--color-ink-*`, a
 - Table row hover: `color-mix(in srgb, var(--color-primary) 3%, transparent)` — barely-there primary tint
 - List row hover: same 3% primary tint
 - These subtle hovers are intentional — keeps the Apple feel without being heavy
+
+### DataTable Component (`src/components/ui/DataTable.tsx`)
+The **preferred way to render any data table** in the app. Use `DataTable<T>` for all new tables.
+- **Exports**: `DataTable` (default), `useTableSort`, `Column<T>`, `GroupDef<T>`, `DataTableProps<T>`
+- **Sortable columns**: click header to sort; uses `ArrowUp`/`ArrowDown` indicators
+- **Grouping**: pass `groups: GroupDef<T>[]` with `filter` functions; collapsible group headers with left border accent
+- **Expandable rows**: pass `expandable: { canExpand, render }` for nested content
+- **Toolbar slot**: `toolbar` prop renders above the table inside `card-header`
+- **Row class**: `<tr>` gets `group/row` class — use `group-hover/row:` for child hover effects
+- **Empty state**: `emptyIcon`, `emptyTitle`, `emptyMessage` props
+- **CSS**: uses `.table-wrap` class (defined in `globals.css`) with `data-sortable`/`data-sort-active` attributes on `<th>`
+
+**Column definition pattern:**
+```tsx
+const columns: Column<MyType>[] = [
+  { key: 'name', label: 'Name', sortable: true, sortKey: (item) => item.name, render: (item) => <span>{item.name}</span> },
+  { key: 'actions', label: '', width: 'w-20', align: 'right', render: (item) => <ActionButtons item={item} /> },
+]
+const { sorted, sortKey, sortDir, onSort } = useTableSort(items, columns)
+```
+
+**Group definition pattern:**
+```tsx
+const groups: GroupDef<MyType>[] = [
+  { key: 'active', label: 'Active', color: '#10b981', filter: (item) => item.status === 'active' },
+  { key: 'archived', label: 'Archived', filter: (item) => item.status === 'archived' },
+]
+```
+
+**When NOT to use DataTable**: Complex form-editor rows (e.g., `MatRow` with inline editing, expandable rule configs, floating panels). Use raw `<table>` with `.table-wrap` CSS class + `group-header` class for group rows instead.
+
+### Table Row Actions (Apple Pattern)
+- **Hidden by default, reveal on hover**: wrap actions in `opacity-0 group-hover/row:opacity-100 transition-opacity`
+- **All icons neutral at rest**: `text-ink-faint` — no color until individual button hover
+- **Edit icon**: `hover:text-ink hover:bg-surface-200` (subtle darken)
+- **Delete icon**: `hover:text-red-500 hover:bg-red-50` (red only on hover)
+- **Add/Plus icon**: `hover:text-emerald-600 hover:bg-surface-200`
+- **No text labels** on icon-only actions in table rows
+- Use `variant="danger-ghost"` on `<Button>` delete buttons (neutral at rest, red on hover)
+- Use `variant="danger"` only for confirm modal destructive buttons with text labels
+- NEVER use always-visible red icons — draws attention to destructive action at rest
 
 ### Focus Ring
 - `outline: 2px solid color-mix(in srgb, var(--color-primary) 60%, transparent)`
@@ -141,6 +195,22 @@ Each preset overrides `--color-primary`, `--color-surface-*`, `--color-ink-*`, a
 - Use `color-mix()` for soft borders: `color-mix(in srgb, var(--color-surface-200) 60%, transparent)`
 - Sidebar tokens in `:root` (not in `@theme`): `--sidebar-bg`, `--sidebar-border`, radius vars
 
+### Branding
+- App name: **Exaktt** (double t) — used in login page, sidebar logo, top nav, PDF reports, footer
+- Never use "MaterialMTO" or "Exakt" (single t)
+
+### URL-based Tab Navigation (Product Page Pattern)
+- Product page uses optional catch-all route: `/products/[id]/[[...tab]]/page.tsx`
+- Tab state synced to URL via `window.history.replaceState()` — NOT `router.replace()` (which triggers server navigation + loading flash)
+- Server component parses `tab` segments into `initialTab` + `initialSubTab` props
+- Client component initializes state from props, then updates URL on state change
+- Valid slugs: `setup`, `materials`, `subassemblies`, `library`, `dependency`, `calculator`, `runs`
+
+### Tender Page Architecture
+- `/tenders/[id]` — Tender detail with unified DataTable (estimates + quotations merged), predefined items, no status buttons
+- `/tenders/[id]/report/[reportId]` — Quotation report builder with tender-level status dropdown (Won/Lost/Cancelled) in the top bar
+- Tender status changes happen INSIDE the report page, not on the tender detail page
+
 ### What NOT to Do
 - No colored borders on emoji (`border: 1px solid ${color}20`)
 - No `background: color + '18'` hex concatenation for tinting
@@ -150,4 +220,10 @@ Each preset overrides `--color-primary`, `--color-surface-*`, `--color-ink-*`, a
 - No `text-[9px]` anywhere (minimum is 10px)
 - No dynamic `style={{ background: color }}` on emoji containers
 - `.btn-secondary` does NOT use `--color-secondary` — it uses surface colors
+- No always-visible red delete icons in tables — use `opacity-0 group-hover/row:opacity-100` + `text-ink-faint`
+- No `variant="danger"` on icon-only table delete buttons — use `variant="danger-ghost"`
+- No `router.replace()` for cosmetic URL updates — use `window.history.replaceState()` to avoid loading flash
+- No raw `<table>` for standard data listings — use `DataTable<T>` component
+- No `bg-white` in modals/cards — use `bg-surface-50` or `bg-surface`
+- No "Edit" text labels on table row action buttons — use icon-only with tooltip (`title` attr)
 
