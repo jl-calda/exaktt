@@ -46,11 +46,10 @@ export default function CreateProjectFromTenderModal({ open, tender, report, gra
         systemIds: (tender.items ?? []).map((i: any) => i.systemId).filter(Boolean),
       }),
     })
-    const { data } = await res.json()
+    if (!res.ok) { setSaving(false); return }
+    const project = await res.json()
     setSaving(false)
-    if (data) {
-      router.push(`/projects/${data.id}`)
-    }
+    router.push(`/projects/${project.id}`)
   }
 
   return (

@@ -1548,3 +1548,21 @@ export async function deleteProjectAsset(id: string, companyId: string) {
   await verifyOwnership(prisma.projectAsset, id, companyId, 'Asset')
   return prisma.projectAsset.delete({ where: { id } })
 }
+
+// ─── Team Schedule ──────────────────────────────────────────────────────────
+
+export async function getTeamSchedule(teamId: string, companyId: string) {
+  await verifyOwnership(prisma.workTeam, teamId, companyId, 'Work team')
+  return prisma.projectActivity.findMany({
+    where: { teamId },
+    include: {
+      milestone: {
+        include: {
+          project: { select: { id: true, name: true, clientName: true, status: true, latitude: true, longitude: true, address: true } },
+        },
+      },
+      assignee: { select: { id: true, name: true, avatarUrl: true } },
+    },
+    orderBy: { startDate: 'asc' },
+  })
+}
