@@ -1,11 +1,12 @@
 // src/components/logistics/PurchaseOrdersTab.tsx
 'use client'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Plus, ChevronDown, ChevronRight, Edit3, Trash2, Check, X, Package } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
+import DataTable, { useTableSort, type Column } from '@/components/ui/DataTable'
 import { format } from 'date-fns'
 import { nanoid } from 'nanoid'
 
@@ -41,7 +42,6 @@ const BLANK_LINE = (): LineItem => ({ _key: nanoid(6), libraryItemId: '', itemNa
 
 export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }: Props) {
   const [filter,     setFilter]     = useState<POStatus | 'all'>('all')
-  const [expanded,   setExpanded]   = useState<Set<string>>(new Set())
   const [showModal,  setShowModal]  = useState(false)
   const [editing,    setEditing]    = useState<any | null>(null)
   const [loading,    setLoading]    = useState(false)
@@ -56,12 +56,6 @@ export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }
   const [lines,        setLines]        = useState<LineItem[]>([BLANK_LINE()])
 
   const filtered = filter === 'all' ? pos : pos.filter(p => p.status === filter)
-
-  const toggleExpand = (id: string) => setExpanded(prev => {
-    const next = new Set(prev)
-    next.has(id) ? next.delete(id) : next.add(id)
-    return next
-  })
 
   const openCreate = () => {
     setEditing(null)
@@ -125,86 +119,145 @@ export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }
     return t > 0 ? t.toFixed(2) : null
   }
 
+  /* ── DataTable columns ── */
+  const columns = useMemo<Column<any>[]>(() => [
+    {
+      key: 'ref',
+      label: 'Reference',
+      sortable: true,
+      sortKey: (po) => (po.ref || `PO-${po.id.slice(0, 6)}`).toLowerCase(),
+      render: (po) => {
+        const r = po.ref || `PO-${po.id.slice(0, 6).toUpperCase()}`
+        const s = STATUS_META[po.status as POStatus] ?? STATUS_META.DRAFT
+        return (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-sm text-ink">{r}</span>
+            <span className="badge text-[10px] font-semibold px-2 py-0.5" style={{ background: s.bg, color: s.color }}>{s.label}</span>
+          </div>
+        )
+      },
+    },
+    {
+      key: 'supplier',
+      label: 'Supplier',
+      sortable: true,
+      sortKey: (po) => (po.supplierName ?? po.supplier?.name ?? '').toLowerCase(),
+      render: (po) => (
+        <span className="text-xs text-ink-muted">{po.supplierName ?? po.supplier?.name ?? 'No supplier'}</span>
+      ),
+    },
+    {
+      key: 'lines',
+      label: 'Lines',
+      align: 'center' as const,
+      sortable: true,
+      sortKey: (po) => (po.lines ?? []).length,
+      render: (po) => (
+        <span className="text-xs text-ink-faint">{(po.lines ?? []).length}</span>
+      ),
+    },
+    {
+      key: 'date',
+      label: 'Date',
+      sortable: true,
+      sortKey: (po) => new Date(po.orderDate).getTime(),
+      render: (po) => (
+        <div className="text-xs text-ink-faint">
+          {format(new Date(po.orderDate), 'd MMM yyyy')}
+          {po.expectedDate && (
+            <div className="text-[10px] text-ink-faint">Exp {format(new Date(po.expectedDate), 'd MMM')}</div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'value',
+      label: 'Value',
+      align: 'right' as const,
+      sortable: true,
+      sortKey: (po) => {
+        const t = (po.lines ?? []).reduce((s: number, l: any) => s + (l.qtyOrdered * (l.unitPrice ?? 0)), 0)
+        return t
+      },
+      render: (po) => {
+        const val = totalValue(po)
+        return val ? <span className="text-xs text-ink font-medium">${val}</span> : <span className="text-xs text-ink-faint">—</span>
+      },
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: 'w-20',
+      render: (po) => (
+        <div className="flex gap-1 justify-end" onClick={e => e.stopPropagation()}>
+          <Button size="xs" variant="ghost" onClick={() => openEdit(po)} icon={<Edit3 className="w-3 h-3" />} />
+          <Button size="xs" variant="danger" onClick={() => setDeleteId(po.id)} icon={<Trash2 className="w-3 h-3" />} />
+        </div>
+      ),
+    },
+  ], [])
+
+  const { sorted, sortKey, sortDir, onSort } = useTableSort(filtered, columns)
+
+  /* ── Nested lines renderer ── */
+  const renderExpandedLines = (po: any) => (
+    <div className="px-10 pb-3 pt-1">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="text-ink-faint">
+            <th className="text-left py-1 pr-4">Material</th>
+            <th className="text-left py-1 pr-4">Unit</th>
+            <th className="text-right py-1 pr-4">Qty</th>
+            <th className="text-right py-1">Unit Price</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-surface-100">
+          {(po.lines ?? []).map((l: any) => (
+            <tr key={l.id}>
+              <td className="py-1.5 pr-4 text-ink">{l.itemName}</td>
+              <td className="py-1.5 pr-4 text-ink-muted">{l.itemUnit}</td>
+              <td className="py-1.5 pr-4 text-right text-ink">{l.qtyOrdered}</td>
+              <td className="py-1.5 text-right text-ink-muted">{l.unitPrice != null ? `$${l.unitPrice.toFixed(2)}` : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex gap-1">
-          {STATUS_TABS.map(t => (
-            <button key={t.id} onClick={() => setFilter(t.id)}
-              className={`filter-pill ${filter === t.id ? 'active !bg-primary !text-white !border-primary' : ''}`}>
-              {t.label}
-              {t.id !== 'all' && <span className="ml-1 opacity-60">{pos.filter(p => p.status === t.id).length}</span>}
-            </button>
-          ))}
-        </div>
-        <Button size="sm" onClick={openCreate} icon={<Plus className="w-3.5 h-3.5" />}>New PO</Button>
-      </div>
-
-      <div className="card overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="py-12 text-center text-sm text-ink-faint">
-            {pos.length === 0 ? 'No purchase orders yet.' : 'No orders match this filter.'}
-          </div>
-        ) : (
-          <div className="divide-y divide-surface-100">
-            {filtered.map(po => {
-              const s   = STATUS_META[po.status as POStatus] ?? STATUS_META.DRAFT
-              const ref = po.ref || `PO-${po.id.slice(0, 6).toUpperCase()}`
-              const val = totalValue(po)
-              const isExp = expanded.has(po.id)
-              return (
-                <div key={po.id}>
-                  <div className="list-row cursor-pointer"
-                    onClick={() => toggleExpand(po.id)}>
-                    {isExp ? <ChevronDown className="w-3.5 h-3.5 text-ink-faint flex-shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-ink-faint flex-shrink-0" />}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm text-ink">{ref}</span>
-                        <span className="badge text-[10px] font-semibold px-2 py-0.5" style={{ background: s.bg, color: s.color }}>{s.label}</span>
-                        {val && <span className="text-xs text-ink-muted">${val}</span>}
-                      </div>
-                      <div className="text-xs text-ink-faint mt-0.5">
-                        {po.supplierName ?? po.supplier?.name ?? 'No supplier'}
-                        {' · '}{(po.lines ?? []).length} line{(po.lines ?? []).length !== 1 ? 's' : ''}
-                        {' · '}{format(new Date(po.orderDate), 'd MMM yyyy')}
-                        {po.expectedDate && ` · Expected ${format(new Date(po.expectedDate), 'd MMM')}`}
-                      </div>
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                      <Button size="xs" variant="ghost" onClick={() => openEdit(po)} icon={<Edit3 className="w-3 h-3" />} />
-                      <Button size="xs" variant="danger" onClick={() => setDeleteId(po.id)} icon={<Trash2 className="w-3 h-3" />} />
-                    </div>
-                  </div>
-                  {isExp && (po.lines ?? []).length > 0 && (
-                    <div className="px-10 pb-3 pt-1">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="text-ink-faint">
-                            <th className="text-left py-1 pr-4">Material</th>
-                            <th className="text-left py-1 pr-4">Unit</th>
-                            <th className="text-right py-1 pr-4">Qty</th>
-                            <th className="text-right py-1">Unit Price</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-surface-100">
-                          {po.lines.map((l: any) => (
-                            <tr key={l.id}>
-                              <td className="py-1.5 pr-4 text-ink">{l.itemName}</td>
-                              <td className="py-1.5 pr-4 text-ink-muted">{l.itemUnit}</td>
-                              <td className="py-1.5 pr-4 text-right text-ink">{l.qtyOrdered}</td>
-                              <td className="py-1.5 text-right text-ink-muted">{l.unitPrice != null ? `$${l.unitPrice.toFixed(2)}` : '—'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
+      <DataTable
+        items={sorted}
+        getRowId={(po) => po.id}
+        columns={columns}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={onSort}
+        compact
+        expandable={{
+          canExpand: (po) => (po.lines ?? []).length > 0,
+          render: renderExpandedLines,
+        }}
+        toolbar={
+          <>
+            <div className="flex gap-1">
+              {STATUS_TABS.map(t => (
+                <button key={t.id} onClick={() => setFilter(t.id)}
+                  className={`filter-pill ${filter === t.id ? 'active !bg-primary !text-white !border-primary' : ''}`}>
+                  {t.label}
+                  {t.id !== 'all' && <span className="ml-1 opacity-60">{pos.filter(p => p.status === t.id).length}</span>}
+                </button>
+              ))}
+            </div>
+            <div className="flex-1" />
+            <Button size="sm" onClick={openCreate} icon={<Plus className="w-3.5 h-3.5" />}>New PO</Button>
+          </>
+        }
+        emptyIcon="📦"
+        emptyTitle={pos.length === 0 ? 'No purchase orders yet' : 'No orders match this filter'}
+        emptyMessage={pos.length === 0 ? 'Create your first purchase order to get started.' : 'Try adjusting the filter above.'}
+      />
 
       {/* Create / Edit modal */}
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Purchase Order' : 'New Purchase Order'} maxWidth="max-w-2xl">
