@@ -12,6 +12,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { Button, Input } from '@/components/ui'
 import { NumberInput } from '@/components/ui/Input'
+import DataTable, { useTableSort, type Column, type GroupDef } from '@/components/ui/DataTable'
 
 type TenderStatus = 'DRAFT' | 'SUBMITTED' | 'WON' | 'LOST' | 'CANCELLED'
 
@@ -47,6 +48,104 @@ interface Props {
   initialReports?: any[]
 }
 
+/* ── Quotations sub-component using DataTable ────────────────────────── */
+
+const Q_COLUMNS: Column<any>[] = [
+  { key: 'tender',    label: 'Tender',      sortable: true, sortKey: r => r.tender?.name ?? '', render: r => <span className="text-xs text-ink font-medium">{r.tender?.name ?? '—'}</span> },
+  { key: 'reference', label: 'Reference',   sortable: true, sortKey: r => r.reference ?? '', render: r => <span className="text-xs text-ink-muted font-mono">{r.reference ?? '—'}</span> },
+  { key: 'client',    label: 'Client',      sortable: true, sortKey: r => r.clientName ?? '', render: r => <span className="text-xs text-ink">{r.clientName ?? '—'}</span> },
+  { key: 'status',    label: 'Status',      sortable: true, sortKey: r => r.status ?? '', render: r => {
+    const cls = r.status === 'submitted' ? 'bg-blue-100 text-blue-700' : r.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : r.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+    return <span className={`badge text-[10px] font-bold ${cls}`}>{r.status}</span>
+  }},
+  { key: 'date',      label: 'Date',        sortable: true, sortKey: r => r.date ? new Date(r.date).getTime() : 0, render: r => <span className="text-xs text-ink-muted">{r.date ? format(new Date(r.date), 'dd MMM yyyy') : '—'}</span> },
+  { key: 'validUntil', label: 'Valid Until', sortable: true, sortKey: r => r.validUntil ? new Date(r.validUntil).getTime() : 0, render: r => <span className="text-xs text-ink-muted">{r.validUntil ? format(new Date(r.validUntil), 'dd MMM yyyy') : '—'}</span> },
+  { key: 'arrow',     label: '',            width: 'w-10', render: () => <ChevronRight className="w-3.5 h-3.5 text-ink-faint" /> },
+]
+
+const GROUP_OPTIONS = [
+  { value: 'none',   label: 'No grouping' },
+  { value: 'client', label: 'Client' },
+  { value: 'tender', label: 'Tender' },
+  { value: 'status', label: 'Status' },
+] as const
+
+function QuotationsTab({ allReports, qFilter, setQFilter, qGroupBy, setQGroupBy, onRowClick }: {
+  allReports: any[]
+  qFilter: string | null
+  setQFilter: (f: string | null | ((p: string | null) => string | null)) => void
+  qGroupBy: 'none' | 'client' | 'tender' | 'status'
+  setQGroupBy: (g: 'none' | 'client' | 'tender' | 'status') => void
+  onRowClick: (r: any) => void
+}) {
+  const filtered = useMemo(() => allReports.filter(r => !qFilter || r.status === qFilter), [allReports, qFilter])
+  const { sorted, sortKey, sortDir, onSort } = useTableSort(filtered, Q_COLUMNS)
+
+  // Build dynamic groups based on groupBy selection
+  const groups = useMemo<GroupDef<any>[] | undefined>(() => {
+    if (qGroupBy === 'none') return undefined
+    const keys = new Set<string>()
+    for (const r of filtered) {
+      if (qGroupBy === 'client') keys.add(r.clientName ?? 'No client')
+      else if (qGroupBy === 'tender') keys.add(r.tender?.name ?? 'No tender')
+      else if (qGroupBy === 'status') keys.add(r.status ?? 'unknown')
+    }
+    return [...keys].sort().map(k => ({
+      key: k,
+      label: qGroupBy === 'status' ? k.charAt(0).toUpperCase() + k.slice(1) : k,
+      filter: (r: any) => {
+        if (qGroupBy === 'client') return (r.clientName ?? 'No client') === k
+        if (qGroupBy === 'tender') return (r.tender?.name ?? 'No tender') === k
+        return (r.status ?? 'unknown') === k
+      },
+    }))
+  }, [filtered, qGroupBy])
+
+  const toolbar = (
+    <div className="flex items-center gap-3 flex-wrap w-full">
+      <div className="flex gap-1.5 flex-wrap flex-1">
+        <button onClick={() => setQFilter(null)}
+          className={`filter-pill ${qFilter === null ? 'active' : ''}`}>
+          All ({allReports.length})
+        </button>
+        {['draft', 'submitted', 'approved', 'rejected'].map(s => {
+          const count = allReports.filter(r => r.status === s).length
+          if (count === 0) return null
+          return (
+            <button key={s} onClick={() => setQFilter(f => f === s ? null : s)}
+              className={`filter-pill ${qFilter === s ? 'active' : ''}`}>
+              {s.charAt(0).toUpperCase() + s.slice(1)} ({count})
+            </button>
+          )
+        })}
+      </div>
+      <select
+        value={qGroupBy}
+        onChange={e => setQGroupBy(e.target.value as any)}
+        className="input text-xs py-1.5 w-32"
+      >
+        {GROUP_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </div>
+  )
+
+  return (
+    <DataTable
+      items={sorted}
+      getRowId={r => r.id}
+      columns={Q_COLUMNS}
+      sortKey={sortKey}
+      sortDir={sortDir}
+      onSort={onSort}
+      groups={groups}
+      onRowClick={onRowClick}
+      toolbar={toolbar}
+      emptyIcon="📋"
+      emptyMessage={qFilter ? `No ${qFilter} quotations` : 'No quotation reports yet. Generate one from a tender detail page.'}
+    />
+  )
+}
+
 export default function TendersClient({
   initialTenders,
   initialBlocks = [],
@@ -61,8 +160,9 @@ export default function TendersClient({
   type PageTab = 'overview' | 'quotations' | 'settings'
   const [pageTab, setPageTab] = useState<PageTab>('overview')
 
-  /* ── Quotations filter ──────────────────────────────────── */
+  /* ── Quotations filter + grouping ──────────────────────── */
   const [qFilter, setQFilter] = useState<string | null>(null)
+  const [qGroupBy, setQGroupBy] = useState<'none' | 'client' | 'tender' | 'status'>('none')
 
   /* ── Settings sub-sections collapsed state ─────────────────── */
   const [settingsCollapsed, setSettingsCollapsed] = useState<Set<string>>(new Set())
@@ -434,62 +534,14 @@ export default function TendersClient({
         </>)}
 
         {/* ── Quotations Tab ───────────────────────────────────────── */}
-        {pageTab === 'quotations' && (<>
-          {/* Filter pills */}
-          <div className="flex gap-1.5 flex-wrap mb-4">
-            <button onClick={() => setQFilter(null)}
-              className={`filter-pill ${qFilter === null ? 'active' : ''}`}>
-              All ({allReports.length})
-            </button>
-            {['draft', 'submitted', 'approved', 'rejected'].map(s => {
-              const count = allReports.filter(r => r.status === s).length
-              if (count === 0) return null
-              return (
-                <button key={s} onClick={() => setQFilter(f => f === s ? null : s)}
-                  className={`filter-pill ${qFilter === s ? 'active' : ''}`}>
-                  {s.charAt(0).toUpperCase() + s.slice(1)} ({count})
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Full quotations table */}
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Tender</th>
-                  <th>Reference</th>
-                  <th>Client</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                  <th>Valid Until</th>
-                  <th className="w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {allReports.filter(r => !qFilter || r.status === qFilter).map(r => (
-                  <tr key={r.id} className="cursor-pointer" onClick={() => router.push(`/tenders/${r.tender?.id}/report/${r.id}`)}>
-                    <td className="text-xs text-ink font-medium">{r.tender?.name ?? '—'}</td>
-                    <td className="text-xs text-ink-muted font-mono">{r.reference ?? '—'}</td>
-                    <td className="text-xs text-ink">{r.clientName ?? '—'}</td>
-                    <td>
-                      <span className={`badge text-[10px] font-bold ${r.status === 'submitted' ? 'bg-blue-100 text-blue-700' : r.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : r.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{r.status}</span>
-                    </td>
-                    <td className="text-xs text-ink-muted">{r.date ? format(new Date(r.date), 'dd MMM yyyy') : '—'}</td>
-                    <td className="text-xs text-ink-muted">{r.validUntil ? format(new Date(r.validUntil), 'dd MMM yyyy') : '—'}</td>
-                    <td><ChevronRight className="w-3.5 h-3.5 text-ink-faint" /></td>
-                  </tr>
-                ))}
-                {allReports.filter(r => !qFilter || r.status === qFilter).length === 0 && (
-                  <tr><td colSpan={7} className="px-4 py-8 text-center text-xs text-ink-faint">
-                    {qFilter ? `No ${qFilter} quotations` : 'No quotation reports yet. Generate one from a tender detail page.'}
-                  </td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </>)}
+        {pageTab === 'quotations' && (<QuotationsTab
+          allReports={allReports}
+          qFilter={qFilter}
+          setQFilter={setQFilter}
+          qGroupBy={qGroupBy}
+          setQGroupBy={setQGroupBy}
+          onRowClick={r => router.push(`/tenders/${r.tender?.id}/report/${r.id}`)}
+        />)}
 
         {/* ── Settings Tab ────────────────────────────────────────── */}
         {pageTab === 'settings' && (

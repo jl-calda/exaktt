@@ -1,13 +1,14 @@
 // src/components/calculator/LibraryTab.tsx
 // Full library inline component — used inside MaterialsTab > Library sub-tab
 'use client'
-import { useState, useEffect } from 'react'
-import { Search, Plus, Trash2, Edit3, Check, X, Package } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Search, Plus, Trash2, Edit3, Check, X } from 'lucide-react'
 import type { LibraryItem, LibraryItemSpec, GlobalTag } from '@/types'
 import type { Plan } from '@prisma/client'
 import { getLimits } from '@/lib/limits'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import UpgradePrompt from '@/components/billing/UpgradePrompt'
+import DataTable, { useTableSort, type Column } from '@/components/ui/DataTable'
 
 interface Props {
   plan:          Plan
@@ -100,14 +101,134 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
     setAdding(false)
   }
 
-  return (
-    <div>
-      {/* Toolbar */}
-      <div className="flex flex-wrap gap-3 items-center mb-5">
+  /* ── Column definitions ────────────────────────────────────────────── */
+  const columns = useMemo<Column<LibraryItem>[]>(() => [
+    {
+      key: 'icon',
+      label: '',
+      width: 'w-14',
+      render: (item) => {
+        if (editingId === item.id) {
+          return (
+            <div className="min-w-[calc(100vw-12rem)] sm:min-w-[540px] p-5 -m-2 bg-primary/5 rounded-xl">
+              <div className="text-xs font-bold text-primary uppercase tracking-wide mb-4">Edit Library Item</div>
+              {editDraft && (
+                <ItemForm
+                  draft={editDraft} plan={plan} globalTags={globalTags}
+                  onSet={(k, v) => setEditDraft(d => ({ ...d!, [k]: v }))}
+                  onSetSpec={(k, v) => setEditDraft(d => ({ ...d!, spec: { ...(d?.spec ?? {}), [k]: v } }))}
+                />
+              )}
+              <div className="flex gap-2 mt-4">
+                <button onClick={handleUpdate} disabled={saving} className="btn-primary text-sm">
+                  <Check className="w-4 h-4" /> {saving ? 'Saving...' : 'Save'}
+                </button>
+                <button onClick={() => { setEditingId(null); setEditDraft(null) }} className="btn-secondary text-sm">
+                  <X className="w-4 h-4" /> Cancel
+                </button>
+              </div>
+            </div>
+          )
+        }
+        const catInfo = CATEGORIES.find(c => c.id === item.category)
+        return (
+          <div className="w-8 h-8 rounded-lg bg-surface-200/40 flex items-center justify-center text-base flex-shrink-0">
+            {catInfo?.icon ?? '📦'}
+          </div>
+        )
+      },
+    },
+    {
+      key: 'item',
+      label: 'Item',
+      width: 'min-w-52',
+      sortable: true,
+      sortKey: (item) => item.name.toLowerCase(),
+      render: (item) => {
+        if (editingId === item.id) return null
+        return (
+          <>
+            <div className="font-semibold text-sm text-ink">{item.name}</div>
+            <div className="flex flex-wrap gap-1.5 mt-0.5">
+              {item.productCode && <code className="text-[10px] bg-surface-100 text-ink-muted px-1.5 py-0.5 rounded font-mono">{item.productCode}</code>}
+              {limits.stockInfo && item.spec?.stockLengthMm && (
+                <span className="text-[10px] bg-surface-100 text-ink-faint px-1.5 py-0.5 rounded">{item.spec.stockLengthMm}mm stock</span>
+              )}
+              {limits.pricing && item.spec?.unitPrice && (
+                <span className="text-[10px] bg-surface-100 text-ink px-1.5 py-0.5 rounded font-semibold">
+                  {item.spec.currency ?? 'SGD'} {item.spec.unitPrice.toFixed(2)}
+                </span>
+              )}
+            </div>
+            {item.notes && <p className="text-xs text-ink-faint mt-0.5 italic truncate max-w-md">{item.notes}</p>}
+          </>
+        )
+      },
+    },
+    {
+      key: 'unit',
+      label: 'Unit',
+      width: 'w-20',
+      align: 'center' as const,
+      sortable: true,
+      sortKey: (item) => item.unit.toLowerCase(),
+      render: (item) => {
+        if (editingId === item.id) return null
+        return <span className="text-xs text-ink-muted">{item.unit}</span>
+      },
+    },
+    {
+      key: 'category',
+      label: 'Category',
+      sortable: true,
+      sortKey: (item) => item.category,
+      render: (item) => {
+        if (editingId === item.id) return null
+        const catInfo = CATEGORIES.find(c => c.id === item.category)
+        return (
+          <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-surface-100 text-ink-muted">
+            {catInfo?.icon} {catInfo?.label ?? item.category}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: 'w-28',
+      render: (item) => {
+        if (editingId === item.id) return null
+        return (
+          <div className="flex gap-1 justify-end">
+            <button onClick={() => onAddToSystem(item)} title="Add to system"
+              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors">
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => startEdit(item)} title="Edit"
+              className="p-1.5 rounded-lg text-ink-muted hover:bg-surface-200 transition-colors">
+              <Edit3 className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => setDeleteId(item.id)} title="Delete"
+              className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )
+      },
+    },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [editingId, editDraft, saving, limits.stockInfo, limits.pricing, plan, globalTags, onAddToSystem])
+
+  const { sorted, sortKey, sortDir, onSort } = useTableSort(filtered, columns)
+
+  /* ── Toolbar (search + filters) ────────────────────────────────────── */
+  const toolbar = (
+    <>
+      <div className="flex flex-wrap gap-3 items-center w-full">
         <div className="relative flex-1 min-w-44">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint" />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search by name or code…" className="input pl-9 text-sm" />
+            placeholder="Search by name or code..." className="input pl-9 text-sm" />
         </div>
         <span className="text-xs text-ink-faint">{filtered.length} of {items.length}</span>
         {(limits.maxLibraryItems === -1 || items.length < limits.maxLibraryItems) ? (
@@ -120,7 +241,7 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
       </div>
 
       {/* Category filter */}
-      <div className="flex gap-1.5 flex-wrap mb-5">
+      <div className="flex gap-1.5 flex-wrap w-full">
         {CATEGORIES.map(c => (
           <button key={c.id} onClick={() => setCatFilter(c.id)}
             className={`filter-pill ${catFilter === c.id ? 'active bg-ink !text-white !border-ink' : ''}`}>
@@ -131,7 +252,7 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
 
       {/* Tag filter */}
       {globalTags.length > 0 && limits.tags && (
-        <div className="flex gap-1.5 flex-wrap mb-5">
+        <div className="flex gap-1.5 flex-wrap w-full">
           {globalTags.map(t => (
             <button key={t.id} onClick={() => setTagFilter(f => f === t.id ? null : t.id)}
               className={`filter-pill ${tagFilter === t.id ? 'active' : ''}`}>
@@ -140,7 +261,11 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
           ))}
         </div>
       )}
+    </>
+  )
 
+  return (
+    <div>
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-4 py-3 mb-4">{error}</div>
       )}
@@ -156,117 +281,30 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
           />
           <div className="flex gap-2 mt-4">
             <button onClick={handleAdd} disabled={!addDraft.name?.trim() || saving} className="btn-primary text-sm">
-              {saving ? 'Saving…' : 'Add to Library'}
+              {saving ? 'Saving...' : 'Add to Library'}
             </button>
             <button onClick={() => setAdding(false)} className="btn-secondary text-sm">Cancel</button>
           </div>
         </div>
       )}
 
-      {loading && <div className="text-sm text-ink-faint text-center py-8">Loading library…</div>}
+      {loading && <div className="text-sm text-ink-faint text-center py-8">Loading library...</div>}
 
-      {/* Items — table format matching Materials tab */}
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th className="w-14"></th>
-              <th className="min-w-52">Item</th>
-              <th className="w-20 text-center">Unit</th>
-              <th>Category</th>
-              <th className="w-28"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(item => {
-              const isEd = editingId === item.id
-              const catInfo = CATEGORIES.find(c => c.id === item.category)
-              return isEd ? (
-                <tr key={item.id}>
-                  <td colSpan={5} className="p-5 bg-primary/5">
-                    <div className="text-xs font-bold text-primary uppercase tracking-wide mb-4">Edit Library Item</div>
-                    {editDraft && (
-                      <ItemForm
-                        draft={editDraft} plan={plan} globalTags={globalTags}
-                        onSet={(k, v) => setEditDraft(d => ({ ...d!, [k]: v }))}
-                        onSetSpec={(k, v) => setEditDraft(d => ({ ...d!, spec: { ...(d?.spec ?? {}), [k]: v } }))}
-                      />
-                    )}
-                    <div className="flex gap-2 mt-4">
-                      <button onClick={handleUpdate} disabled={saving} className="btn-primary text-sm">
-                        <Check className="w-4 h-4" /> {saving ? 'Saving…' : 'Save'}
-                      </button>
-                      <button onClick={() => { setEditingId(null); setEditDraft(null) }} className="btn-secondary text-sm">
-                        <X className="w-4 h-4" /> Cancel
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                <tr key={item.id} className="hover:bg-surface-100/50 transition-colors">
-                  <td className="px-3 py-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-surface-200/40 flex items-center justify-center text-base flex-shrink-0">
-                      {catInfo?.icon ?? '📦'}
-                    </div>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div className="font-semibold text-sm text-ink">{item.name}</div>
-                    <div className="flex flex-wrap gap-1.5 mt-0.5">
-                      {item.productCode && <code className="text-[10px] bg-surface-100 text-ink-muted px-1.5 py-0.5 rounded font-mono">{item.productCode}</code>}
-                      {limits.stockInfo && item.spec?.stockLengthMm && (
-                        <span className="text-[10px] bg-surface-100 text-ink-faint px-1.5 py-0.5 rounded">{item.spec.stockLengthMm}mm stock</span>
-                      )}
-                      {limits.pricing && item.spec?.unitPrice && (
-                        <span className="text-[10px] bg-surface-100 text-ink px-1.5 py-0.5 rounded font-semibold">
-                          {item.spec.currency ?? 'SGD'} {item.spec.unitPrice.toFixed(2)}
-                        </span>
-                      )}
-                    </div>
-                    {item.notes && <p className="text-xs text-ink-faint mt-0.5 italic truncate max-w-md">{item.notes}</p>}
-                  </td>
-                  <td className="px-3 py-2.5 text-center">
-                    <span className="text-xs text-ink-muted">{item.unit}</span>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-surface-100 text-ink-muted">
-                      {catInfo?.icon} {catInfo?.label ?? item.category}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex gap-1 justify-end">
-                      <button onClick={() => onAddToSystem(item)} title="Add to system"
-                        className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors">
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => startEdit(item)} title="Edit"
-                        className="p-1.5 rounded-lg text-ink-muted hover:bg-surface-200 transition-colors">
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => setDeleteId(item.id)} title="Delete"
-                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-        {!loading && filtered.length === 0 && !adding && (
-          <div className="py-12 text-center">
-            <Package className="w-10 h-10 text-ink-faint mx-auto mb-3" />
-            <p className="text-sm font-medium text-ink mb-1">
-              {items.length === 0 ? 'Your library is empty' : 'No items match your filters'}
-            </p>
-            <p className="text-xs text-ink-faint">
-              {items.length === 0
-                ? 'Add reusable material definitions here — plates, fasteners, ladder sections, etc.'
-                : 'Try a different category or clear your search.'}
-            </p>
-          </div>
-        )}
-      </div>
+      <DataTable<LibraryItem>
+        items={sorted}
+        getRowId={(item) => item.id}
+        columns={columns}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={onSort}
+        toolbar={toolbar}
+        emptyIcon="📦"
+        emptyTitle={items.length === 0 ? 'Your library is empty' : 'No items match your filters'}
+        emptyMessage={items.length === 0
+          ? 'Add reusable material definitions here — plates, fasteners, ladder sections, etc.'
+          : 'Try a different category or clear your search.'}
+      />
+
       <ConfirmModal
         open={deleteId !== null}
         title="Remove from library?"

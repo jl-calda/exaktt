@@ -1,9 +1,10 @@
 // src/components/logistics/FabricationTab.tsx
 'use client'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Plus, Edit3, Trash2, Check, X, Users } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import DataTable, { useTableSort, type Column, type GroupDef } from '@/components/ui/DataTable'
 import { Modal } from '@/components/ui/Modal'
 import { NumberInput } from '@/components/ui/Input'
 import type { CompanyRole } from '@/types'
@@ -197,12 +198,80 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
   const setWar = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setWarForm(f => ({ ...f, [k]: e.target.value }))
 
-  // Group WARs by category
-  const groupedWars = workActivityRates.reduce<Record<string, any[]>>((acc, w) => {
-    const cat = w.categoryName || 'Uncategorised'
-    ;(acc[cat] ??= []).push(w)
-    return acc
-  }, {})
+  // ─── Activity-rates DataTable setup ──────────────────────────────────────────
+  const warColumns = useMemo<Column<any>[]>(() => [
+    {
+      key: 'name', label: 'Name', sortable: true,
+      sortKey: (w: any) => w.name.toLowerCase(),
+      render: (w: any) => <span className="font-medium text-ink">{w.name}</span>,
+    },
+    {
+      key: 'labour', label: 'Labour', sortable: true,
+      sortKey: (w: any) => (w.rateName ?? '').toLowerCase(),
+      render: (w: any) => (
+        <span className="text-ink-muted">
+          {w.rateName}
+          {isOwner && w.rateValue ? <span className="ml-1 font-mono text-ink-faint">(${w.rateValue?.toFixed(2)}/{w.rateUnitLabel})</span> : null}
+        </span>
+      ),
+    },
+    {
+      key: 'speed', label: 'Speed',
+      render: (w: any) => (
+        <span className="text-ink-muted">
+          {w.speedMode === 'rate'
+            ? `${w.defaultRatePerHr ?? '—'}/hr`
+            : `${w.defaultTimePerUnit ?? '—'} min/unit`}
+        </span>
+      ),
+    },
+    {
+      key: 'crew', label: 'Crew', sortable: true, align: 'center' as const,
+      sortKey: (w: any) => w.crewSize ?? 1,
+      render: (w: any) => <span className="text-ink-muted">{w.crewSize}</span>,
+    },
+    {
+      key: 'systems', label: 'Systems',
+      render: (w: any) => (
+        Array.isArray(w.systemTags) && w.systemTags.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {w.systemTags.map((sId: string) => {
+              const sys = systems.find((s: any) => s.id === sId)
+              return sys ? (
+                <span key={sId} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-surface-100 text-ink-muted rounded-full">
+                  <span className="text-xs">{sys.icon}</span> {sys.shortName || sys.name}
+                </span>
+              ) : null
+            })}
+          </div>
+        ) : <span className="text-ink-faint">—</span>
+      ),
+    },
+    {
+      key: 'actions', label: '', width: 'w-16', align: 'right' as const,
+      render: (w: any) => (
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
+          <Button size="xs" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); openEditWar(w) }} icon={<Edit3 className="w-3 h-3" />} />
+          <Button size="xs" variant="danger" onClick={(e: React.MouseEvent) => { e.stopPropagation(); removeWar(w) }} icon={<Trash2 className="w-3 h-3" />} />
+        </div>
+      ),
+    },
+  ], [isOwner, systems, openEditWar, removeWar])
+
+  const warGroups = useMemo<GroupDef<any>[]>(() => {
+    const cats = new Set(workActivityRates.map((w: any) => w.categoryName || 'Uncategorised'))
+    return Array.from(cats).sort().map(cat => {
+      const catObj = workCategories.find((c: any) => c.name === cat)
+      return {
+        key: cat,
+        label: `${catObj?.icon ?? '📁'} ${cat}`,
+        color: catObj?.color,
+        filter: (w: any) => (w.categoryName || 'Uncategorised') === cat,
+      }
+    })
+  }, [workActivityRates, workCategories])
+
+  const { sorted: sortedWars, sortKey: warSortKey, sortDir: warSortDir, onSort: onWarSort } = useTableSort(workActivityRates, warColumns)
 
   return (
     <div className="space-y-4">
@@ -364,78 +433,26 @@ export default function FabricationTab({ labourRates, workCategories, workActivi
 
       {/* ─── Work Activity Rates ───────────────────────────────────────────────── */}
       {section === 'activity-rates' && (
-        <>
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-ink-faint">{workActivityRates.length} activity rate{workActivityRates.length !== 1 ? 's' : ''}</div>
-            <Button size="sm" onClick={openCreateWar} icon={<Plus className="w-3.5 h-3.5" />}>Add Activity Rate</Button>
-          </div>
-
-          {workActivityRates.length === 0 ? (
-            <div className="card py-16 text-center text-sm text-ink-faint">
-              No activity rates yet — pair a work category with a labour rate to create one.
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {Object.entries(groupedWars).sort(([a], [b]) => a.localeCompare(b)).map(([category, wars]) => (
-                <div key={category}>
-                  <div className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2">{category}</div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-surface-200 text-ink-faint text-left">
-                          <th className="py-2 pr-4 font-medium">Name</th>
-                          <th className="py-2 pr-4 font-medium">Category</th>
-                          <th className="py-2 pr-4 font-medium">Labour</th>
-                          <th className="py-2 pr-4 font-medium">Speed</th>
-                          <th className="py-2 pr-4 font-medium">Crew</th>
-                          <th className="py-2 pr-4 font-medium">Systems</th>
-                          <th className="py-2 w-16" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {wars.map((w: any) => (
-                          <tr key={w.id} className="border-b border-surface-100 group hover:bg-surface-50 transition-colors">
-                            <td className="py-2 pr-4 font-medium text-ink">{w.name}</td>
-                            <td className="py-2 pr-4 text-ink-muted">{w.categoryIcon} {w.categoryName}</td>
-                            <td className="py-2 pr-4 text-ink-muted">{w.rateName}{isOwner && w.rateValue ? <span className="ml-1 font-mono text-ink-faint">(${w.rateValue?.toFixed(2)}/{w.rateUnitLabel})</span> : null}</td>
-                            <td className="py-2 pr-4 text-ink-muted">
-                              {w.speedMode === 'rate'
-                                ? `${w.defaultRatePerHr ?? '—'}/hr`
-                                : `${w.defaultTimePerUnit ?? '—'} min/unit`}
-                            </td>
-                            <td className="py-2 pr-4 text-ink-muted">{w.crewSize}</td>
-                            <td className="py-2 pr-4">
-                              {Array.isArray(w.systemTags) && w.systemTags.length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {w.systemTags.map((sId: string) => {
-                                    const sys = systems.find((s: any) => s.id === sId)
-                                    return sys ? (
-                                      <span key={sId} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-surface-100 text-ink-muted rounded-full">
-                                        <span className="text-xs">{sys.icon}</span> {sys.shortName || sys.name}
-                                      </span>
-                                    ) : null
-                                  })}
-                                </div>
-                              ) : (
-                                <span className="text-ink-faint">—</span>
-                              )}
-                            </td>
-                            <td className="py-2">
-                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
-                                <Button size="xs" variant="ghost" onClick={() => openEditWar(w)} icon={<Edit3 className="w-3 h-3" />} />
-                                <Button size="xs" variant="danger" onClick={() => removeWar(w)} icon={<Trash2 className="w-3 h-3" />} />
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
+        <DataTable
+          items={sortedWars}
+          getRowId={(w: any) => w.id}
+          columns={warColumns}
+          groups={warGroups}
+          sortKey={warSortKey}
+          sortDir={warSortDir}
+          onSort={onWarSort}
+          compact
+          toolbar={
+            <>
+              <span className="text-xs text-ink-faint">{workActivityRates.length} activity rate{workActivityRates.length !== 1 ? 's' : ''}</span>
+              <span className="flex-1" />
+              <Button size="sm" onClick={openCreateWar} icon={<Plus className="w-3.5 h-3.5" />}>Add Activity Rate</Button>
+            </>
+          }
+          emptyIcon="📋"
+          emptyTitle="No activity rates yet"
+          emptyMessage="Pair a work category with a labour rate to create one."
+        />
       )}
 
       {/* ─── Labour Category Modal ─────────────────────────────────────────────── */}

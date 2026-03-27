@@ -335,6 +335,33 @@
     &:hover { background: color-mix(in srgb, var(--color-primary) 3%, transparent); }
   }
 
+  /* Sortable column headers */
+  .table-wrap th[data-sortable] {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s;
+    &:hover { color: var(--color-ink); }
+  }
+  .table-wrap th[data-sort-active] { color: var(--color-ink); }
+
+  /* Group header row */
+  .table-wrap .group-header td {
+    padding: 0.5rem 1rem;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    background: color-mix(in srgb, var(--color-surface-100) 50%, transparent);
+    border-bottom: 1px solid var(--color-surface-200);
+  }
+  .table-wrap .group-header:hover td {
+    background: color-mix(in srgb, var(--color-surface-100) 80%, transparent);
+  }
+
+  /* Compact variant */
+  .table-wrap.compact th { padding: 0.375rem 0.75rem; }
+  .table-wrap.compact td { padding: 0.5rem 0.75rem; }
+
   /* ── Card section header ────────────────────────────────────────────── */
   .card-header {
     display: flex;
