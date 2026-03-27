@@ -403,7 +403,7 @@ export function InlineRuleEditor({ mat, onSave, onClose, customDims, customCrite
                     <div className="flex gap-1 ml-auto">
                       {idx > 0                  && <Button size="xs" variant="ghost" onClick={() => moveUp(row.id)}   icon={<ChevronUp   className="w-3 h-3" />} />}
                       {idx < ruleSet.length - 1 && <Button size="xs" variant="ghost" onClick={() => moveDown(row.id)} icon={<ChevronDown className="w-3 h-3" />} />}
-                      <Button size="xs" variant="danger" onClick={() => setDeleteRuleId(row.id)} icon={<Trash2 className="w-3 h-3" />} />
+                      <Button size="xs" variant="danger-ghost" onClick={() => setDeleteRuleId(row.id)} icon={<Trash2 className="w-3 h-3" />} />
                     </div>
                   </div>
 
@@ -790,7 +790,7 @@ export default function MatRow({ mat, rowIndex, inputModel, onSave, onDelete, cu
                 </div>
               )}
             </div>
-            <Button size="xs" variant="danger" onClick={() => setConfirmDel(true)} icon={<Trash2 className="w-3 h-3" />} />
+            <Button size="xs" variant="danger-ghost" onClick={() => setConfirmDel(true)} icon={<Trash2 className="w-3 h-3" />} />
           </div>
         </td>
       </tr>

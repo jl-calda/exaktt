@@ -189,9 +189,9 @@ export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }
       label: '',
       width: 'w-20',
       render: (po) => (
-        <div className="flex gap-1 justify-end" onClick={e => e.stopPropagation()}>
+        <div className="flex gap-0.5 justify-end opacity-0 group-hover/row:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
           <Button size="xs" variant="ghost" onClick={() => openEdit(po)} icon={<Edit3 className="w-3 h-3" />} />
-          <Button size="xs" variant="danger" onClick={() => setDeleteId(po.id)} icon={<Trash2 className="w-3 h-3" />} />
+          <Button size="xs" variant="danger-ghost" onClick={() => setDeleteId(po.id)} icon={<Trash2 className="w-3 h-3" />} />
         </div>
       ),
     },

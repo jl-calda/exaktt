@@ -187,7 +187,7 @@ export default function DataTable<T>({
     return (
       <tr
         key={id}
-        className={clsx(clickable && 'cursor-pointer')}
+        className={clsx('group/row', clickable && 'cursor-pointer')}
         onClick={() => {
           if (isExpandable) toggleExpand(id)
           else if (onRowClick) onRowClick(item)

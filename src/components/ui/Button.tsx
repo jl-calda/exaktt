@@ -3,7 +3,7 @@ import { forwardRef } from 'react'
 import { clsx } from 'clsx'
 import { Loader2 } from 'lucide-react'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-ghost' | 'success'
 type Size    = 'xs' | 'sm' | 'md' | 'lg'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -20,6 +20,7 @@ const variants: Record<Variant, string> = {
   secondary: 'border border-surface-300 bg-surface-50 text-ink-muted hover:bg-surface-100 hover:text-ink active:scale-[0.97] shadow-xs',
   ghost:     'text-ink-muted hover:bg-surface-100 hover:text-ink active:scale-[0.97]',
   danger:    'bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 active:scale-[0.97]',
+  'danger-ghost': 'text-ink-faint hover:text-red-600 hover:bg-red-50 active:scale-[0.97]',
   success:   'bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 active:scale-[0.97]',
 }
 

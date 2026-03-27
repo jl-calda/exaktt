@@ -231,7 +231,7 @@ export default function CriteriaPanel({ customCriteria, customDims, inputModel, 
                     icon={<Edit3 className="w-3 h-3" />}>
                     {isEd ? 'Cancel' : 'Edit'}
                   </Button>
-                  <Button size="xs" variant="danger" onClick={() => setDeleteId(cr.id)} icon={<Trash2 className="w-3 h-3" />} />
+                  <Button size="xs" variant="danger-ghost" onClick={() => setDeleteId(cr.id)} icon={<Trash2 className="w-3 h-3" />} />
                 </div>
               </div>
               {isEd && editDraft && (

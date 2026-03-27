@@ -117,7 +117,7 @@ function VariantNodeEditor({
             <>
               <Button size="xs" variant="ghost"  onClick={() => { setLabelDraft(node.label); setEditingLabel(true) }} icon={<Edit3 className="w-3 h-3" />} />
               {depth < 2 && <Button size="xs" variant="ghost" onClick={addChild} icon={<Plus className="w-3 h-3" />} />}
-              <Button size="xs" variant="danger" onClick={() => setConfirming(true)} icon={<Trash2 className="w-3 h-3" />} />
+              <Button size="xs" variant="danger-ghost" onClick={() => setConfirming(true)} icon={<Trash2 className="w-3 h-3" />} />
             </>
           )}
         </div>
@@ -259,7 +259,7 @@ export default function VariantsPanel({ variants, onChange }: Props) {
                     icon={<Edit3 className="w-3 h-3" />}>
                     {isEd ? 'Cancel' : 'Edit'}
                   </Button>
-                  <Button size="xs" variant="danger" onClick={() => setDeleteVarId(v.id)} icon={<Trash2 className="w-3 h-3" />} />
+                  <Button size="xs" variant="danger-ghost" onClick={() => setDeleteVarId(v.id)} icon={<Trash2 className="w-3 h-3" />} />
                 </div>
               </div>
 

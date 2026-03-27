@@ -191,13 +191,15 @@ export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshP
       render: (d) => {
         const isPending = ['PENDING', 'PARTIAL'].includes(d.status)
         return (
-          <div className="flex gap-1 justify-end" onClick={e => e.stopPropagation()}>
+          <div className="flex gap-0.5 justify-end items-center" onClick={e => e.stopPropagation()}>
             {isPending && (
               <Button size="xs" variant="success" onClick={() => markDelivered(d)}
                 icon={<Truck className="w-3 h-3" />}>Delivered</Button>
             )}
-            <Button size="xs" variant="ghost" onClick={() => openEdit(d)} icon={<Edit3 className="w-3 h-3" />} />
-            <Button size="xs" variant="danger" onClick={() => setDeleteId(d.id)} icon={<Trash2 className="w-3 h-3" />} />
+            <div className="flex gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
+              <Button size="xs" variant="ghost" onClick={() => openEdit(d)} icon={<Edit3 className="w-3 h-3" />} />
+              <Button size="xs" variant="danger-ghost" onClick={() => setDeleteId(d.id)} icon={<Trash2 className="w-3 h-3" />} />
+            </div>
           </div>
         )
       },

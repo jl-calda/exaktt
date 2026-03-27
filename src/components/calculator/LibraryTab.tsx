@@ -195,21 +195,21 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
     {
       key: 'actions',
       label: '',
-      width: 'w-28',
+      width: 'w-24',
       render: (item) => {
         if (editingId === item.id) return null
         return (
-          <div className="flex gap-1 justify-end">
+          <div className="flex gap-0.5 justify-end opacity-0 group-hover/row:opacity-100 transition-opacity">
             <button onClick={() => onAddToSystem(item)} title="Add to system"
-              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors">
+              className="p-1.5 rounded-lg text-ink-faint hover:text-emerald-600 hover:bg-surface-200 transition-colors">
               <Plus className="w-3.5 h-3.5" />
             </button>
             <button onClick={() => startEdit(item)} title="Edit"
-              className="p-1.5 rounded-lg text-ink-muted hover:bg-surface-200 transition-colors">
+              className="p-1.5 rounded-lg text-ink-faint hover:text-ink hover:bg-surface-200 transition-colors">
               <Edit3 className="w-3.5 h-3.5" />
             </button>
             <button onClick={() => setDeleteId(item.id)} title="Delete"
-              className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+              className="p-1.5 rounded-lg text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors">
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
