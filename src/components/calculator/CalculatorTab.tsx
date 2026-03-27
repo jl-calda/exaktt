@@ -313,7 +313,7 @@ function SegmentEditor({ segments, onChange, hasSpacing, spacingLabel, dimOverri
             <div className="flex">
               {SEG_TYPES.map(t => (
                 <button key={t.value} onClick={() => update(seg.id, 'type', t.value)}
-                  className={"flex-1 py-1.5 text-[10px] font-semibold transition-all border-r border-surface-200 last:border-r-0 " + (seg.type === t.value ? 'bg-secondary text-white' : 'text-secondary-600 hover:bg-secondary-50')}>
+                  className={"flex-1 py-1.5 text-[10px] font-semibold transition-all border-r border-surface-200 last:border-r-0 " + (seg.type === t.value ? 'bg-primary text-white' : 'text-ink-muted hover:bg-surface-100')}>
                   {t.label}
                 </button>
               ))}
@@ -326,7 +326,7 @@ function SegmentEditor({ segments, onChange, hasSpacing, spacingLabel, dimOverri
                   <input type="number" value={seg.length} min={0} step="0.1" placeholder="0"
                     onChange={e => update(seg.id, 'length', e.target.value)}
                     className="input text-xs py-1 pr-6 font-semibold"
-                    style={{ borderColor: parseFloat(seg.length) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
+                    style={{ borderColor: parseFloat(seg.length) > 0 ? 'var(--color-primary)' : undefined }} />
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{getDimUnit('length', dimOverrides)}</span>
                 </div>
               </div>
@@ -337,7 +337,7 @@ function SegmentEditor({ segments, onChange, hasSpacing, spacingLabel, dimOverri
                     <input type="number" value={seg.spacing} min={0} step="0.1" placeholder="default"
                       onChange={e => update(seg.id, 'spacing', e.target.value)}
                       className="input text-xs py-1 pr-6"
-                      style={{ borderColor: parseFloat(seg.spacing) > 0 ? 'var(--color-secondary)' : undefined }} />
+                      style={{ borderColor: parseFloat(seg.spacing) > 0 ? 'var(--color-primary)' : undefined }} />
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{getDimUnit('length', dimOverrides)}</span>
                   </div>
                 </div>
@@ -374,12 +374,12 @@ function VariantSelector({ sys, run, onUpdate }: { sys: MtoSystem; run: Run; onU
         const current = (run.variantState ?? {})[v.id] ?? ''
         return (
           <div key={v.id}>
-            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1"><span className="mr-1">{v.icon}</span>{v.name}</div>
+            <div className="text-[9px] font-semibold uppercase text-ink-faint tracking-wide mb-1"><span className="mr-1">{v.icon}</span>{v.name}</div>
             <div className="flex flex-wrap gap-1">
               {leaves.map(leaf => (
                 <button key={leaf.key}
                   onClick={() => onUpdate({ variantState: { ...(run.variantState ?? {}), [v.id]: current === leaf.key ? '' : leaf.key } })}
-                  className={"text-[10px] px-2 py-0.5 border transition-all " + (current !== leaf.key ? 'bg-secondary-50 border-secondary-200 text-secondary-700' : '')}
+                  className={"text-[10px] px-2 py-0.5 border transition-all " + (current !== leaf.key ? 'bg-surface-50 border-surface-200 text-ink-muted' : '')}
                   style={{ borderRadius: 'var(--radius)', ...(current === leaf.key ? { background: v.color + '20', borderColor: v.color + '60', color: v.color, fontWeight: 600 } : {}) }}>
                   {leaf.label}
                 </button>
@@ -825,22 +825,22 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
           )}
           <div className="space-y-3">
             {calc.runs.map((run, ri) => (
-              <div key={run.id} className={`border overflow-hidden ${collapsedRuns.has(run.id) ? 'border-surface-200 bg-surface-50' : 'border-secondary-200 bg-secondary-50/20'}`} style={{ borderRadius: 'var(--radius-card)' }}>
+              <div key={run.id} className={`border overflow-hidden ${collapsedRuns.has(run.id) ? 'border-surface-200 bg-surface-50' : 'border-surface-200/60 bg-surface-50 border-l-2 border-l-primary'}`} style={{ borderRadius: 'var(--radius-card)' }}>
                 {/* Run header — always visible */}
-                <div className="flex items-center gap-2 px-3 py-2 border-b bg-secondary-100 border-secondary-200">
-                  <span className="text-xs font-black text-secondary-700 w-5 flex-shrink-0">#{ri + 1}</span>
+                <div className="flex items-center gap-2 px-3 py-2.5 border-b border-surface-200/60 bg-surface-100/80">
+                  <span className="text-[10px] font-bold text-primary bg-primary/10 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">#{ri + 1}</span>
                   <input value={run.name} onChange={e => calc.updateRun(run.id, { name: e.target.value })}
-                    className="flex-1 bg-transparent text-xs font-semibold text-secondary-900 outline-none min-w-0 placeholder-secondary-600 border-b border-dashed border-secondary-200 focus:border-solid focus:border-secondary-300 transition-colors"
+                    className="flex-1 bg-transparent text-xs font-semibold text-ink outline-none min-w-0 placeholder-ink-faint hover:bg-surface-50 focus:bg-surface-50 rounded px-1 -mx-1 transition-colors"
                     placeholder="Run name…" />
-                  <div className="flex items-center gap-1 text-xs text-secondary-700 flex-shrink-0">
-                    <span className="text-[10px] text-secondary-600">×</span>
+                  <div className="flex items-center gap-1 text-xs text-ink-muted flex-shrink-0">
+                    <span className="text-[10px] text-ink-faint">×</span>
                     <input type="number" value={run.qty} min={1}
                       onChange={e => calc.updateRun(run.id, { qty: Math.max(1, parseInt(e.target.value) || 1) })}
-                      className="w-10 text-center border rounded text-xs font-semibold py-0.5 outline-none focus:ring-1 bg-secondary-50 border-secondary-200 text-secondary-900" />
+                      className="w-10 text-center border rounded-lg text-xs font-semibold py-0.5 outline-none focus:ring-1 focus:ring-primary/30 bg-surface-50 border-surface-200 text-ink" />
                   </div>
-                  <button onClick={() => calc.duplicateRun(run.id)} className="text-secondary-600 hover:text-secondary-700 flex-shrink-0"><Copy className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => calc.duplicateRun(run.id)} className="text-ink-faint hover:text-ink-muted flex-shrink-0"><Copy className="w-3.5 h-3.5" /></button>
                   {calc.runs.length > 1 && <button onClick={() => calc.removeRun(run.id)} className="text-red-400 hover:text-red-600 flex-shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>}
-                  <button onClick={() => toggleRunCollapse(run.id)} className="text-secondary-600 hover:text-secondary-700 flex-shrink-0">
+                  <button onClick={() => toggleRunCollapse(run.id)} className="text-ink-faint hover:text-ink-muted flex-shrink-0">
                     {collapsedRuns.has(run.id) ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
                   </button>
                 </div>
@@ -852,7 +852,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                     {/* Criteria (per-run) */}
                     {sys.customCriteria?.filter(c => c.type === 'input').length > 0 && (
                       <div className="space-y-1.5">
-                        <div className="text-[9px] font-semibold uppercase text-secondary-600 tracking-wide">Conditions</div>
+                        <div className="text-[9px] font-semibold uppercase text-ink-faint tracking-wide">Conditions</div>
                         {sys.customCriteria.filter(c => c.type === 'input').map(cr => {
                           const isOn = (run.criteriaState ?? {})[cr.key] === true
                           return (
@@ -882,10 +882,10 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                     )}
 
                     {sys.inputModel === 'linear' && (
-                      <div className="flex gap-0 rounded-lg overflow-hidden border border-secondary-200">
+                      <div className="flex gap-0 rounded-lg overflow-hidden border border-surface-200/60">
                         {([['simple', '📐 Simple'], ['segment', '🗺 Segments']] as const).map(([mode, label], i) => (
                           <button key={mode} onClick={() => calc.updateRun(run.id, { inputMode: mode })}
-                            className={'flex-1 py-1.5 text-xs font-semibold ' + (i > 0 ? 'border-l border-secondary-200 ' : '') + (run.inputMode === mode ? 'bg-secondary text-white' : 'bg-secondary-50 text-secondary-700')}>
+                            className={'flex-1 py-1.5 text-xs font-semibold transition-colors ' + (i > 0 ? 'border-l border-surface-200/60 ' : '') + (run.inputMode === mode ? 'bg-primary text-white' : 'bg-surface-100 text-ink-muted')}>
                             {label}
                           </button>
                         ))}
@@ -896,27 +896,27 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                       <div className="grid grid-cols-2 gap-2">
                         {['length', 'width'].map(key => (
                           <div key={key}>
-                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{getDimLabel(key, sys.dimOverrides)}</div>
+                            <div className="text-[9px] font-semibold uppercase text-ink-faint tracking-wide mb-1">{getDimLabel(key, sys.dimOverrides)}</div>
                             <div className="relative">
                               <input type="number" value={(run.job as any)[key] ?? ''} min={0} step="0.1" placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)[key]) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{getDimUnit(key, sys.dimOverrides)}</span>
+                                style={{ borderColor: parseFloat((run.job as any)[key]) > 0 ? 'var(--color-primary)' : undefined }} />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{getDimUnit(key, sys.dimOverrides)}</span>
                             </div>
                           </div>
                         ))}
                         {userInputDims.map(cd => (
                           <div key={cd.key}>
-                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">
+                            <div className="text-[9px] font-semibold uppercase text-ink-faint tracking-wide mb-1">
                               {cd.icon} {cd.name}{cd.unit ? ` (${cd.unit})` : ''}
                             </div>
                             <div className="relative">
                               <input type="number" value={(run.job as any)[cd.key] ?? ''} min={0} step={String(cd.inputStep ?? 1)} placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [cd.key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
-                              {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
+                                style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? 'var(--color-primary)' : undefined }} />
+                              {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{cd.unit}</span>}
                             </div>
                           </div>
                         ))}
@@ -939,13 +939,13 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                           const dimDef = PRIMITIVE_DIMS.find(p => p.key === key)
                           return (
                           <div key={key}>
-                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{dimDef?.icon} {getDimLabel(key, sys.dimOverrides)}</div>
+                            <div className="text-[9px] font-semibold uppercase text-ink-faint tracking-wide mb-1">{dimDef?.icon} {getDimLabel(key, sys.dimOverrides)}</div>
                             <div className="relative">
                               <input type="number" value={(run.job as any)[key] ?? ''} min={0} step="0.1" placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)[key]) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">
+                                style={{ borderColor: parseFloat((run.job as any)[key]) > 0 ? 'var(--color-primary)' : undefined }} />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">
                                 {getDimUnit(key, sys.dimOverrides)}
                               </span>
                             </div>
@@ -953,27 +953,27 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                         )})}
                         {spacingDims.map(cd => (
                           <div key={cd.key}>
-                            <div className="text-[9px] font-semibold uppercase text-ink-faint mb-1">{cd.spacingLabel || cd.name} <span className="text-secondary-600">(spacing)</span></div>
+                            <div className="text-[9px] font-semibold uppercase text-ink-faint mb-1">{cd.spacingLabel || cd.name} <span className="text-ink-faint">(spacing)</span></div>
                             <div className="relative">
                               <input type="number" value={(run.job as any)['__spacing_' + cd.key] ?? ''} min={0.1} step="0.1" placeholder={String(cd.spacing ?? 1)}
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, ['__spacing_' + cd.key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)['__spacing_' + cd.key]) > 0 ? 'var(--color-secondary)' : 'var(--color-secondary-200)' }} />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{getDimUnit(cd.spacingTargetDim ?? 'length', sys.dimOverrides)}</span>
+                                style={{ borderColor: parseFloat((run.job as any)['__spacing_' + cd.key]) > 0 ? 'var(--color-primary)' : undefined }} />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{getDimUnit(cd.spacingTargetDim ?? 'length', sys.dimOverrides)}</span>
                             </div>
                           </div>
                         ))}
                         {userInputDims.map(cd => (
                           <div key={cd.key}>
-                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">
+                            <div className="text-[9px] font-semibold uppercase text-ink-faint tracking-wide mb-1">
                               {cd.icon} {cd.name}{cd.unit ? ` (${cd.unit})` : ''}
                             </div>
                             <div className="relative">
                               <input type="number" value={(run.job as any)[cd.key] ?? ''} min={0} step={String(cd.inputStep ?? 1)} placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [cd.key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
-                              {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
+                                style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? 'var(--color-primary)' : undefined }} />
+                              {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{cd.unit}</span>}
                             </div>
                           </div>
                         ))}
@@ -984,7 +984,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                           const hasOverride = (run.job as any)[overrideKey] !== undefined && (run.job as any)[overrideKey] !== ''
                           return (
                             <div key={cd.key}>
-                              <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">
+                              <div className="text-[9px] font-semibold uppercase text-ink-faint tracking-wide mb-1">
                                 {cd.icon} {cd.name}{cd.unit ? ` (${cd.unit})` : ''}
                                 {computed != null && <span className={`ml-1 ${hasOverride ? 'line-through opacity-50' : 'text-primary'}`}>(auto: {computed})</span>}
                               </div>
@@ -995,8 +995,8 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                                   min={0} step="1"
                                   onChange={e => calc.updateRun(run.id, { job: { ...run.job, [overrideKey]: e.target.value } })}
                                   className="input text-xs py-1.5 pr-7"
-                                  style={{ borderColor: hasOverride ? 'var(--color-secondary)' : 'var(--color-secondary-200)', borderStyle: hasOverride ? 'solid' : 'dashed' }} />
-                                {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
+                                  style={{ borderColor: hasOverride ? 'var(--color-primary)' : undefined, borderStyle: hasOverride ? 'solid' : 'dashed' }} />
+                                {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{cd.unit}</span>}
                               </div>
                             </div>
                           )
@@ -1007,38 +1007,38 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                     {sys.inputModel === 'linear' && run.inputMode === 'simple' && (
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{getDimLabel('length', sys.dimOverrides)}</div>
+                          <div className="text-[9px] font-semibold uppercase text-ink-faint tracking-wide mb-1">{getDimLabel('length', sys.dimOverrides)}</div>
                           <div className="relative">
                             <input type="number" value={run.simpleJob?.length ?? ''} min={0} step="0.1" placeholder="0"
                               onChange={e => calc.updateRun(run.id, { simpleJob: { ...run.simpleJob, length: e.target.value } as any })}
                               className="input text-xs py-1.5"
-                              style={{ borderColor: parseFloat(run.simpleJob?.length as any) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{getDimUnit('length', sys.dimOverrides)}</span>
+                              style={{ borderColor: parseFloat(run.simpleJob?.length as any) > 0 ? 'var(--color-primary)' : undefined }} />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{getDimUnit('length', sys.dimOverrides)}</span>
                           </div>
                         </div>
                         {spacingDims.map(cd => (
                           <div key={cd.key}>
-                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">{cd.icon} {cd.spacingLabel || cd.name}</div>
+                            <div className="text-[9px] font-semibold uppercase text-ink-faint tracking-wide mb-1">{cd.icon} {cd.spacingLabel || cd.name}</div>
                             <div className="relative">
                               <input type="number" value={(run.job as any)['__spacing_' + cd.key] ?? ''} min={0.01} step="0.1" placeholder={String(cd.spacing ?? 1)}
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, ['__spacing_' + cd.key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)['__spacing_' + cd.key]) > 0 ? 'var(--color-secondary)' : 'var(--color-secondary-200)' }} />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{getDimUnit('length', sys.dimOverrides)}</span>
+                                style={{ borderColor: parseFloat((run.job as any)['__spacing_' + cd.key]) > 0 ? 'var(--color-primary)' : undefined }} />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{getDimUnit('length', sys.dimOverrides)}</span>
                             </div>
                           </div>
                         ))}
                         {userInputDims.map(cd => (
                           <div key={cd.key}>
-                            <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">
+                            <div className="text-[9px] font-semibold uppercase text-ink-faint tracking-wide mb-1">
                               {cd.icon} {cd.name}{cd.unit ? ` (${cd.unit})` : ''}
                             </div>
                             <div className="relative">
                               <input type="number" value={(run.job as any)[cd.key] ?? ''} min={0} step={String(cd.inputStep ?? 1)} placeholder="0"
                                 onChange={e => calc.updateRun(run.id, { job: { ...run.job, [cd.key]: e.target.value } })}
                                 className="input text-xs py-1.5 pr-7"
-                                style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
-                              {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
+                                style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? 'var(--color-primary)' : undefined }} />
+                              {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{cd.unit}</span>}
                             </div>
                           </div>
                         ))}
@@ -1049,7 +1049,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                           const hasOverride = (run.job as any)[overrideKey] !== undefined && (run.job as any)[overrideKey] !== ''
                           return (
                             <div key={cd.key}>
-                              <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">
+                              <div className="text-[9px] font-semibold uppercase text-ink-faint tracking-wide mb-1">
                                 {cd.icon} {cd.name}{cd.unit ? ` (${cd.unit})` : ''}
                                 {computed != null && <span className={`ml-1 ${hasOverride ? 'line-through opacity-50' : 'text-primary'}`}>(auto: {computed})</span>}
                               </div>
@@ -1060,8 +1060,8 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                                   min={0} step="1"
                                   onChange={e => calc.updateRun(run.id, { job: { ...run.job, [overrideKey]: e.target.value } })}
                                   className="input text-xs py-1.5 pr-7"
-                                  style={{ borderColor: hasOverride ? 'var(--color-secondary)' : 'var(--color-secondary-200)', borderStyle: hasOverride ? 'solid' : 'dashed' }} />
-                                {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
+                                  style={{ borderColor: hasOverride ? 'var(--color-primary)' : undefined, borderStyle: hasOverride ? 'solid' : 'dashed' }} />
+                                {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{cd.unit}</span>}
                               </div>
                             </div>
                           )
@@ -1083,15 +1083,15 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                           <div className="grid grid-cols-2 gap-2">
                             {userInputDims.map(cd => (
                               <div key={cd.key}>
-                                <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">
+                                <div className="text-[9px] font-semibold uppercase text-ink-faint tracking-wide mb-1">
                                   {cd.icon} {cd.name}{cd.unit ? ` (${cd.unit})` : ''}
                                 </div>
                                 <div className="relative">
                                   <input type="number" value={(run.job as any)[cd.key] ?? ''} min={0} step={String(cd.inputStep ?? 1)} placeholder="0"
                                     onChange={e => calc.updateRun(run.id, { job: { ...run.job, [cd.key]: e.target.value } })}
                                     className="input text-xs py-1.5 pr-7"
-                                    style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? 'var(--color-primary)' : 'var(--color-secondary-200)' }} />
-                                  {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
+                                    style={{ borderColor: parseFloat((run.job as any)[cd.key]) > 0 ? 'var(--color-primary)' : undefined }} />
+                                  {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{cd.unit}</span>}
                                 </div>
                               </div>
                             ))}
@@ -1102,7 +1102,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                               const hasOverride = (run.job as any)[overrideKey] !== undefined && (run.job as any)[overrideKey] !== ''
                               return (
                                 <div key={cd.key}>
-                                  <div className="text-[9px] font-semibold uppercase text-secondary-600 mb-1">
+                                  <div className="text-[9px] font-semibold uppercase text-ink-faint tracking-wide mb-1">
                                     {cd.icon} {cd.name}{cd.unit ? ` (${cd.unit})` : ''}
                                     {computed != null && <span className={`ml-1 ${hasOverride ? 'line-through opacity-50' : 'text-primary'}`}>(auto: {computed})</span>}
                                   </div>
@@ -1113,8 +1113,8 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
                                       min={0} step="1"
                                       onChange={e => calc.updateRun(run.id, { job: { ...run.job, [overrideKey]: e.target.value } })}
                                       className="input text-xs py-1.5 pr-7"
-                                      style={{ borderColor: hasOverride ? 'var(--color-secondary)' : 'var(--color-secondary-200)', borderStyle: hasOverride ? 'solid' : 'dashed' }} />
-                                    {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-secondary-600">{cd.unit}</span>}
+                                      style={{ borderColor: hasOverride ? 'var(--color-primary)' : undefined, borderStyle: hasOverride ? 'solid' : 'dashed' }} />
+                                    {cd.unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink-faint">{cd.unit}</span>}
                                   </div>
                                 </div>
                               )
@@ -1392,7 +1392,7 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
               const priceMap2    = Object.fromEntries(sys.materials.map(m => [m.id, m.unitPrice ?? null]))
               const totalMatCost = bomMats.reduce((a: number, m: any) => { const p = priceMap2[m.id]; return a + (p != null ? p * m.grandTotal : 0) }, 0)
               const pills: { label: string; value: string; cls: string }[] = [
-                { label: 'Total length', value: `${totalRunLength.toFixed(1)} m`, cls: 'bg-secondary-50 border-secondary-200 text-secondary-700' },
+                { label: 'Total length', value: `${totalRunLength.toFixed(1)} m`, cls: 'bg-surface-100 border-surface-200 text-ink-muted' },
               ]
               if (totalMatCost > 0) {
                 pills.push({ label: 'Material rate', value: `$${(totalMatCost / totalRunLength).toFixed(2)}/m`, cls: 'bg-primary/10 border-primary/30 text-primary' })

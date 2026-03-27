@@ -17,7 +17,7 @@ export const THEME_PRESETS: ThemePreset[] = [
     id:          'default',
     name:        'Zinc',
     description: 'Clean neutral grays with an emerald accent',
-    accent:      '#3ecf8e',
+    accent:      '#34c759',
     surface:     '#f4f4f5',
     border:      '#d1d1d6',
   },
