@@ -353,7 +353,7 @@ export default function TendersClient({
                 {/* Day headers */}
                 <div className="grid grid-cols-7 gap-0.5 mb-1">
                   {['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => (
-                    <div key={d} className="text-[9px] text-ink-faint text-center font-medium">{d}</div>
+                    <div key={d} className="text-[10px] text-ink-faint text-center font-medium">{d}</div>
                   ))}
                 </div>
                 {/* Day cells */}
@@ -459,7 +459,7 @@ export default function TendersClient({
                 <div className="p-4 space-y-4">
                   {/* Add block form */}
                   {blockAdding && (
-                    <div className="card p-4 border-primary/30 bg-primary/5 space-y-3">
+                    <div className="card p-4 border-primary/30 bg-primary/5 space-y-3 animate-fade-in">
                       <div className="text-xs font-bold text-primary uppercase tracking-wide">New Block</div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>

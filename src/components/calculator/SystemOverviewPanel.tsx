@@ -48,7 +48,7 @@ function Row({ icon, label, sub, keyTag, right }: { icon?: string; label: string
       <div className="flex-1 min-w-0">
         <div className="font-medium text-ink truncate">{label}</div>
         {keyTag && (
-          <div className="font-mono text-[9px] text-ink-faint bg-surface-200 px-1 py-0.5 mt-0.5 inline-block" style={{ borderRadius: 'var(--radius)' }}>
+          <div className="font-mono text-[10px] text-ink-faint bg-surface-200 px-1 py-0.5 mt-0.5 inline-block" style={{ borderRadius: 'var(--radius)' }}>
             {keyTag}
           </div>
         )}

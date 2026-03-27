@@ -497,10 +497,10 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
                     <button
                       key={opt.label}
                       onClick={() => setDark(opt.value)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-all ${
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
                         isDark === opt.value
-                          ? 'border-primary bg-primary/5 text-primary'
-                          : 'border-surface-200 text-ink-muted hover:border-surface-300'
+                          ? 'bg-surface-50 border-primary shadow-sm ring-1 ring-primary/20 text-primary'
+                          : 'bg-surface-100/60 border-surface-200 text-ink-muted hover:bg-surface-100'
                       }`}>
                       {opt.icon}
                       <span className="font-medium text-[13px]">{opt.label}</span>
@@ -512,16 +512,16 @@ export default function SettingsClient({ user, initialProfile, initialTags, init
               {/* Color preset */}
               <div className="card p-5">
                 <h2 className="font-semibold text-[13px] text-ink mb-1">Color Preset</h2>
-                <p className="text-[12px] text-ink-faint mb-4">Changes the accent color and surface tones across the app.</p>
+                <p className="text-xs text-ink-faint mb-4">Changes the accent color and surface tones across the app.</p>
                 <div className="grid grid-cols-2 gap-3">
                   {THEME_PRESETS.map(preset => (
                     <button
                       key={preset.id}
                       onClick={() => setTheme(preset.id)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-all text-left ${
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-all duration-200 text-left ${
                         theme === preset.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-surface-200 hover:border-surface-300'
+                          ? 'bg-surface-50 border-primary shadow-sm ring-1 ring-primary/20'
+                          : 'bg-surface-100/60 border-surface-200 hover:bg-surface-100'
                       }`}>
                       {/* Swatch */}
                       <div className="flex gap-1 shrink-0">

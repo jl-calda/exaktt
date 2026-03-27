@@ -179,10 +179,10 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, 
             {INPUT_MODELS.map(opt => {
               return (
                 <button key={opt.value} type="button" onClick={() => onUpdate({ inputModel: opt.value as any })}
-                  className={`flex-1 min-w-36 text-left p-4 border transition-all ${
+                  className={`flex-1 min-w-36 text-left p-4 border transition-all duration-200 ${
                     sys.inputModel === opt.value
-                      ? 'border-primary bg-primary/10'
-                      : 'border-surface-300 bg-surface-100 hover:border-surface-300 hover:bg-surface-100'
+                      ? 'bg-surface-50 border-primary shadow-sm ring-1 ring-primary/20'
+                      : 'bg-surface-100/60 border-surface-200 hover:bg-surface-100'
                   }`}
                   style={{ borderRadius: 'var(--radius-card)' }}>
                   <span className="w-8 h-8 rounded-lg bg-surface-200/30 flex items-center justify-center text-base mb-1">{opt.icon}</span>

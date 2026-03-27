@@ -58,7 +58,7 @@ export default function TopNav({ userName, userEmail, plan }: Props) {
             {initials}
           </div>
           <div className="hidden sm:block">
-            <div className="text-[12px] font-medium text-ink leading-none">{userName ?? userEmail}</div>
+            <div className="text-xs font-medium text-ink leading-none">{userName ?? userEmail}</div>
             {plan && (
               <div className="text-[11px] text-ink-faint mt-0.5 capitalize">{plan.toLowerCase()}</div>
             )}

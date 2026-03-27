@@ -61,7 +61,7 @@ export default function PhotoUploader({ photo, onPhoto, size = 36 }: Props) {
           <input type="file" accept="image/*" onChange={handleFile} className="hidden" />
         </label>
       )}
-      <span className="text-[9px] text-ink-faint">~120×120px</span>
+      <span className="text-[10px] text-ink-faint">~120×120px</span>
     </div>
   )
 }
