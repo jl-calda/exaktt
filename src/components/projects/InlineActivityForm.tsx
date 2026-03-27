@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { X, CheckCircle2, FileText, Clock } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { X, CheckCircle2, FileText, Clock, AlertTriangle, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ACTIVITY_COLORS } from '@/components/projects/colors'
 
@@ -12,7 +12,6 @@ const STATUS_OPTIONS = [
   { value: 'BLOCKED', label: 'Blocked' },
 ]
 
-/** Shift a YYYY-MM-DD date string by +/- days */
 function shiftDate(dateStr: string, days: number): string {
   if (!dateStr) return dateStr
   const d = new Date(dateStr)
@@ -62,15 +61,58 @@ export default function InlineActivityForm({
   const [selectedAssets, setSelectedAssets] = useState<string[]>(activity?.assetIds ?? [])
   const [skills, setSkills] = useState<string[]>(activity?.skills ?? [])
   const [skillInput, setSkillInput] = useState('')
+  const [showSkillDropdown, setShowSkillDropdown] = useState(false)
   const [outputs, setOutputs] = useState<string[]>(activity?.requiredOutput ?? [])
   const [outputInput, setOutputInput] = useState('')
+  const [showAssetDropdown, setShowAssetDropdown] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  const skillRef = useRef<HTMLDivElement>(null)
+  const assetRef = useRef<HTMLDivElement>(null)
+
+  // Collect all known skills from team members
+  const knownSkills = useMemo(() => {
+    const all = new Set<string>()
+    teams.forEach((t: any) =>
+      t.members?.forEach((m: any) =>
+        m.skills?.forEach((s: string) => all.add(s))
+      )
+    )
+    return Array.from(all).sort()
+  }, [teams])
+
+  // Filter skills suggestions
+  const skillSuggestions = useMemo(() => {
+    const q = skillInput.toLowerCase()
+    return knownSkills.filter(s => !skills.includes(s) && (!q || s.toLowerCase().includes(q)))
+  }, [knownSkills, skills, skillInput])
+
+  // Check if a selected asset is unavailable
+  const unavailableAssetIds = useMemo(() => {
+    const set = new Set<string>()
+    assets.forEach((a: any) => { if (a.isAvailable === false) set.add(a.id) })
+    return set
+  }, [assets])
+
+  // Check if a required skill is missing from all team members
+  const missingSkills = useMemo(() => {
+    return skills.filter(s => !knownSkills.includes(s))
+  }, [skills, knownSkills])
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (skillRef.current && !skillRef.current.contains(e.target as Node)) setShowSkillDropdown(false)
+      if (assetRef.current && !assetRef.current.contains(e.target as Node)) setShowAssetDropdown(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   // Status <-> progress sync
   useEffect(() => {
     if (status === 'COMPLETED' && progress !== 100) setProgress(100)
   }, [status])
-
   useEffect(() => {
     if (progress === 100 && status !== 'COMPLETED') setStatus('COMPLETED')
     if (progress < 100 && status === 'COMPLETED') setStatus('IN_PROGRESS')
@@ -80,7 +122,6 @@ export default function InlineActivityForm({
     if (e.key === 'Escape') { e.stopPropagation(); onCancel() }
   }, [onCancel])
 
-  /** Arrow up/down on date inputs to shift by 1 day */
   const handleDateKey = (
     e: React.KeyboardEvent<HTMLInputElement>,
     value: string,
@@ -106,6 +147,19 @@ export default function InlineActivityForm({
     } finally { setSaving(false) }
   }
 
+  const addSkill = (s: string) => {
+    const val = s.trim()
+    if (val && !skills.includes(val)) setSkills(prev => [...prev, val])
+    setSkillInput('')
+    setShowSkillDropdown(false)
+  }
+
+  const removeSkill = (idx: number) => setSkills(prev => prev.filter((_, i) => i !== idx))
+
+  const toggleAsset = (id: string) => {
+    setSelectedAssets(prev => prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id])
+  }
+
   const addTag = (list: string[], setList: (v: string[]) => void, input: string, setInput: (v: string) => void) => {
     const val = input.trim()
     if (val && !list.includes(val)) { setList([...list, val]); setInput('') }
@@ -115,15 +169,11 @@ export default function InlineActivityForm({
     setList(list.filter((_, i) => i !== idx))
   }
 
-  const toggleAsset = (id: string) => {
-    setSelectedAssets(prev => prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id])
-  }
+  // Warning counts
+  const hasUnavailableAssets = selectedAssets.some(id => unavailableAssetIds.has(id))
 
   return (
-    <div
-      className="animate-fade-in flex flex-col gap-1.5 py-1.5 px-2"
-      onKeyDown={handleKeyDown}
-    >
+    <div className="animate-fade-in flex flex-col gap-1.5 py-1.5 px-2" onKeyDown={handleKeyDown}>
       {/* Row 1: Name + color dots + Save/Cancel */}
       <div className="flex items-center gap-1.5">
         <input
@@ -178,35 +228,28 @@ export default function InlineActivityForm({
         />
       </div>
 
-      {/* Row 3: Dates (with arrow key adjust) + Hours + Intraday + Times */}
+      {/* Row 3: Dates + Hours + Intraday + Times */}
       <div className="flex items-center gap-1.5">
         <input
-          type="date"
-          className="input h-6 text-xs px-1.5 w-[110px]"
-          value={startDate}
-          onChange={e => setStartDate(e.target.value)}
+          type="date" className="input h-6 text-xs px-1.5 w-[110px]"
+          value={startDate} onChange={e => setStartDate(e.target.value)}
           onKeyDown={e => handleDateKey(e, startDate, setStartDate)}
           title="Arrow Up/Down to adjust date"
         />
         <span className="text-[10px] text-ink-faint">&rarr;</span>
         <input
-          type="date"
-          className="input h-6 text-xs px-1.5 w-[110px]"
-          value={endDate}
-          onChange={e => setEndDate(e.target.value)}
+          type="date" className="input h-6 text-xs px-1.5 w-[110px]"
+          value={endDate} onChange={e => setEndDate(e.target.value)}
           onKeyDown={e => handleDateKey(e, endDate, setEndDate)}
           title="Arrow Up/Down to adjust date"
         />
         <div className="flex items-center gap-0.5 shrink-0">
           <Clock size={10} className="text-ink-faint" />
           <input
-            type="number"
-            className="input h-6 text-xs px-1 w-12 text-right font-mono"
-            placeholder="hrs"
-            value={estimatedHours}
+            type="number" className="input h-6 text-xs px-1 w-12 text-right font-mono"
+            placeholder="hrs" value={estimatedHours}
             onChange={e => setEstimatedHours(e.target.value)}
-            min={0}
-            step={0.5}
+            min={0} step={0.5}
           />
           <span className="text-[10px] text-ink-faint">h</span>
         </div>
@@ -229,48 +272,133 @@ export default function InlineActivityForm({
         )}
       </div>
 
-      {/* Row 4: Skills + Assets */}
-      <div className="flex items-center gap-1.5 min-h-[24px]">
-        <div className="flex items-center gap-1 flex-1 min-w-0">
+      {/* Row 4: Skills (combobox with dropdown) + Assets (dropdown selector) */}
+      <div className="flex items-center gap-3 min-h-[24px]">
+        {/* Skills */}
+        <div ref={skillRef} className="relative flex items-center gap-1 flex-1 min-w-0">
           <span className="text-[10px] text-ink-faint tracking-wide shrink-0">Skills</span>
           <div className="flex items-center gap-0.5 flex-wrap">
             {skills.map((s, i) => (
-              <span key={i} className="inline-flex items-center gap-0.5 bg-surface-100 border border-surface-200/60 rounded-full px-1.5 h-5 text-[10px] text-ink-muted">
+              <span key={i} className={`inline-flex items-center gap-0.5 rounded-full px-1.5 h-5 text-[10px] border ${
+                missingSkills.includes(s)
+                  ? 'bg-amber-50 border-amber-300 text-amber-700'
+                  : 'bg-surface-100 border-surface-200/60 text-ink-muted'
+              }`}>
+                {missingSkills.includes(s) && <AlertTriangle size={8} className="text-amber-500 shrink-0" />}
                 {s}
-                <button type="button" className="text-ink-faint hover:text-ink" onClick={() => removeTag(skills, setSkills, i)}><X size={8} /></button>
+                <button type="button" className="text-ink-faint hover:text-ink" onClick={() => removeSkill(i)}><X size={8} /></button>
               </span>
             ))}
           </div>
-          <input
-            className="input h-5 text-[10px] px-1 w-16 min-w-0"
-            placeholder="+ skill"
-            value={skillInput}
-            onChange={e => setSkillInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(skills, setSkills, skillInput, setSkillInput) } }}
-          />
+          <div className="relative">
+            <input
+              className="input h-5 text-[10px] px-1 w-20 min-w-0"
+              placeholder="+ skill"
+              value={skillInput}
+              onChange={e => { setSkillInput(e.target.value); setShowSkillDropdown(true) }}
+              onFocus={() => setShowSkillDropdown(true)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { e.preventDefault(); addSkill(skillInput) }
+              }}
+            />
+            {showSkillDropdown && (skillSuggestions.length > 0 || skillInput.trim()) && (
+              <div className="absolute left-0 top-full mt-0.5 bg-surface-50 border border-surface-200 rounded-lg shadow-panel z-30 py-0.5 min-w-[140px] max-h-[120px] overflow-y-auto animate-fade-in">
+                {skillSuggestions.map(s => (
+                  <button key={s} type="button"
+                    className="w-full px-2 py-1 text-left text-[10px] text-ink-muted hover:bg-surface-100 truncate"
+                    onClick={() => addSkill(s)}>
+                    {s}
+                  </button>
+                ))}
+                {skillInput.trim() && !knownSkills.includes(skillInput.trim()) && (
+                  <button type="button"
+                    className="w-full px-2 py-1 text-left text-[10px] text-primary hover:bg-surface-100 border-t border-surface-100"
+                    onClick={() => addSkill(skillInput)}>
+                    + Add &ldquo;{skillInput.trim()}&rdquo;
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          {missingSkills.length > 0 && (
+            <span className="text-[10px] text-amber-600 shrink-0" title="Skills not found in any team member">
+              <AlertTriangle size={10} />
+            </span>
+          )}
         </div>
-        {assets.length > 0 && (
-          <div className="flex items-center gap-0.5 overflow-x-auto max-w-[200px] shrink-0">
-            <span className="text-[10px] text-ink-faint tracking-wide shrink-0">Assets</span>
-            {assets.map((a: any) => {
-              const selected = selectedAssets.includes(a.id)
-              const unavailable = a.isAvailable === false
+
+        {/* Assets */}
+        <div ref={assetRef} className="relative flex items-center gap-1 shrink-0">
+          <span className="text-[10px] text-ink-faint tracking-wide shrink-0">Assets</span>
+          {/* Selected asset pills */}
+          <div className="flex items-center gap-0.5 flex-wrap">
+            {selectedAssets.map(id => {
+              const asset = assets.find((a: any) => a.id === id)
+              if (!asset) return null
+              const unavailable = unavailableAssetIds.has(id)
               return (
-                <button
-                  key={a.id}
-                  type="button"
-                  className={`inline-flex items-center h-5 px-1.5 rounded-full text-[10px] border transition-colors shrink-0
-                    ${selected ? 'bg-ink text-surface-50 border-ink' : 'bg-surface-100 border-surface-200/60 text-ink-muted hover:border-surface-300'}
-                    ${unavailable ? 'border-red-300 opacity-70' : ''}`}
-                  onClick={() => toggleAsset(a.id)}
-                  title={unavailable ? 'Unavailable' : a.name}
-                >
-                  {a.name}{unavailable && <span className="ml-0.5 text-red-400">!</span>}
-                </button>
+                <span key={id} className={`inline-flex items-center gap-0.5 rounded-full px-1.5 h-5 text-[10px] border ${
+                  unavailable
+                    ? 'bg-red-50 border-red-300 text-red-700'
+                    : 'bg-ink text-surface-50 border-ink'
+                }`}>
+                  {unavailable && <AlertTriangle size={8} className="text-red-500 shrink-0" />}
+                  {asset.name}
+                  <button type="button" className="hover:opacity-70" onClick={() => toggleAsset(id)}>
+                    <X size={8} />
+                  </button>
+                </span>
               )
             })}
           </div>
-        )}
+          {/* Dropdown trigger */}
+          {assets.length > 0 && (
+            <div className="relative">
+              <button
+                type="button"
+                className="input h-5 text-[10px] px-1.5 flex items-center gap-0.5 text-ink-faint hover:text-ink"
+                onClick={() => setShowAssetDropdown(!showAssetDropdown)}
+              >
+                + <ChevronDown size={8} />
+              </button>
+              {showAssetDropdown && (
+                <div className="absolute right-0 top-full mt-0.5 bg-surface-50 border border-surface-200 rounded-lg shadow-panel z-30 py-0.5 min-w-[160px] max-h-[140px] overflow-y-auto animate-fade-in">
+                  {assets.map((a: any) => {
+                    const selected = selectedAssets.includes(a.id)
+                    const unavailable = a.isAvailable === false
+                    return (
+                      <button key={a.id} type="button"
+                        className={`w-full px-2 py-1 text-left text-[10px] flex items-center gap-1.5 hover:bg-surface-100 ${
+                          selected ? 'text-ink font-medium' : 'text-ink-muted'
+                        }`}
+                        onClick={() => toggleAsset(a.id)}
+                      >
+                        <span className={`w-3 h-3 rounded border flex items-center justify-center shrink-0 ${
+                          selected ? 'bg-primary border-primary text-white' : 'border-surface-300'
+                        }`}>
+                          {selected && <CheckCircle2 size={8} />}
+                        </span>
+                        <span className="truncate flex-1">{a.name}</span>
+                        {a.category && <span className="text-ink-faint">{a.category}</span>}
+                        {unavailable && (
+                          <span className="text-red-500 flex items-center gap-0.5 shrink-0">
+                            <AlertTriangle size={8} />
+                            <span className="text-[9px] font-medium">N/A</span>
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+          {hasUnavailableAssets && (
+            <span className="text-[10px] text-red-500 shrink-0" title="Some selected assets are unavailable">
+              <AlertTriangle size={10} />
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Row 5: Required outputs */}
