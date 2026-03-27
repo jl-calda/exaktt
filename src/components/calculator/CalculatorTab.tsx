@@ -343,7 +343,7 @@ function SegmentEditor({ segments, onChange, hasSpacing, spacingLabel, dimOverri
                 </div>
               )}
               <div className="flex flex-col justify-center gap-0.5">
-                {st.ends > 0    && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-semibold">+{st.ends}e</span>}
+                {st.ends > 0    && <span className="text-[10px] bg-surface-100 text-primary px-1.5 py-0.5 rounded font-semibold">+{st.ends}e</span>}
                 {st.corners > 0 && <span className="text-[10px] bg-surface-200 text-ink-muted px-1.5 py-0.5 rounded font-semibold">+{st.corners}c</span>}
               </div>
             </div>
@@ -1227,14 +1227,14 @@ export default function CalculatorTab({ sys, jobs, onSaveJob, onRunCalc, plan = 
         <div className="flex items-center justify-end gap-2 mb-3">
           <button
             onClick={() => setShowFieldGuide(v => !v)}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 border transition-colors ${showFieldGuide ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-surface-50 border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 border transition-colors ${showFieldGuide ? 'bg-surface-50 border-primary shadow-sm text-primary' : 'bg-surface-50 border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
             style={{ borderRadius: 'var(--radius)' }}>
             <BookOpen className="w-3.5 h-3.5" />
             Field Guide
           </button>
           <button
             onClick={() => setShowOverview(v => !v)}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 border transition-colors ${showOverview ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-surface-50 border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 border transition-colors ${showOverview ? 'bg-surface-50 border-primary shadow-sm text-primary' : 'bg-surface-50 border-surface-200 text-ink-muted hover:text-ink hover:bg-surface-50'}`}
             style={{ borderRadius: 'var(--radius)' }}>
             {showOverview ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
             System Overview

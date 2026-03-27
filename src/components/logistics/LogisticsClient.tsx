@@ -72,7 +72,7 @@ export default function LogisticsClient({ library: initialLibrary, suppliers: in
         {NAV_TABS.map(({ id, label, Icon }) => (
           <button key={id} onClick={() => setTab(id)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
-              tab === id ? 'bg-primary/10 text-primary font-semibold' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
+              tab === id ? 'bg-surface-50 text-ink font-semibold shadow-[var(--shadow-card)]' : 'text-ink-muted hover:text-ink hover:bg-surface-100'
             }`}>
             <Icon className="w-3.5 h-3.5" strokeWidth={tab === id ? 2.2 : 1.8} />
             {label}

@@ -198,7 +198,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
             return (
               <button key={s} onClick={() => handleStatusChange(s)}
                 className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
-                style={{ borderColor: m.color + '50', color: m.color, background: m.bg }}>
+                style={{ color: m.color, background: m.bg, borderColor: 'var(--color-surface-200)' }}>
                 Mark as {m.label}
               </button>
             )
@@ -246,7 +246,7 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
               </thead>
               <tbody>
                 {items.map((item, i) => (
-                  <tr key={item.id} className={i % 2 === 0 ? 'bg-white' : 'bg-surface-50'}>
+                  <tr key={item.id} className={i % 2 === 0 ? 'bg-surface-50' : 'bg-surface-100/40'}>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
                         {item.system && (

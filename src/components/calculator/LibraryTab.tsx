@@ -205,7 +205,7 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
               ) : (
                 <tr key={item.id} className="hover:bg-surface-100/50 transition-colors">
                   <td className="px-3 py-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-base flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-surface-200/40 flex items-center justify-center text-base flex-shrink-0">
                       {catInfo?.icon ?? '📦'}
                     </div>
                   </td>
@@ -217,7 +217,7 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
                         <span className="text-[10px] bg-surface-100 text-ink-faint px-1.5 py-0.5 rounded">{item.spec.stockLengthMm}mm stock</span>
                       )}
                       {limits.pricing && item.spec?.unitPrice && (
-                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-semibold">
+                        <span className="text-[10px] bg-surface-100 text-ink px-1.5 py-0.5 rounded font-semibold">
                           {item.spec.currency ?? 'SGD'} {item.spec.unitPrice.toFixed(2)}
                         </span>
                       )}

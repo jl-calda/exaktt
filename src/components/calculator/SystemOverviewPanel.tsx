@@ -22,7 +22,7 @@ function Section({ title, icon, count, children, defaultOpen = true }: {
           <span className="text-sm leading-none">{icon}</span>
           <span className="text-xs font-bold text-ink">{title}</span>
           {count !== undefined && (
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${count > 0 ? 'bg-primary/10 text-primary' : 'bg-surface-200 text-ink-faint'}`}>
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${count > 0 ? 'bg-surface-100 text-primary' : 'bg-surface-200 text-ink-faint'}`}>
               {count}
             </span>
           )}
@@ -339,7 +339,7 @@ export default function SystemOverviewPanel({ sys, onViewGraph }: Props) {
           <div className="px-3 py-3 border-t border-surface-200">
             <button
               onClick={onViewGraph}
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold bg-surface-100 text-ink-muted hover:bg-primary/10 hover:text-primary transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold bg-surface-100 text-ink-muted hover:bg-surface-100 hover:text-primary transition-colors"
               style={{ borderRadius: 'var(--radius)' }}
             >
               <GitBranch className="w-3.5 h-3.5" />

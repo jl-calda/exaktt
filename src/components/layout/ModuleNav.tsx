@@ -36,16 +36,16 @@ export default function ModuleNav({ role, plan: _plan }: Props) {
     item.exact ? pathname === item.href : pathname.startsWith(item.href)
 
   return (
-    <nav className="bg-white border-b border-surface-200 sticky top-12 z-30">
+    <nav className="bg-surface-50 border-b border-surface-200 sticky top-12 z-30">
       <div className="max-w-screen-xl mx-auto px-4 flex items-center h-10">
         <div className="flex items-center gap-0.5 flex-1">
           {visible.map(item => (
             <Link
               key={item.href}
               href={item.href}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 isActive(item)
-                  ? 'bg-primary/10 text-primary font-semibold'
+                  ? 'bg-surface-50 text-ink font-semibold shadow-[var(--shadow-card)]'
                   : 'text-ink-muted hover:text-ink hover:bg-surface-100'
               }`}
             >
@@ -56,9 +56,9 @@ export default function ModuleNav({ role, plan: _plan }: Props) {
         {showSettings && (
           <Link
             href="/settings"
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
               pathname.startsWith('/settings')
-                ? 'bg-primary/10 text-primary font-semibold'
+                ? 'bg-surface-50 text-ink font-semibold shadow-[var(--shadow-card)]'
                 : 'text-ink-muted hover:text-ink hover:bg-surface-100'
             }`}
           >
