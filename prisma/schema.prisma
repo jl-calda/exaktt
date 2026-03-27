@@ -51,6 +51,21 @@ enum DeliveryOrderStatus {
   CANCELLED
 }
 
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum ActivityStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPANY — owns the subscription and team seats
 // ─────────────────────────────────────────────────────────────────────────────
@@ -100,6 +115,9 @@ model Company {
   workActivityRates      WorkActivityRate[]
   tasks                  Task[]
   notifications          Notification[]
+  projects               Project[]
+  workTeams              WorkTeam[]
+  projectAssets          ProjectAsset[]
 
   @@map("companies")
 }
@@ -176,6 +194,10 @@ model User {
   tasksAssigned              Task[]                  @relation("taskAssignee")
   taskComments               TaskComment[]           @relation("taskComments")
   notifications              Notification[]          @relation("notifications")
+  projectsCreated            Project[]               @relation("projectCreatedBy")
+  projectsManaged            Project[]               @relation("projectManager")
+  activitiesAssigned         ProjectActivity[]       @relation("activityAssignee")
+  workTeamMembers            WorkTeamMember[]
 
   @@map("users")
 }
@@ -448,6 +470,7 @@ model Tender {
 
   items     TenderItem[]
   reports   TenderReport[]
+  projects  Project[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1001,4 +1024,141 @@ model Notification {
   @@index([userId, isRead])
   @@index([companyId])
   @@map("notifications")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROJECTS MODULE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Project {
+  id             String        @id @default(cuid())
+  companyId      String
+  createdById    String
+  tenderId       String?
+  reportId       String?
+  quotationNo    String?
+  name           String
+  address        String?
+  longitude      Float?
+  latitude       Float?
+  managerId      String?
+  managerName    String?
+  startDate      DateTime?
+  endDate        DateTime?
+  clientName     String?
+  contractValue  Float         @default(0)
+  status         ProjectStatus @default(PLANNING)
+  systemIds      String[]      @default([])
+  isArchived     Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  company    Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy  User             @relation("projectCreatedBy", fields: [createdById], references: [id])
+  manager    User?            @relation("projectManager", fields: [managerId], references: [id])
+  tender     Tender?          @relation(fields: [tenderId], references: [id])
+  milestones ProjectMilestone[]
+
+  @@index([companyId])
+  @@index([tenderId])
+  @@map("projects")
+}
+
+model ProjectMilestone {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  color       String   @default("#3b82f6")
+  startDate   DateTime?
+  endDate     DateTime?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project    Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activities ProjectActivity[]
+
+  @@index([projectId])
+  @@map("project_milestones")
+}
+
+model ProjectActivity {
+  id             String         @id @default(cuid())
+  milestoneId    String
+  name           String
+  description    String?
+  assigneeId     String?
+  assigneeName   String?
+  teamId         String?
+  requiredOutput String[]       @default([])
+  startDate      DateTime?
+  endDate        DateTime?
+  isWithinDay    Boolean        @default(false)
+  startTime      String?
+  endTime        String?
+  status         ActivityStatus @default(NOT_STARTED)
+  progress       Int            @default(0)
+  color          String         @default("#10b981")
+  sortOrder      Int            @default(0)
+  assetIds       String[]       @default([])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  milestone  ProjectMilestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  assignee   User?            @relation("activityAssignee", fields: [assigneeId], references: [id])
+  team       WorkTeam?        @relation(fields: [teamId], references: [id])
+
+  @@index([milestoneId])
+  @@index([teamId])
+  @@index([assigneeId])
+  @@map("project_activities")
+}
+
+model WorkTeam {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company    Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  members    WorkTeamMember[]
+  activities ProjectActivity[]
+
+  @@index([companyId])
+  @@map("work_teams")
+}
+
+model WorkTeamMember {
+  id        String  @id @default(cuid())
+  teamId    String
+  userId    String?
+  name      String?
+  avatarUrl String?
+  skills    String[] @default([])
+
+  team WorkTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User?    @relation(fields: [userId], references: [id])
+
+  @@index([teamId])
+  @@index([userId])
+  @@map("work_team_members")
+}
+
+model ProjectAsset {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  category    String?
+  description String?
+  location    String?
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("project_assets")
 }

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Package, FileText, Users, Truck,
-  BarChart2, UserCog, Settings, Menu, X,
+  BarChart2, UserCog, Settings, Menu, X, FolderKanban,
 } from 'lucide-react'
 import type { CompanyRole } from '@/types'
 import type { Plan } from '@prisma/client'
@@ -22,6 +22,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['OWNER', 'ADMIN', 'MEMBER'], exact: true },
   { label: 'Products',  href: '/products',  icon: Package,         roles: ['OWNER', 'ADMIN', 'MEMBER'] },
   { label: 'Tenders',   href: '/tenders',   icon: FileText,        roles: ['OWNER', 'ADMIN', 'MEMBER'] },
+  { label: 'Projects',  href: '/projects',  icon: FolderKanban,    roles: ['OWNER', 'ADMIN', 'MEMBER'] },
   { label: 'Clients',   href: '/clients',   icon: Users,           roles: ['OWNER', 'ADMIN', 'MEMBER'] },
   { label: 'Logistics', href: '/logistics', icon: Truck,           roles: ['OWNER', 'ADMIN', 'MEMBER'] },
   { label: 'Finance',   href: '/finance',   icon: BarChart2,       roles: ['OWNER', 'ADMIN'] },
