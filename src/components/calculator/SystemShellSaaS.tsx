@@ -2,7 +2,7 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, FileText, Settings, BookOpen, Calculator, Lock, GitBranch, Copy, Link as LinkIcon, X, Network, List } from 'lucide-react'
+import { ArrowLeft, Save, FileText, Settings, BookOpen, Calculator, Lock, GitBranch, Copy, Link as LinkIcon, X, Network, List, Boxes, Library } from 'lucide-react'
 import type { MtoSystem, GlobalTag, CompanyProfile, JobLastResults } from '@/types'
 import type { Plan } from '@prisma/client'
 import { useCalcStore } from '@/store'
@@ -20,7 +20,7 @@ import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 
 type Tab = 'setup' | 'calculator' | 'runs'
-type SetupSubTab = 'setup' | 'materials' | 'dependency'
+type SetupSubTab = 'setup' | 'materials' | 'subassemblies' | 'library' | 'dependency'
 
 interface Props {
   system:      any
@@ -30,10 +30,13 @@ interface Props {
   plan:        Plan
   profile?:    CompanyProfile | null
   initialDraft?: { runs?: any[]; stockOptimMode?: string } | null
+  initialTab?:    Tab
+  initialSubTab?: SetupSubTab
 }
 
 export default function SystemShellSaaS({
   system: initialSystem, initialJobs, globalTags: initialTags, plan, profile, initialDraft,
+  initialTab, initialSubTab,
 }: Props) {
   const router   = useRouter()
   const { canWrite } = usePermissions()
@@ -41,8 +44,8 @@ export default function SystemShellSaaS({
   const planMeta = PLAN_META[plan]
   const calc     = useCalcStore()
 
-  const [tab, setTab] = useState<Tab>('setup')
-  const [setupSubTab, setSetupSubTab] = useState<SetupSubTab>('setup')
+  const [tab, setTab] = useState<Tab>(initialTab ?? 'setup')
+  const [setupSubTab, setSetupSubTab] = useState<SetupSubTab>(initialSubTab ?? 'setup')
   const [sys,          setSys]          = useState<MtoSystem>(initialSystem)
   const [jobs,         setJobs]         = useState(initialJobs)
   const [tags,         setTags]         = useState<GlobalTag[]>(initialTags)
@@ -57,6 +60,14 @@ export default function SystemShellSaaS({
   const [addingToTender,   setAddingToTender]   = useState(false)
   const [limitWarning,     setLimitWarning]     = useState<string | null>(null)
   const [duplicating,      setDuplicating]      = useState(false)
+
+  // Sync tab state → URL
+  useEffect(() => {
+    let slug: string
+    if (tab === 'setup') slug = setupSubTab === 'setup' ? 'setup' : setupSubTab
+    else slug = tab
+    router.replace(`/products/${sys.id}/${slug}`, { scroll: false })
+  }, [tab, setupSubTab, sys.id, router])
 
   const isSample = sys.name.includes('(Sample)')
 
@@ -236,9 +247,11 @@ export default function SystemShellSaaS({
   ]
 
   const SETUP_SUB_TABS: { id: SetupSubTab; label: string; Icon: React.ElementType }[] = [
-    { id: 'setup',      label: 'Settings',   Icon: Settings   },
-    { id: 'materials',  label: 'Materials',  Icon: BookOpen   },
-    { id: 'dependency', label: 'Dependency', Icon: Network    },
+    { id: 'setup',         label: 'Settings',       Icon: Settings },
+    { id: 'materials',     label: 'Materials',      Icon: BookOpen },
+    { id: 'subassemblies', label: 'Sub-assemblies', Icon: Boxes    },
+    { id: 'library',       label: 'Library',        Icon: Library  },
+    { id: 'dependency',    label: 'Dependency',     Icon: Network  },
   ]
 
   return (
@@ -387,7 +400,7 @@ export default function SystemShellSaaS({
             {/* Dependency sub-tab — full bleed, no padding */}
             {setupSubTab === 'dependency' && <SystemGraphTab sys={sys} />}
 
-            {/* Padded content for setup and materials sub-tabs */}
+            {/* Padded content for setup, materials, sub-assemblies, library sub-tabs */}
             {setupSubTab !== 'dependency' && (
               <div className="px-3 pt-3 pb-4 md:px-6 md:pt-4 md:pb-6">
                 {setupSubTab === 'setup' && (
@@ -401,7 +414,27 @@ export default function SystemShellSaaS({
                     globalTags={tags}
                     onGoToSetup={() => setSetupSubTab('setup')}
                     plan={plan}
-                    subTab="all"
+                    view="materials"
+                  />
+                )}
+                {setupSubTab === 'subassemblies' && (
+                  <MaterialsTab
+                    sys={sys}
+                    onUpdate={updateSystemGated}
+                    globalTags={tags}
+                    onGoToSetup={() => setSetupSubTab('setup')}
+                    plan={plan}
+                    view="brackets"
+                  />
+                )}
+                {setupSubTab === 'library' && (
+                  <MaterialsTab
+                    sys={sys}
+                    onUpdate={updateSystemGated}
+                    globalTags={tags}
+                    onGoToSetup={() => setSetupSubTab('setup')}
+                    plan={plan}
+                    view="library"
                   />
                 )}
               </div>

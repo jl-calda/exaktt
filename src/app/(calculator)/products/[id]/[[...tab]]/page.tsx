@@ -1,13 +1,28 @@
-// src/app/mto/system/[id]/page.tsx — MTO calculator
+// src/app/(calculator)/products/[id]/[[...tab]]/page.tsx
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getMtoSystem, getMtoJobs, getGlobalTags, getUserWithPlan, getProfile, getUserCompany, getRunDraft } from '@/lib/db/queries'
 import SystemShellSaaS from '@/components/calculator/SystemShellSaaS'
 
-interface PageProps { params: Promise<{ id: string }> }
+type Tab = 'setup' | 'calculator' | 'runs'
+type SetupSubTab = 'setup' | 'materials' | 'subassemblies' | 'library' | 'dependency'
+
+const SLUG_MAP: Record<string, { tab: Tab; subTab?: SetupSubTab }> = {
+  setup:         { tab: 'setup', subTab: 'setup' },
+  materials:     { tab: 'setup', subTab: 'materials' },
+  subassemblies: { tab: 'setup', subTab: 'subassemblies' },
+  library:       { tab: 'setup', subTab: 'library' },
+  dependency:    { tab: 'setup', subTab: 'dependency' },
+  calculator:    { tab: 'calculator' },
+  runs:          { tab: 'runs' },
+}
+
+interface PageProps { params: Promise<{ id: string; tab?: string[] }> }
 
 export default async function MtoSystemPage({ params }: PageProps) {
-  const { id } = await params
+  const { id, tab: tabSegments } = await params
+  const slug = tabSegments?.[0] ?? 'setup'
+  const mapped = SLUG_MAP[slug] ?? { tab: 'setup' as Tab, subTab: 'setup' as SetupSubTab }
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
@@ -49,6 +64,8 @@ export default async function MtoSystemPage({ params }: PageProps) {
       plan={plan}
       profile={profile as any}
       initialDraft={draft as any}
+      initialTab={mapped.tab}
+      initialSubTab={mapped.subTab}
     />
   )
 }
