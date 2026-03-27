@@ -16,6 +16,8 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
     const ctx = await requireAccess(user.id, 'projects', 'write')
 
     const body = await request.json()
+    if (body.startDate) body.startDate = new Date(body.startDate)
+    if (body.endDate) body.endDate = new Date(body.endDate)
     const milestone = await updateMilestone(milestoneId, ctx.companyId, body)
     return NextResponse.json(milestone)
   } catch (e) {

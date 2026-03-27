@@ -98,8 +98,9 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
-    const { data: updated } = await res.json()
-    if (updated) setProject(prev => ({ ...prev, ...updated }))
+    if (!res.ok) return
+    const updated = await res.json()
+    setProject(prev => ({ ...prev, ...updated }))
     setEditProject(false)
     setShowStatusMenu(false)
   }, [project.id])
@@ -112,26 +113,24 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      const { data: updated } = await res.json()
-      if (updated) {
-        setProject(prev => ({
-          ...prev,
-          milestones: prev.milestones.map(m => m.id === editing.id ? { ...m, ...updated } : m),
-        }))
-      }
+      if (!res.ok) return
+      const updated = await res.json()
+      setProject(prev => ({
+        ...prev,
+        milestones: prev.milestones.map(m => m.id === editing.id ? { ...m, ...updated } : m),
+      }))
     } else {
       const res = await fetch(`/api/projects/${project.id}/milestones`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      const { data: created } = await res.json()
-      if (created) {
-        setProject(prev => ({
-          ...prev,
-          milestones: [...prev.milestones, { ...created, activities: created.activities ?? [] }],
-        }))
-      }
+      if (!res.ok) return
+      const created = await res.json()
+      setProject(prev => ({
+        ...prev,
+        milestones: [...prev.milestones, { ...created, activities: created.activities ?? [] }],
+      }))
     }
     setMilestoneModal({ open: false })
   }, [project.id, milestoneModal.milestone])
@@ -152,34 +151,32 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      const { data: updated } = await res.json()
-      if (updated) {
-        setProject(prev => ({
-          ...prev,
-          milestones: prev.milestones.map(m =>
-            m.id === milestoneId
-              ? { ...m, activities: m.activities.map(a => a.id === editing.id ? { ...a, ...updated } : a) }
-              : m
-          ),
-        }))
-      }
+      if (!res.ok) return
+      const updated = await res.json()
+      setProject(prev => ({
+        ...prev,
+        milestones: prev.milestones.map(m =>
+          m.id === milestoneId
+            ? { ...m, activities: m.activities.map(a => a.id === editing.id ? { ...a, ...updated } : a) }
+            : m
+        ),
+      }))
     } else {
       const res = await fetch(`/api/projects/${project.id}/milestones/${milestoneId}/activities`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      const { data: created } = await res.json()
-      if (created) {
-        setProject(prev => ({
-          ...prev,
-          milestones: prev.milestones.map(m =>
-            m.id === milestoneId
-              ? { ...m, activities: [...m.activities, created] }
-              : m
-          ),
-        }))
-      }
+      if (!res.ok) return
+      const created = await res.json()
+      setProject(prev => ({
+        ...prev,
+        milestones: prev.milestones.map(m =>
+          m.id === milestoneId
+            ? { ...m, activities: [...m.activities, created] }
+            : m
+        ),
+      }))
     }
     setActivityModal({ open: false })
   }, [project.id, activityModal.activity])
