@@ -1,7 +1,7 @@
 // src/components/projects/ProjectFormModal.tsx
 'use client'
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { X, MapPin, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 
 const STATUS_OPTIONS = [
@@ -43,7 +43,35 @@ export default function ProjectFormModal({ initial, onSave, onClose }: Props) {
   const [startDate, setStartDate]     = useState(initial?.startDate ?? '')
   const [endDate, setEndDate]         = useState(initial?.endDate ?? '')
   const [managerName, setManagerName] = useState(initial?.managerName ?? '')
+  const [latitude, setLatitude]       = useState<number | null>(initial?.latitude ?? null)
+  const [longitude, setLongitude]     = useState<number | null>(initial?.longitude ?? null)
+  const [geocoding, setGeocoding]     = useState(false)
   const [saving, setSaving]           = useState(false)
+
+  const handleGeocode = async () => {
+    if (!address.trim()) return
+    setGeocoding(true)
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`,
+        { headers: { 'Accept': 'application/json' } }
+      )
+      const data = await res.json()
+      if (data.length > 0) {
+        setLatitude(parseFloat(data[0].lat))
+        setLongitude(parseFloat(data[0].lon))
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setGeocoding(false)
+    }
+  }
+
+  const clearCoords = () => {
+    setLatitude(null)
+    setLongitude(null)
+  }
 
   const handleSubmit = async () => {
     if (!name.trim()) return
@@ -57,6 +85,8 @@ export default function ProjectFormModal({ initial, onSave, onClose }: Props) {
       startDate: startDate || null,
       endDate: endDate || null,
       managerName: managerName || null,
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
       ...(initial?.tenderId ? { tenderId: initial.tenderId } : {}),
       ...(initial?.reportId ? { reportId: initial.reportId } : {}),
       ...(initial?.quotationNo ? { quotationNo: initial.quotationNo } : {}),
@@ -95,9 +125,34 @@ export default function ProjectFormModal({ initial, onSave, onClose }: Props) {
 
           <div>
             <label className="label mb-1">Address</label>
-            <input className="input w-full" value={address} onChange={e => setAddress(e.target.value)}
-              placeholder="Project address" />
+            <div className="flex gap-2">
+              <input className="input flex-1" value={address} onChange={e => setAddress(e.target.value)}
+                placeholder="Project address" />
+              <Button variant="ghost" size="sm" onClick={handleGeocode}
+                disabled={!address.trim() || geocoding}
+                title="Lookup coordinates">
+                <MapPin className={`w-3.5 h-3.5 ${geocoding ? 'animate-pulse' : ''}`} />
+              </Button>
+            </div>
           </div>
+
+          {(latitude !== null && longitude !== null) && (
+            <div className="animate-fade-in">
+              <div className="flex items-center justify-between mb-1">
+                <label className="label">Coordinates</label>
+                <button onClick={clearCoords} className="text-ink-faint hover:text-ink transition-colors"
+                  title="Clear coordinates">
+                  <XCircle className="w-3 h-3" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input className="input w-full text-ink-muted" value={latitude.toFixed(6)} readOnly
+                  tabIndex={-1} title="Latitude" />
+                <input className="input w-full text-ink-muted" value={longitude.toFixed(6)} readOnly
+                  tabIndex={-1} title="Longitude" />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>

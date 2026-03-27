@@ -1,7 +1,7 @@
 // src/components/projects/ActivityModal.tsx
 'use client'
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { X, CheckCircle2, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 
 const STATUS_OPTIONS = [
@@ -40,7 +40,38 @@ export default function ActivityModal({ activity, milestoneId, teams, assets, on
   const [startTime, setStartTime] = useState(activity?.startTime ?? '')
   const [endTime, setEndTime] = useState(activity?.endTime ?? '')
   const [selectedAssets, setSelectedAssets] = useState<string[]>(activity?.assetIds ?? [])
+  const [skills, setSkills] = useState<string[]>(activity?.skills ?? [])
+  const [skillInput, setSkillInput] = useState('')
+  const [outputs, setOutputs] = useState<string[]>(activity?.requiredOutput ?? [])
+  const [outputInput, setOutputInput] = useState('')
   const [saving, setSaving] = useState(false)
+
+  const handleStatusChange = (newStatus: string) => {
+    setStatus(newStatus)
+    if (newStatus === 'COMPLETED') setProgress(100)
+  }
+
+  const handleProgressChange = (newProgress: number) => {
+    setProgress(newProgress)
+    if (newProgress === 100) setStatus('COMPLETED')
+    else if (status === 'COMPLETED') setStatus('IN_PROGRESS')
+  }
+
+  const addSkill = () => {
+    const v = skillInput.trim()
+    if (v && !skills.includes(v)) setSkills(prev => [...prev, v])
+    setSkillInput('')
+  }
+
+  const removeSkill = (s: string) => setSkills(prev => prev.filter(x => x !== s))
+
+  const addOutput = () => {
+    const v = outputInput.trim()
+    if (v && !outputs.includes(v)) setOutputs(prev => [...prev, v])
+    setOutputInput('')
+  }
+
+  const removeOutput = (o: string) => setOutputs(prev => prev.filter(x => x !== o))
 
   const handleSave = async () => {
     if (!name.trim()) return
@@ -59,6 +90,8 @@ export default function ActivityModal({ activity, milestoneId, teams, assets, on
       startTime: isWithinDay ? startTime || null : null,
       endTime: isWithinDay ? endTime || null : null,
       assetIds: selectedAssets,
+      skills,
+      requiredOutput: outputs,
     })
     setSaving(false)
   }
@@ -91,7 +124,7 @@ export default function ActivityModal({ activity, milestoneId, teams, assets, on
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label mb-1">Status</label>
-              <select className="input w-full" value={status} onChange={e => setStatus(e.target.value)}>
+              <select className="input w-full" value={status} onChange={e => handleStatusChange(e.target.value)}>
                 {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
