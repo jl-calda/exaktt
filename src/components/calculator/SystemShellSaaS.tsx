@@ -250,8 +250,7 @@ export default function SystemShellSaaS({
           className="flex items-center gap-1 text-xs text-ink-faint hover:text-ink transition-colors shrink-0">
           <ArrowLeft className="w-3.5 h-3.5" />
         </button>
-        <span className="w-6 h-6 rounded-md flex items-center justify-center text-sm shrink-0"
-          style={{ background: (sys.color ?? 'var(--color-primary)') + '15' }}>
+        <span className="w-6 h-6 rounded-md flex items-center justify-center text-sm shrink-0 bg-surface-200/40">
           {sys.icon}
         </span>
         <span className="font-semibold text-xs text-ink truncate flex-1">{sys.name}</span>
@@ -291,8 +290,7 @@ export default function SystemShellSaaS({
         {/* Identity */}
         <div className="px-3 py-3 border-b border-surface-200">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0 shadow-sm"
-              style={{ background: (sys.color ?? 'var(--color-primary)') + '15', border: `1px solid ${sys.color ?? 'var(--color-primary)'}20` }}>
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0 shadow-sm bg-surface-200/40">
               {sys.icon}
             </span>
             <span className="font-semibold text-xs text-ink leading-tight truncate">{sys.name}</span>
@@ -320,8 +318,7 @@ export default function SystemShellSaaS({
         {/* Plan badge */}
         <div className="px-3 py-2 border-t border-surface-200">
           <button onClick={() => router.push('/billing')}
-            className="w-full text-[11px] font-semibold py-1 rounded-lg text-center transition-all hover:opacity-80"
-            style={{ background: planMeta.color + '18', color: planMeta.color }}>
+            className="w-full text-[11px] font-semibold py-1 rounded-lg text-center transition-all hover:opacity-80 bg-surface-100 text-ink">
             {planMeta.name}
           </button>
         </div>

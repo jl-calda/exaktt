@@ -136,8 +136,7 @@ export default function SetupTab({ sys, onUpdate, globalTags = [], onViewGraph, 
       {/* ── System Identity ── */}
       <div className="card overflow-hidden">
         <div className="card-header">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0 shadow-sm"
-            style={{ background: sys.color + '15', border: `1px solid ${sys.color}20` }}>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0 shadow-sm bg-surface-200/40">
             {sys.icon}
           </div>
           <span className="text-xs font-semibold text-ink">{sys.name || 'System Identity'}</span>

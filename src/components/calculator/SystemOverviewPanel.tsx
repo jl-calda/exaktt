@@ -126,8 +126,7 @@ export default function SystemOverviewPanel({ sys, onViewGraph }: Props) {
             <div className="text-xs font-bold text-ink truncate">System Overview</div>
             <div className="text-[10px] text-ink-faint">Live config summary</div>
           </div>
-          <span className="badge text-[10px] font-bold"
-            style={{ background: sys.color + '18', color: sys.color }}>
+          <span className="badge text-[10px] font-bold bg-surface-100 border border-surface-200/60 text-ink">
             {INPUT_MODELS.find(m => m.value === sys.inputModel)?.label ?? sys.inputModel}
           </span>
         </div>

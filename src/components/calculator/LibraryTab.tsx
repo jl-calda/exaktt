@@ -134,7 +134,6 @@ export default function LibraryTab({ plan, globalTags, onAddToSystem }: Props) {
         <div className="flex gap-1.5 flex-wrap mb-5">
           {globalTags.map(t => (
             <button key={t.id} onClick={() => setTagFilter(f => f === t.id ? null : t.id)}
-              style={{ background: tagFilter === t.id ? t.color + '18' : undefined, color: tagFilter === t.id ? t.color : undefined, borderColor: tagFilter === t.id ? t.color + '60' : undefined }}
               className={`filter-pill ${tagFilter === t.id ? 'active' : ''}`}>
               {t.name}
             </button>
@@ -330,8 +329,7 @@ function ItemForm({ draft, plan, globalTags, onSet, onSetSpec }: {
                   onClick={() => onSet('tags', active
                     ? (draft.tags ?? []).filter(x => x !== t.id)
                     : [...(draft.tags ?? []), t.id])}
-                  style={{ background: active ? t.color + '18' : undefined, color: active ? t.color : undefined, borderColor: active ? t.color + '60' : undefined }}
-                  className="badge border border-surface-300 text-ink-muted transition-all cursor-pointer px-3 py-1">
+                  className={"badge border transition-all cursor-pointer px-3 py-1 " + (active ? 'bg-surface-50 border-primary shadow-sm text-ink font-semibold' : 'border-surface-300 text-ink-muted')}>
                   {t.name}
                 </button>
               )

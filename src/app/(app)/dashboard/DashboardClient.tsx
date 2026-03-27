@@ -110,8 +110,7 @@ export default function DashboardClient({
                 {systems.map(sys => (
                   <button key={sys.id} onClick={() => router.push('/products/' + sys.id)}
                     className="w-full list-row group text-left">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0"
-                      style={{ background: sys.color + '18', border: `1.5px solid ${sys.color}30` }}>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0 bg-surface-200/40">
                       {sys.icon}
                     </div>
                     <div className="flex-1 min-w-0">

@@ -207,8 +207,7 @@ export default function CriteriaPanel({ customCriteria, customDims, inputModel, 
           return (
             <div key={cr.id} className={isEd ? 'bg-primary/5' : ''}>
               <div className="px-5 py-3 flex items-start gap-3">
-                <div className="w-9 h-9 flex items-center justify-center text-lg flex-shrink-0"
-                  style={{ background: (cr.color ?? '#0891b2') + '18', border: '1.5px solid ' + (cr.color ?? '#0891b2') + '30', borderRadius: 'var(--radius-card)' }}>
+                <div className="w-9 h-9 flex items-center justify-center text-lg flex-shrink-0 rounded-xl bg-surface-200/40">
                   {cr.icon ?? '🏷️'}
                 </div>
                 <div className="flex-1 min-w-0">

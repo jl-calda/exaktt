@@ -462,10 +462,8 @@ function ActivityForm({
                     const keys = d.criteriaKeys ?? []
                     set('criteriaKeys')(active ? keys.filter(k => k !== cr.key) : [...keys, cr.key])
                   }}
-                  className="text-xs px-2.5 py-1 border transition-all"
-                  style={active
-                    ? { borderRadius: 'var(--radius)', background: cr.color + '20', borderColor: cr.color, color: cr.color, fontWeight: 600 }
-                    : { borderRadius: 'var(--radius)', background: 'var(--color-surface-50)', borderColor: '#e2e8f0', color: '#64748b' }}>
+                  className={"text-xs px-2.5 py-1 border transition-all " + (active ? 'bg-surface-50 border-primary shadow-sm text-ink font-semibold' : 'bg-surface-50 border-surface-200 text-ink-muted')}
+                  style={{ borderRadius: 'var(--radius)' }}>
                   {cr.icon} {cr.name}
                 </button>
               )
@@ -605,7 +603,7 @@ export default function WorkActivitiesPanel({ workActivities, materials, customC
               <div className="px-4 py-2.5 flex items-center gap-2"
                 style={{ borderLeft: `3px solid ${PHASE_COLORS[phase]}` }}>
                 <Chevron className="w-3.5 h-3.5 flex-shrink-0" style={{ color: PHASE_COLORS[phase] }} />
-                <span className="w-6 h-6 rounded-md flex items-center justify-center text-sm flex-shrink-0" style={{ background: PHASE_COLORS[phase] + '15' }}>{phaseInfo.icon}</span>
+                <span className="w-6 h-6 rounded-md flex items-center justify-center text-sm flex-shrink-0 bg-surface-200/40">{phaseInfo.icon}</span>
                 <span className="font-semibold text-xs" style={{ color: PHASE_COLORS[phase] }}>{phaseInfo.label}</span>
                 <span className="text-[10px] text-ink-faint">({count})</span>
                 <span className="text-[10px] text-ink-faint ml-1">{phaseInfo.desc}</span>
