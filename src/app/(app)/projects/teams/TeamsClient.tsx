@@ -101,8 +101,9 @@ export default function TeamsClient({ initialTeams, companyUsers }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newTeamName.trim() }),
     })
-    const { data } = await res.json()
-    if (data) setTeams(prev => [{ ...data, members: data.members ?? [] }, ...prev])
+    if (!res.ok) { setSaving(false); return }
+    const team = await res.json()
+    setTeams(prev => [{ ...team, members: team.members ?? [] }, ...prev])
     setNewTeamName('')
     setShowCreate(false)
     setSaving(false)
@@ -126,12 +127,11 @@ export default function TeamsClient({ initialTeams, companyUsers }: Props) {
         skills: memberSkills ? memberSkills.split(',').map(s => s.trim()).filter(Boolean) : [],
       }),
     })
-    const { data } = await res.json()
-    if (data) {
-      setTeams(prev => prev.map(t =>
-        t.id === addMemberTeamId ? { ...t, members: [...t.members, data] } : t
-      ))
-    }
+    if (!res.ok) { setSaving(false); return }
+    const member = await res.json()
+    setTeams(prev => prev.map(t =>
+      t.id === addMemberTeamId ? { ...t, members: [...t.members, member] } : t
+    ))
     setMemberName('')
     setMemberUserId('')
     setMemberSkills('')
