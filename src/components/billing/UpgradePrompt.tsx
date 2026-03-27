@@ -42,7 +42,9 @@ export default function UpgradePrompt({ feature, message, description, plan = 'F
 
   if (isInline) return (
     <div className="flex items-start gap-3 bg-gradient-to-r from-primary-50 to-accent/5 border border-primary/20 rounded-xl p-4">
-      <Sparkles className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+      <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+        <Sparkles className="w-4 h-4 text-primary" />
+      </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-ink mb-0.5">Pro feature</p>
         <p className="text-xs text-ink-muted">{displayMsg ?? 'Upgrade to Pro to unlock this feature.'}</p>
@@ -67,7 +69,9 @@ export default function UpgradePrompt({ feature, message, description, plan = 'F
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-float animate-fade-in overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-br from-primary to-accent p-6 text-white text-center">
-          <Sparkles className="w-10 h-10 mx-auto mb-2 opacity-90" />
+          <span className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-2">
+            <Sparkles className="w-6 h-6 opacity-90" />
+          </span>
           <h2 className="font-display font-black text-xl">Upgrade to Pro</h2>
           <p className="text-sm opacity-80 mt-1">{displayMsg ?? 'Unlock ' + feature + ' and much more.'}</p>
         </div>

@@ -55,7 +55,9 @@ export default function OverviewTab({ library, suppliers, pos, dos, onNavigate }
               className="card p-4 text-left hover:shadow-panel hover:-translate-y-0.5 transition-all group">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-ink-faint font-medium">{s.label}</span>
-                <Icon className="w-3.5 h-3.5 text-ink-faint group-hover:text-primary transition-colors" />
+                <span className="w-6 h-6 rounded-lg bg-surface-200/40 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                  <Icon className="w-3.5 h-3.5 text-ink-faint group-hover:text-primary transition-colors" />
+                </span>
               </div>
               <div className="text-2xl font-bold text-ink">{s.value}</div>
             </button>
