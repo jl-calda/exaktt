@@ -150,11 +150,10 @@ export default function ProjectsClient({ initialProjects, teams }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
-    const { data: project } = await res.json()
-    if (project) {
-      setProjects(prev => [{ ...project, milestones: [] }, ...prev])
-      setShowCreate(false)
-    }
+    if (!res.ok) return
+    const project = await res.json()
+    setProjects(prev => [{ ...project, milestones: [] }, ...prev])
+    setShowCreate(false)
   }, [])
 
   const filterStatuses = ['ACTIVE', 'PLANNING', 'ON_HOLD', 'COMPLETED'] as const
