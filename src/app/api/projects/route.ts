@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     if (!body.name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
 
+    if (body.startDate) body.startDate = new Date(body.startDate)
+    if (body.endDate) body.endDate = new Date(body.endDate)
+
     const project = await createProject(ctx.companyId, ctx.userId, body)
     return NextResponse.json(project, { status: 201 })
   } catch (e) {
