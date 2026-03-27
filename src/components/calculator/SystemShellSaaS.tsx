@@ -307,7 +307,7 @@ export default function SystemShellSaaS({
             <button key={id}
               onClick={() => setTab(id)}
               className={`sidebar-item text-[11px] ${tab === id ? 'active' : ''}`}>
-              <span className={`icon-well ${tab === id ? 'bg-primary/15' : ''}`}>
+              <span className={`icon-well ${tab === id ? 'text-primary' : ''}`}>
                 <Icon className="w-[15px] h-[15px]" strokeWidth={tab === id ? 2.2 : 1.8} />
               </span>
               <span>{label}</span>

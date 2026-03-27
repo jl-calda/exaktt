@@ -42,8 +42,8 @@ export default function Sidebar({ role }: Props) {
     <Link href="/settings"
       onClick={() => setMobileOpen(false)}
       className={`sidebar-item${pathname.startsWith('/settings') ? ' active' : ''}`}>
-      <span className={`icon-well ${pathname.startsWith('/settings') ? 'bg-primary/15' : ''}`}>
-        <Settings className="w-[15px] h-[15px]" strokeWidth={1.8} />
+      <span className={`icon-well ${pathname.startsWith('/settings') ? 'text-primary' : ''}`}>
+        <Settings className="w-[15px] h-[15px]" strokeWidth={pathname.startsWith('/settings') ? 2.2 : 1.8} />
       </span>
       <span className="text-[13px] font-medium whitespace-nowrap
         md:opacity-0 md:group-hover/sb:opacity-100 transition-opacity duration-150 delay-75">
@@ -70,7 +70,7 @@ export default function Sidebar({ role }: Props) {
             <Link key={item.href} href={item.href}
               onClick={() => setMobileOpen(false)}
               className={`sidebar-item${active ? ' active' : ''}`}>
-              <span className={`icon-well ${active ? 'bg-primary/15' : ''}`}>
+              <span className={`icon-well ${active ? 'text-primary' : ''}`}>
                 <Icon className="w-[15px] h-[15px]" strokeWidth={active ? 2.2 : 1.8} />
               </span>
               <span className="text-[13px] font-medium whitespace-nowrap
