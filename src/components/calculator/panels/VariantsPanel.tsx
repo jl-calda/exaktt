@@ -245,7 +245,7 @@ export default function VariantsPanel({ variants, onChange }: Props) {
           return (
             <div key={v.id}>
               <div className="px-5 py-3 flex items-center gap-3" style={{ background: v.color + '08' }}>
-                <span className="text-xl">{v.icon}</span>
+                <span className="w-8 h-8 rounded-lg flex items-center justify-center text-lg flex-shrink-0" style={{ background: v.color + '15' }}>{v.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-sm text-ink">{v.name}</div>
                   <div className="text-xs text-ink-faint">{v.levelLabels.join(' → ')} · {v.nodes.length} top-level options</div>

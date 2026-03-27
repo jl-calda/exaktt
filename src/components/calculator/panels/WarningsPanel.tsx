@@ -195,7 +195,9 @@ export default function WarningsPanel({ warnings, customDims, onChange, inputMod
           return (
             <div key={w.id} className={isEd ? 'bg-primary/5' : ''}>
               <div className="px-5 py-3 flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <span className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                </span>
                 <div className="flex-1 min-w-0">
                   <div className="font-mono text-xs text-amber-700 font-semibold mb-0.5">
                     {PRIMITIVE_DIMS.some(p => p.key === cdKey) ? getDimLabel(cdKey, dimOverrides) : (dimInfo as any)?.name ?? cdKey}

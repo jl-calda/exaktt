@@ -507,7 +507,7 @@ export default function CustomBracketsPanel({ customBrackets, materials, library
               <td colSpan={5} className="p-0">
               <div className={isEd ? 'bg-primary/5' : ''}>
               <div className="px-5 py-3 flex items-start gap-3">
-                <span className="text-lg flex-shrink-0 mt-0.5">{bracket.icon}</span>
+                <span className="w-8 h-8 rounded-lg bg-surface-200/40 flex items-center justify-center text-base flex-shrink-0">{bracket.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-sm text-ink">{bracket.name}</span>
