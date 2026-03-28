@@ -1448,6 +1448,16 @@ export async function deleteActivity(activityId: string, companyId: string) {
   return prisma.projectActivity.delete({ where: { id: activityId } })
 }
 
+// ─── Company Members ────────────────────────────────────────────────────────
+
+export async function getCompanyMembers(companyId: string) {
+  return prisma.companyMember.findMany({
+    where: { companyId },
+    include: { user: { select: { id: true, name: true, email: true } } },
+    orderBy: { user: { name: 'asc' } },
+  })
+}
+
 // ─── Work Teams ─────────────────────────────────────────────────────────────
 
 export async function getWorkTeams(companyId: string) {
