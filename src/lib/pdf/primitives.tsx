@@ -7,6 +7,7 @@ import type { DocBlock, DocBranding, TableColumn } from '@/lib/doc-builder/types
 import { baseStyles, colors } from './styles'
 import { formatPrice, formatNumber } from './helpers'
 import { renderTiptapToPdf } from './richtext-to-pdf'
+import { resolveAllCells, indexToColLetter } from '@/lib/doc-builder/formula-engine'
 
 type BlockRenderContext = {
   branding: DocBranding
@@ -287,6 +288,58 @@ function FooterPdf({ block, ctx }: { block: Extract<DocBlock, { type: 'footer' }
   )
 }
 
+// ─── Spreadsheet Block ──────────────────────────────────────────────────────
+
+function SpreadsheetPdf({ block, ctx }: { block: Extract<DocBlock, { type: 'spreadsheet' }>; ctx: BlockRenderContext }) {
+  const S = baseStyles(ctx.accent)
+  const C = colors(ctx.accent)
+  const { columns, rows, cells } = block.data
+  const resolved = resolveAllCells(cells)
+
+  return (
+    <View style={{ marginBottom: 14 }}>
+      {/* Header row with column letters */}
+      <View style={S.tableHdr}>
+        {Array.from({ length: columns }, (_, c) => (
+          <Text key={c} style={{ ...S.tableHdrText, flex: 1, textAlign: 'center' }}>
+            {indexToColLetter(c)}
+          </Text>
+        ))}
+      </View>
+
+      {/* Data rows */}
+      {Array.from({ length: rows }, (_, r) => (
+        <View key={r} style={r % 2 === 0 ? S.tableRow : S.tableRowAlt}>
+          {Array.from({ length: columns }, (_, c) => {
+            const key = `${indexToColLetter(c)}${r + 1}`
+            const cell = cells[key]
+            const display = resolved[key] ?? cell?.value ?? ''
+            return (
+              <Text
+                key={c}
+                style={{
+                  flex: 1,
+                  fontSize: 8.5,
+                  textAlign: cell?.align ?? 'left',
+                  fontFamily: cell?.bold ? 'Helvetica-Bold' : 'Helvetica',
+                }}
+              >
+                {display || '\u2014'}
+              </Text>
+            )
+          })}
+        </View>
+      ))}
+    </View>
+  )
+}
+
+// ─── Page Break Block ───────────────────────────────────────────────────────
+
+function PageBreakPdf() {
+  return <View break />
+}
+
 // ─── Block Renderer Dispatch ─────────────────────────────────────────────────
 
 export function renderBlock(block: DocBlock, ctx: BlockRenderContext, key: number): React.ReactElement | null {
@@ -302,6 +355,8 @@ export function renderBlock(block: DocBlock, ctx: BlockRenderContext, key: numbe
     case 'spacer':        return <SpacerPdf key={key} block={block} />
     case 'divider':       return <DividerPdf key={key} block={block} ctx={ctx} />
     case 'footer':        return <FooterPdf key={key} block={block} ctx={ctx} />
+    case 'spreadsheet':   return <SpreadsheetPdf key={key} block={block} ctx={ctx} />
+    case 'page_break':    return <PageBreakPdf key={key} />
     default:              return null
   }
 }

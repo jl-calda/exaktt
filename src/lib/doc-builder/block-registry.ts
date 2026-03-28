@@ -66,6 +66,17 @@ export const BLOCK_REGISTRY: BlockMeta[] = [
       data: { height: 20 },
     }),
   },
+  {
+    type: 'page_break',
+    label: 'Page Break',
+    icon: 'SeparatorHorizontal',
+    category: 'layout',
+    description: 'Force a new page in the PDF',
+    createDefault: () => ({
+      type: 'page_break', id: uid(),
+      data: {},
+    }),
+  },
 
   // ── Content ──────────────────────────────────────────
   {
@@ -133,6 +144,18 @@ export const BLOCK_REGISTRY: BlockMeta[] = [
     createDefault: () => ({
       type: 'image', id: uid(),
       data: { images: [], columns: 1 },
+    }),
+  },
+
+  {
+    type: 'spreadsheet',
+    label: 'Spreadsheet',
+    icon: 'Grid3X3',
+    category: 'content',
+    description: 'Excel-like grid with formulas (SUM, AVERAGE, etc.)',
+    createDefault: () => ({
+      type: 'spreadsheet', id: uid(),
+      data: { columns: 5, rows: 8, cells: {} },
     }),
   },
 
