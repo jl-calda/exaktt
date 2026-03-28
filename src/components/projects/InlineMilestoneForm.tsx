@@ -44,7 +44,6 @@ export default function InlineMilestoneForm({
   const [saving, setSaving] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
 
-  // Color is auto-assigned, stored but not user-selectable
   const color = milestone?.color ?? defaultColor
 
   const handleSave = async () => {
@@ -54,8 +53,7 @@ export default function InlineMilestoneForm({
       await onSave({
         name: name.trim(),
         description: description.trim() || null,
-        color,
-        icon,
+        color, icon,
         startDate: startDate || null,
         endDate: endDate || null,
       })
@@ -69,7 +67,6 @@ export default function InlineMilestoneForm({
     if (e.key === 'Escape') { e.preventDefault(); onCancel() }
   }
 
-  /** Arrow up/down on date inputs to shift by 1 day */
   const handleDateKey = (
     e: React.KeyboardEvent<HTMLInputElement>,
     value: string,
@@ -80,11 +77,11 @@ export default function InlineMilestoneForm({
   }
 
   return (
-    <div className="animate-fade-in flex flex-col gap-1.5 py-1.5 px-2" onKeyDown={handleKeyDown}>
+    <div className="animate-fade-in flex flex-col gap-2.5 py-3 px-3" onKeyDown={handleKeyDown}>
       {/* Row 1: Icon + Name + Save + Cancel */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         <InlineEmojiPicker value={icon} onChange={setIcon} />
-        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} title={`Auto color: ${color}`} />
+        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} title={`Auto color`} />
         <input
           ref={nameRef}
           autoFocus
@@ -93,14 +90,8 @@ export default function InlineMilestoneForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <Button
-          variant="primary"
-          size="xs"
-          icon={<Check className="w-3.5 h-3.5" />}
-          disabled={!name.trim() || saving}
-          loading={saving}
-          onClick={handleSave}
-        >
+        <Button variant="primary" size="xs" icon={<Check className="w-3.5 h-3.5" />}
+          disabled={!name.trim() || saving} loading={saving} onClick={handleSave}>
           Save
         </Button>
         <Button variant="ghost" size="xs" onClick={onCancel} title="Cancel (Esc)">
@@ -109,36 +100,32 @@ export default function InlineMilestoneForm({
       </div>
 
       {/* Row 2: Description */}
-      <div className="flex items-center gap-1.5">
-        <input
-          className="input flex-1 h-7 text-xs min-w-0"
-          placeholder="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </div>
+      <input
+        className="input h-7 text-xs min-w-0 w-full"
+        placeholder="Description (optional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
 
-      {/* Row 3: Date inputs with arrow key adjustment */}
-      <div className="flex items-center gap-1.5 text-xs text-ink-faint">
-        <span className="text-[10px] text-ink-faint shrink-0">Dates</span>
+      {/* Row 3: Dates */}
+      <div className="flex items-center gap-2 text-xs text-ink-faint">
+        <span className="text-[10px] shrink-0">Dates</span>
         <input
-          type="date"
-          className="input h-6 text-[11px] w-[110px]"
+          type="date" className="input h-6 text-[11px] w-[110px]"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
           onKeyDown={(e) => handleDateKey(e, startDate, setStartDate)}
-          title="Arrow Up/Down to adjust date"
+          title="Arrow Up/Down to adjust"
         />
-        <span className="text-ink-faint">&rarr;</span>
+        <span>&rarr;</span>
         <input
-          type="date"
-          className="input h-6 text-[11px] w-[110px]"
+          type="date" className="input h-6 text-[11px] w-[110px]"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
           onKeyDown={(e) => handleDateKey(e, endDate, setEndDate)}
-          title="Arrow Up/Down to adjust date"
+          title="Arrow Up/Down to adjust"
         />
-        <span className="text-[10px] text-ink-faint italic">Auto-filled from activities</span>
+        <span className="text-[10px] italic">Auto-filled from activities</span>
       </div>
     </div>
   )

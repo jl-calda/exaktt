@@ -251,8 +251,8 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
   const sm = STATUS_META[project.status] ?? STATUS_META.PLANNING
 
   return (
-    <div className="min-h-full">
-      <main className="px-4 py-4 md:px-6 md:py-5">
+    <div className="flex flex-col min-h-screen">
+      <main className="flex flex-col flex-1 px-4 py-4 md:px-6 md:py-5">
         {/* Back + title */}
         <div className="flex items-center gap-3 mb-4">
           <button onClick={() => router.push('/projects')} className="text-ink-faint hover:text-ink">
@@ -356,6 +356,7 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
           newRow={newRow}
           teams={teams}
           assets={assets}
+          fillHeight
           onToggleCollapse={toggleCollapse}
           onStartEdit={(id) => { setNewRow(null); setEditingId(id) }}
           onCancelEdit={cancelEdit}
