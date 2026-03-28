@@ -1,7 +1,7 @@
 // src/components/projects/MapView.tsx
 'use client'
 import { useEffect, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -15,31 +15,37 @@ const STATUS_COLORS: Record<string, string> = {
 
 function createPillIcon(project: MapProject, isSelected: boolean, isDimmed: boolean) {
   const color = STATUS_COLORS[project.status] ?? '#64748b'
-  const teamCount = project.teams?.length ?? 0
-  const name = project.name.length > 20 ? project.name.slice(0, 18) + '…' : project.name
+  const teams = project.teams ?? []
+  const name = project.name.length > 22 ? project.name.slice(0, 20) + '…' : project.name
 
-  const html = `<div style="
-    display: flex; align-items: center; gap: 5px;
-    background: ${isSelected ? '#f8fafc' : 'white'};
-    border: 1px solid ${isSelected ? color : '#e2e8f0'};
-    border-left: 3px solid ${color};
-    border-radius: 8px;
-    padding: 3px 8px 3px 6px;
-    font-family: Inter, system-ui, sans-serif;
-    font-size: 11px; font-weight: 600; color: #1e293b;
-    white-space: nowrap;
-    box-shadow: ${isSelected ? '0 2px 8px rgba(0,0,0,0.18)' : '0 1px 3px rgba(0,0,0,0.12)'};
-    opacity: ${isDimmed ? '0.35' : '1'};
-    transition: opacity 0.2s;
-    cursor: pointer;
-  ">
-    <span style="width:6px;height:6px;border-radius:50%;background:${color};flex-shrink:0;"></span>
-    <span style="overflow:hidden;text-overflow:ellipsis;">${name}</span>
-    ${teamCount > 0 ? `<span style="
-      font-size:9px; font-weight:700; color:#2563eb;
-      background:#dbeafe; border-radius:6px; padding:0 4px;
-      min-width:14px; text-align:center; flex-shrink:0;
-    ">${teamCount}</span>` : ''}
+  const teamPills = teams.length > 0
+    ? `<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:3px;">
+        ${teams.map(t => `<span style="
+          display:inline-block;padding:1px 6px;border-radius:10px;
+          background:#dbeafe;color:#2563eb;font-size:10px;font-weight:500;
+          font-family:Inter,system-ui,sans-serif;
+        ">${t}</span>`).join('')}
+      </div>`
+    : ''
+
+  const html = `<div style="opacity:${isDimmed ? '0.35' : '1'};transition:opacity 0.2s;">
+    <div style="
+      display:flex;align-items:center;gap:5px;
+      background:${isSelected ? '#f8fafc' : 'white'};
+      border:1px solid ${isSelected ? color : '#e2e8f0'};
+      border-left:3px solid ${color};
+      border-radius:8px;
+      padding:3px 8px 3px 6px;
+      font-family:Inter,system-ui,sans-serif;
+      font-size:11px;font-weight:600;color:#1e293b;
+      white-space:nowrap;
+      box-shadow:${isSelected ? '0 2px 8px rgba(0,0,0,0.18)' : '0 1px 3px rgba(0,0,0,0.12)'};
+      cursor:pointer;
+    ">
+      <span style="width:6px;height:6px;border-radius:50%;background:${color};flex-shrink:0;"></span>
+      <span style="overflow:hidden;text-overflow:ellipsis;">${name}</span>
+    </div>
+    ${teamPills}
   </div>`
 
   return L.divIcon({
@@ -106,15 +112,12 @@ export default function MapView({ projects, selectedId, onSelect, dimmedIds }: P
 
       <style>{`
         .map-pill-marker { background: none !important; border: none !important; }
-        .map-team-tooltip { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
-        .map-team-tooltip::before { display: none !important; }
       `}</style>
 
       {projects.map(p => {
         if (p.latitude == null || p.longitude == null) return null
         const isSelected = p.id === selectedId
         const isDimmed = dimmedIds ? dimmedIds.has(p.id) : false
-        const hasTeams = (p.teams?.length ?? 0) > 0
 
         return (
           <Marker
@@ -125,30 +128,6 @@ export default function MapView({ projects, selectedId, onSelect, dimmedIds }: P
               click: () => onSelect(p.id),
             }}
           >
-            {/* Always-visible team tooltip below the marker */}
-            {hasTeams && (
-              <Tooltip
-                permanent
-                direction="bottom"
-                offset={[0, 4]}
-                className="map-team-tooltip"
-              >
-                <div style={{
-                  display: 'flex', gap: '3px', flexWrap: 'wrap',
-                  opacity: isDimmed ? 0.35 : 1, transition: 'opacity 0.2s',
-                }}>
-                  {p.teams!.map(t => (
-                    <span key={t} style={{
-                      display: 'inline-block', padding: '1px 6px', borderRadius: '10px',
-                      background: '#dbeafe', color: '#2563eb', fontSize: '10px', fontWeight: 500,
-                      fontFamily: 'Inter, system-ui, sans-serif',
-                    }}>{t}</span>
-                  ))}
-                </div>
-              </Tooltip>
-            )}
-
-            {/* Detailed popup on click */}
             <Popup>
               <div style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: '12px', maxWidth: '220px' }}>
                 <strong>{p.name}</strong>
