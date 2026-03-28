@@ -208,7 +208,7 @@ export default function InlineActivityForm({
       <div className="flex flex-col gap-1.5">
         <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Status</span>
         <div className="flex items-center gap-2">
-          <select className="input h-6 text-[11px] text-ink-muted px-1.5 w-32" value={status} onChange={e => setStatus(e.target.value)}>
+          <select className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-32" value={status} onChange={e => setStatus(e.target.value)}>
             {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
@@ -243,12 +243,12 @@ export default function InlineActivityForm({
       <div className="flex flex-col gap-1.5">
         <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Team</span>
         <div className="flex items-center gap-2">
-          <select className="input h-6 text-[11px] text-ink-muted px-1.5 flex-1" value={teamId} onChange={e => setTeamId(e.target.value)}>
+          <select className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 flex-1" value={teamId} onChange={e => setTeamId(e.target.value)}>
             <option value="">No team</option>
             {teams.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
           <input
-            className="input h-6 text-[11px] text-ink-muted px-1.5 flex-1 min-w-0"
+            className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 flex-1 min-w-0"
             placeholder="Assignee"
             value={assigneeName}
             onChange={e => setAssigneeName(e.target.value)}
@@ -260,7 +260,7 @@ export default function InlineActivityForm({
       {categories.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Category</span>
-          <select className="input h-6 text-[11px] text-ink-muted px-1.5 w-44" value={categoryId} onChange={e => setCategoryId(e.target.value)}>
+          <select className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-44" value={categoryId} onChange={e => setCategoryId(e.target.value)}>
             <option value="">General (default)</option>
             {categories.filter(c => !c.isDefault).map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
@@ -274,14 +274,14 @@ export default function InlineActivityForm({
         <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Schedule</span>
         <div className="flex items-center gap-2">
           <input
-            type="date" className="input h-6 text-[11px] text-ink-muted px-1.5 w-[110px]"
+            type="date" className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-[110px]"
             value={startDate} onChange={e => setStartDate(e.target.value)}
             onKeyDown={e => handleDateKey(e, startDate, setStartDate)}
             title="Arrow Up/Down to adjust"
           />
           <span className="text-[10px] text-ink-faint">&rarr;</span>
           <input
-            type="date" className="input h-6 text-[11px] text-ink-muted px-1.5 w-[110px]"
+            type="date" className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-[110px]"
             value={endDate} onChange={e => setEndDate(e.target.value)}
             onKeyDown={e => handleDateKey(e, endDate, setEndDate)}
             title="Arrow Up/Down to adjust"
@@ -313,9 +313,9 @@ export default function InlineActivityForm({
         </label>
         {isWithinDay && (
           <>
-            <input type="time" className="input h-6 text-[11px] text-ink-muted px-1.5 w-[80px]" value={startTime} onChange={e => setStartTime(e.target.value)} />
+            <input type="time" className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-[80px]" value={startTime} onChange={e => setStartTime(e.target.value)} />
             <span className="text-[10px] text-ink-faint">&ndash;</span>
-            <input type="time" className="input h-6 text-[11px] text-ink-muted px-1.5 w-[80px]" value={endTime} onChange={e => setEndTime(e.target.value)} />
+            <input type="time" className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-[80px]" value={endTime} onChange={e => setEndTime(e.target.value)} />
           </>
         )}
       </div>
