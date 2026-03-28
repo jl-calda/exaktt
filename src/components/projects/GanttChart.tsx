@@ -710,6 +710,35 @@ export default function GanttChart({
                   />
                 )
               })}
+              {/* Critical path continuous line */}
+              {showCriticalPath && (() => {
+                const criticalRows = rows
+                  .filter(r => r.type === 'activity' && r.bar && criticalPathIds.has(r.id))
+                  .sort((a, b) => a.bar!.left - b.bar!.left)
+                if (criticalRows.length < 2) return null
+                const points: string[] = []
+                criticalRows.forEach((row, i) => {
+                  const centerY = row.yOffset + ACTIVITY_ROW_H / 2
+                  const left = row.bar!.left
+                  const right = row.bar!.left + row.bar!.width
+                  if (i > 0) {
+                    points.push(`L${left},${centerY}`)
+                  } else {
+                    points.push(`M${left},${centerY}`)
+                  }
+                  points.push(`L${right},${centerY}`)
+                })
+                return (
+                  <path
+                    d={points.join(' ')}
+                    fill="none"
+                    stroke="#f97316"
+                    strokeWidth={2}
+                    strokeDasharray="6 3"
+                    opacity={0.5}
+                  />
+                )
+              })()}
             </svg>
           </div>
         )
