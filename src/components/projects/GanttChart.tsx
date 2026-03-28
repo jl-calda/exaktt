@@ -271,26 +271,29 @@ export default function GanttChart({
     if (!showCriticalPath) return new Set<string>()
 
     const activities = allProjects.flatMap(p => p.milestones.flatMap(m => m.activities))
-    if (activities.length === 0) return new Set<string>()
+    // Only consider activities with dates
+    const dated = activities.filter(a => a.startDate && a.endDate)
+    if (dated.length === 0) return new Set<string>()
 
-    const actMap = new Map(activities.map(a => [a.id, a]))
+    const actMap = new Map(dated.map(a => [a.id, a]))
     const dependents = new Map<string, string[]>()
-    activities.forEach(a => dependents.set(a.id, []))
-    activities.forEach(a => {
+    dated.forEach(a => dependents.set(a.id, []))
+    dated.forEach(a => {
       (a.dependsOnIds ?? []).forEach(depId => {
         dependents.get(depId)?.push(a.id)
       })
     })
 
+    // Use actual calendar dates for ES/EF (days from project start)
+    const projectStartDate = minDate(dated.map(a => new Date(a.startDate!)))
+    const toDays = (d: string) => differenceInDays(new Date(d), projectStartDate)
+
     // Duration in days (min 1)
-    const dur = (a: Activity) => {
-      if (!a.startDate || !a.endDate) return 1
-      return Math.max(differenceInDays(new Date(a.endDate), new Date(a.startDate)) + 1, 1)
-    }
+    const dur = (a: Activity) => Math.max(differenceInDays(new Date(a.endDate!), new Date(a.startDate!)) + 1, 1)
 
     // Topological sort (Kahn's algorithm)
     const inDeg = new Map<string, number>()
-    activities.forEach(a => {
+    dated.forEach(a => {
       inDeg.set(a.id, (a.dependsOnIds ?? []).filter(id => actMap.has(id)).length)
     })
     const queue: string[] = []
@@ -306,21 +309,23 @@ export default function GanttChart({
       })
     }
     // Cycle detected — abort
-    if (order.length !== activities.length) return new Set<string>()
+    if (order.length !== dated.length) return new Set<string>()
 
-    // Forward pass: ES (earliest start), EF (earliest finish)
+    // Forward pass: ES uses actual start date or dependency EF (whichever is later)
     const es = new Map<string, number>()
     const ef = new Map<string, number>()
     order.forEach(id => {
       const a = actMap.get(id)!
+      const actualStart = toDays(a.startDate!)
       const deps = (a.dependsOnIds ?? []).filter(d => actMap.has(d))
-      const earlyStart = deps.length > 0 ? Math.max(...deps.map(d => ef.get(d) ?? 0)) : 0
+      const depEnd = deps.length > 0 ? Math.max(...deps.map(d => ef.get(d) ?? 0)) : 0
+      const earlyStart = Math.max(actualStart, depEnd)
       es.set(id, earlyStart)
       ef.set(id, earlyStart + dur(a))
     })
 
     // Project duration
-    const projectEnd = Math.max(...activities.map(a => ef.get(a.id) ?? 0))
+    const projectEnd = Math.max(...dated.map(a => ef.get(a.id) ?? 0))
 
     // Backward pass: LS (latest start), LF (latest finish)
     const ls = new Map<string, number>()
@@ -336,7 +341,7 @@ export default function GanttChart({
 
     // Critical activities: float (LS - ES) === 0
     const critical = new Set<string>()
-    activities.forEach(a => {
+    dated.forEach(a => {
       const float = (ls.get(a.id) ?? 0) - (es.get(a.id) ?? 0)
       if (float === 0) critical.add(a.id)
     })

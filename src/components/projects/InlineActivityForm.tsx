@@ -208,7 +208,7 @@ export default function InlineActivityForm({
       <div className="flex flex-col gap-1.5">
         <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Status</span>
         <div className="flex items-center gap-2">
-          <select className="input h-6 text-xs px-1.5 w-28" value={status} onChange={e => setStatus(e.target.value)}>
+          <select className="input h-7 text-xs px-1.5 w-32" value={status} onChange={e => setStatus(e.target.value)}>
             {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <span className="text-[10px] text-ink-faint w-6 text-right font-mono">{progress}%</span>
@@ -224,12 +224,12 @@ export default function InlineActivityForm({
       <div className="flex flex-col gap-1.5">
         <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Team</span>
         <div className="flex items-center gap-2">
-          <select className="input h-6 text-xs px-1.5 flex-1" value={teamId} onChange={e => setTeamId(e.target.value)}>
+          <select className="input h-7 text-xs px-1.5 flex-1" value={teamId} onChange={e => setTeamId(e.target.value)}>
             <option value="">No team</option>
             {teams.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
           <input
-            className="input h-6 text-xs px-1.5 flex-1 min-w-0"
+            className="input h-7 text-xs px-1.5 flex-1 min-w-0"
             placeholder="Assignee"
             value={assigneeName}
             onChange={e => setAssigneeName(e.target.value)}
@@ -241,7 +241,7 @@ export default function InlineActivityForm({
       {categories.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Category</span>
-          <select className="input h-6 text-xs px-1.5 w-40" value={categoryId} onChange={e => setCategoryId(e.target.value)}>
+          <select className="input h-7 text-xs px-1.5 w-44" value={categoryId} onChange={e => setCategoryId(e.target.value)}>
             <option value="">General (default)</option>
             {categories.filter(c => !c.isDefault).map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
@@ -255,14 +255,14 @@ export default function InlineActivityForm({
         <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Schedule</span>
         <div className="flex items-center gap-2">
           <input
-            type="date" className="input h-6 text-xs px-1.5 w-[110px]"
+            type="date" className="input h-7 text-xs px-1.5 w-[110px]"
             value={startDate} onChange={e => setStartDate(e.target.value)}
             onKeyDown={e => handleDateKey(e, startDate, setStartDate)}
             title="Arrow Up/Down to adjust"
           />
           <span className="text-[10px] text-ink-faint">&rarr;</span>
           <input
-            type="date" className="input h-6 text-xs px-1.5 w-[110px]"
+            type="date" className="input h-7 text-xs px-1.5 w-[110px]"
             value={endDate} onChange={e => setEndDate(e.target.value)}
             onKeyDown={e => handleDateKey(e, endDate, setEndDate)}
             title="Arrow Up/Down to adjust"
@@ -270,7 +270,7 @@ export default function InlineActivityForm({
           <div className="flex items-center gap-0.5 shrink-0">
             <Clock size={10} className="text-ink-faint" />
             <input
-              type="number" className="input h-6 text-xs px-1 w-12 text-right font-mono"
+              type="number" className="input h-7 text-xs px-1 w-12 text-right font-mono"
               placeholder="hrs" value={estimatedHours}
               onChange={e => setEstimatedHours(e.target.value)}
               min={0} step={0.5}
@@ -294,9 +294,9 @@ export default function InlineActivityForm({
         </label>
         {isWithinDay && (
           <>
-            <input type="time" className="input h-6 text-xs px-1.5 w-[80px]" value={startTime} onChange={e => setStartTime(e.target.value)} />
+            <input type="time" className="input h-7 text-xs px-1.5 w-[80px]" value={startTime} onChange={e => setStartTime(e.target.value)} />
             <span className="text-[10px] text-ink-faint">&ndash;</span>
-            <input type="time" className="input h-6 text-xs px-1.5 w-[80px]" value={endTime} onChange={e => setEndTime(e.target.value)} />
+            <input type="time" className="input h-7 text-xs px-1.5 w-[80px]" value={endTime} onChange={e => setEndTime(e.target.value)} />
           </>
         )}
       </div>
@@ -481,46 +481,46 @@ export default function InlineActivityForm({
       </div>
 
       {/* Constraints */}
-      {siblingActivities.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-1 text-[10px] text-ink-faint cursor-pointer select-none shrink-0">
-              <button
-                type="button"
-                className={`w-7 h-4 rounded-full transition-colors relative ${showConstraints ? 'bg-primary' : 'bg-surface-200 border border-surface-300'}`}
-                onClick={() => setShowConstraints(!showConstraints)}
-              >
-                <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-surface-50 shadow-sm transition-transform ${showConstraints ? 'left-3.5' : 'left-0.5'}`} />
-              </button>
-              Constraints
-            </label>
-            <Link2 size={10} className="text-ink-faint" />
-            {showConstraints && dependsOnIds.length > 0 && (
-              <span className="text-[10px] text-ink-faint">{dependsOnIds.length} dep{dependsOnIds.length !== 1 ? 's' : ''}</span>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Constraints</span>
+          <label className="flex items-center gap-1 text-[10px] text-ink-faint cursor-pointer select-none shrink-0">
+            <button
+              type="button"
+              className={`w-7 h-4 rounded-full transition-colors relative ${showConstraints ? 'bg-primary' : 'bg-surface-200 border border-surface-300'}`}
+              onClick={() => setShowConstraints(!showConstraints)}
+            >
+              <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-surface-50 shadow-sm transition-transform ${showConstraints ? 'left-3.5' : 'left-0.5'}`} />
+            </button>
+          </label>
+          <Link2 size={10} className="text-ink-faint" />
+          {showConstraints && dependsOnIds.length > 0 && (
+            <span className="text-[10px] text-ink-faint">{dependsOnIds.length} dep{dependsOnIds.length !== 1 ? 's' : ''}</span>
+          )}
+        </div>
+        {showConstraints && (
+          <div className="flex flex-col gap-1 animate-fade-in">
+            {/* Selected dependencies as pills */}
+            {dependsOnIds.length > 0 && (
+              <div className="flex items-center gap-1 flex-wrap">
+                {dependsOnIds.map(id => {
+                  const act = siblingActivities.find(a => a.id === id)
+                  if (!act) return null
+                  return (
+                    <span key={id} className="inline-flex items-center gap-0.5 rounded-full px-1.5 h-5 text-[10px] border bg-amber-50 border-amber-300 text-amber-700">
+                      <Link2 size={8} className="shrink-0" />
+                      {act.name}
+                      <button type="button" className="text-amber-500 hover:text-amber-700"
+                        onClick={() => setDependsOnIds(prev => prev.filter(d => d !== id))}>
+                        <X size={8} />
+                      </button>
+                    </span>
+                  )
+                })}
+              </div>
             )}
-          </div>
-          {showConstraints && (
-            <div className="flex flex-col gap-1 animate-fade-in">
-              {/* Selected dependencies as pills */}
-              {dependsOnIds.length > 0 && (
-                <div className="flex items-center gap-1 flex-wrap">
-                  {dependsOnIds.map(id => {
-                    const act = siblingActivities.find(a => a.id === id)
-                    if (!act) return null
-                    return (
-                      <span key={id} className="inline-flex items-center gap-0.5 rounded-full px-1.5 h-5 text-[10px] border bg-amber-50 border-amber-300 text-amber-700">
-                        <Link2 size={8} className="shrink-0" />
-                        {act.name}
-                        <button type="button" className="text-amber-500 hover:text-amber-700"
-                          onClick={() => setDependsOnIds(prev => prev.filter(d => d !== id))}>
-                          <X size={8} />
-                        </button>
-                      </span>
-                    )
-                  })}
-                </div>
-              )}
-              {/* Checklist of sibling activities */}
+            {/* Checklist of sibling activities */}
+            {siblingActivities.length > 0 ? (
               <div className="border border-surface-200 rounded-lg py-0.5 max-h-[100px] overflow-y-auto">
                 {siblingActivities.filter(a => !dependsOnIds.includes(a.id)).map(a => (
                   <button key={a.id} type="button"
@@ -534,10 +534,12 @@ export default function InlineActivityForm({
                   <div className="px-2 py-1 text-[10px] text-ink-faint">All activities selected</div>
                 )}
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            ) : (
+              <div className="text-[10px] text-ink-faint">Add more activities to this milestone to set dependencies</div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
