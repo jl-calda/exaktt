@@ -60,13 +60,15 @@ function createPillIcon(project: MapProject, isSelected: boolean, isDimmed: bool
       font-family:${font};
       box-shadow:${isSelected ? '0 2px 8px rgba(0,0,0,0.18)' : '0 1px 4px rgba(0,0,0,0.1)'};
       cursor:pointer;
-      max-width:200px;
+      min-width:60px;
+      width:max-content;
+      max-width:220px;
     ">
       <div style="display:flex;align-items:center;gap:5px;">
         <span style="width:6px;height:6px;border-radius:50%;background:${color};flex-shrink:0;"></span>
-        <span style="font-size:12px;font-weight:700;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(name)}</span>
+        <span style="font-size:12px;font-weight:700;color:#1e293b;white-space:nowrap;">${esc(name)}</span>
       </div>
-      ${addr ? `<div style="font-size:10px;color:#6b7280;margin-top:2px;padding-left:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(addr)}</div>` : ''}
+      ${addr ? `<div style="font-size:10px;color:#6b7280;margin-top:2px;padding-left:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;">${esc(addr)}</div>` : ''}
       <div style="padding-left:11px;">
         ${teamHtml}
         ${skillHtml}
@@ -78,8 +80,8 @@ function createPillIcon(project: MapProject, isSelected: boolean, isDimmed: bool
   return L.divIcon({
     className: 'map-pill-marker',
     html,
-    iconSize: [0, 0],
-    iconAnchor: [0, 20],
+    iconSize: undefined as any,
+    iconAnchor: [0, 0],
   })
 }
 
