@@ -45,7 +45,27 @@ export default function DocBuilder({
   const [zoom, setZoom] = useState(100)
   const autoSaveRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  useEffect(() => { setDirty(true) }, [blocks, title, ref, status])
+  // Track initial load vs actual changes
+  const isInitialMount = useRef(true)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+    setDirty(true)
+  }, [blocks, title, ref, status])
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (dirty) {
+        e.preventDefault()
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?'
+      }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [dirty])
 
   useEffect(() => {
     if (!dirty || !onSave || !documentId) return
