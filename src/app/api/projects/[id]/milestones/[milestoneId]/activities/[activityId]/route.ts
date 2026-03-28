@@ -3,13 +3,13 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireAccess, ForbiddenError } from '@/lib/auth/access'
-import { updateActivity, deleteActivity } from '@/lib/db/queries'
+import { updateActivity, deleteActivity, getTasks, createTask } from '@/lib/db/queries'
 
 type Ctx = { params: Promise<{ id: string; milestoneId: string; activityId: string }> }
 
 export async function PATCH(request: NextRequest, { params }: Ctx) {
   try {
-    const { activityId } = await params
+    const { id: projectId, activityId } = await params
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -19,6 +19,29 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
     if (body.startDate) body.startDate = new Date(body.startDate)
     if (body.endDate) body.endDate = new Date(body.endDate)
     const activity = await updateActivity(activityId, ctx.companyId, body)
+
+    // Auto-create a linked task when assignee is set and no task exists yet
+    if (body.assigneeId) {
+      const linkedUrl = `/projects/${projectId}#activity-${activityId}`
+      const existing = await getTasks(ctx.companyId, { linkedUrl })
+      if (existing.length === 0) {
+        const outputs = activity.requiredOutput ?? []
+        const checklist = outputs.map((text: string, i: number) => ({
+          id: `output-${i}`, text, checked: false,
+        }))
+        await createTask(ctx.companyId, ctx.userId, {
+          title: activity.name,
+          description: activity.description || null,
+          assigneeId: body.assigneeId,
+          targetDate: activity.endDate ?? null,
+          linkedUrl,
+          linkedType: 'activity',
+          linkedLabel: activity.name,
+          checklist,
+        })
+      }
+    }
+
     return NextResponse.json(activity)
   } catch (e) {
     if (e instanceof ForbiddenError) return NextResponse.json({ error: e.message }, { status: 403 })
