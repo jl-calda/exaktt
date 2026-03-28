@@ -6,7 +6,7 @@ import {
   eachMonthOfInterval, startOfDay, addDays, subDays, min as minDate,
   max as maxDate,
 } from 'date-fns'
-import { ChevronDown, ChevronRight, Plus, Trash2, Pencil, GripVertical } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, Trash2, Pencil, GripVertical, CheckCircle2 } from 'lucide-react'
 import TeamPill from './TeamPill'
 import InlineMilestoneForm from './InlineMilestoneForm'
 import InlineActivityForm from './InlineActivityForm'
@@ -72,6 +72,8 @@ interface Props {
   onProjectClick?: (projectId: string) => void
   onReorderMilestones?: (projectId: string, milestoneIds: string[]) => void
   onReorderActivities?: (milestoneId: string, activityIds: string[]) => void
+  clients?: { id: string; name: string; address?: string | null }[]
+  members?: { userId: string; user: { id: string; name: string | null; email: string } }[]
   readOnly?: boolean
   showCriticalPath?: boolean
 }
@@ -83,7 +85,7 @@ export default function GanttChart({
   onSaveMilestone, onSaveActivity,
   onAddMilestone, onAddActivity, onDeleteMilestone, onDeleteActivity,
   onSaveProject, onProjectClick, onReorderMilestones, onReorderActivities,
-  readOnly, showCriticalPath,
+  clients, members, readOnly, showCriticalPath,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const hasEditing = editingId !== null || newRow !== null
@@ -213,7 +215,7 @@ export default function GanttChart({
     const subtitle = [p.clientName, p.address].filter(Boolean).join(' · ') || null
     pushRow({
       type: 'project', id: `project-${p.id}`, projectId: p.id,
-      label: p.name, subtitle, color: '#64748b', icon: '📊',
+      label: p.name, subtitle, color: '#ef4444', icon: '📊',
       bar: pBar, isCollapsed: isProjectCollapsed,
       isEditing: editingId === `project-${p.id}`,
       data: p,
@@ -460,6 +462,8 @@ export default function GanttChart({
                     {row.type === 'project' ? (
                       <InlineProjectForm
                         project={row.data}
+                        clients={clients}
+                        members={members}
                         onSave={async (data) => { await onSaveProject?.(data); onCancelEdit() }}
                         onCancel={onCancelEdit}
                       />
@@ -529,10 +533,12 @@ export default function GanttChart({
                   {/* Icon */}
                   <span className={`shrink-0 leading-none ${isProject ? 'text-sm' : 'text-xs'}`} title={row.icon}>{row.icon}</span>
 
-                  {/* Color dot */}
-                  {!isProject && (
+                  {/* Color dot / completed check */}
+                  {row.type === 'activity' && row.data?.status === 'COMPLETED' ? (
+                    <CheckCircle2 size={10} className="text-emerald-500 shrink-0" />
+                  ) : !isProject ? (
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: row.color }} />
-                  )}
+                  ) : null}
 
                   {/* Label */}
                   <div
@@ -549,7 +555,9 @@ export default function GanttChart({
                           ? `text-xs font-bold text-ink ${(onSaveProject || onProjectClick) ? 'hover:text-primary' : ''}`
                           : row.type === 'milestone'
                             ? `text-[11px] font-semibold text-ink ${!readOnly ? 'hover:text-primary' : ''}`
-                            : `text-[11px] text-ink-muted ${!readOnly ? 'hover:text-primary' : ''}`
+                            : row.type === 'activity' && row.data?.status === 'COMPLETED'
+                              ? `text-[11px] text-ink-faint line-through ${!readOnly ? 'hover:text-primary' : ''}`
+                              : `text-[11px] text-ink-muted ${!readOnly ? 'hover:text-primary' : ''}`
                       }`}
                     >
                       {row.label}
@@ -644,17 +652,18 @@ export default function GanttChart({
                       top: isProject ? 11 : row.type === 'milestone' ? 9 : 9,
                       height: isProject ? 20 : row.type === 'milestone' ? 14 : 8,
                       background: isProject
-                        ? '#64748bA0'
+                        ? '#ef444480'
                         : row.type === 'milestone'
                           ? `${row.color}B0`
                           : `${row.color}90`,
                       border: isProject
-                        ? '2px solid #64748bC0'
+                        ? 'none'
                         : row.type === 'milestone'
                           ? 'none'
                           : hasDeps
                             ? `2px dashed ${row.color}C0`
                             : `1px solid ${row.color}C0`,
+                      ...(row.type === 'activity' && row.data?.status === 'COMPLETED' ? { opacity: 0.5 } : {}),
                       borderRadius: isProject ? 10 : row.type === 'milestone' ? 7 : 4,
                       ...(isCritical ? { outline: '2px solid #f97316', outlineOffset: '1px' } : {}),
                     }}

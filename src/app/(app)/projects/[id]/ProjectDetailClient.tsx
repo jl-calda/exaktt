@@ -47,9 +47,9 @@ const STATUS_META: Record<string, { label: string; bg: string; color: string }> 
   CANCELLED: { label: 'Cancelled', bg: '#f9fafb', color: '#9ca3af' },
 }
 
-interface Props { project: Project; teams: any[]; assets: any[]; categories?: any[] }
+interface Props { project: Project; teams: any[]; assets: any[]; categories?: any[]; clients?: any[]; members?: any[] }
 
-export default function ProjectDetailClient({ project: initialProject, teams, assets, categories }: Props) {
+export default function ProjectDetailClient({ project: initialProject, teams, assets, categories, clients, members }: Props) {
   const router = useRouter()
   const [project, setProject] = useState(initialProject)
   const [viewMode, setViewMode] = useState<'days' | 'weeks' | 'months'>('weeks')
@@ -381,6 +381,8 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
           teams={teams}
           assets={assets}
           categories={categories}
+          clients={clients}
+          members={members}
           fillHeight
           showCriticalPath={showCriticalPath}
           onToggleCollapse={toggleCollapse}

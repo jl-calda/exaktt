@@ -30,11 +30,13 @@ interface Props {
     reportId?: string
     systemIds?: string[]
   }
+  clients?: { id: string; name: string; address?: string | null }[]
+  members?: { userId: string; user: { id: string; name: string | null; email: string } }[]
   onSave: (data: any) => void
   onClose: () => void
 }
 
-export default function ProjectFormModal({ initial, onSave, onClose }: Props) {
+export default function ProjectFormModal({ initial, clients, members, onSave, onClose }: Props) {
   const [name, setName]               = useState(initial?.name ?? '')
   const [clientName, setClientName]   = useState(initial?.clientName ?? '')
   const [address, setAddress]         = useState(initial?.address ?? '')
@@ -43,6 +45,7 @@ export default function ProjectFormModal({ initial, onSave, onClose }: Props) {
   const [startDate, setStartDate]     = useState(initial?.startDate ?? '')
   const [endDate, setEndDate]         = useState(initial?.endDate ?? '')
   const [managerName, setManagerName] = useState(initial?.managerName ?? '')
+  const [managerId, setManagerId]     = useState(initial?.managerId ?? '')
   const [latitude, setLatitude]       = useState<number | null>(initial?.latitude ?? null)
   const [longitude, setLongitude]     = useState<number | null>(initial?.longitude ?? null)
   const [geocoding, setGeocoding]     = useState(false)
@@ -85,6 +88,7 @@ export default function ProjectFormModal({ initial, onSave, onClose }: Props) {
       startDate: startDate || null,
       endDate: endDate || null,
       managerName: managerName || null,
+      managerId: managerId || null,
       latitude: latitude ?? null,
       longitude: longitude ?? null,
       ...(initial?.tenderId ? { tenderId: initial.tenderId } : {}),
@@ -119,8 +123,20 @@ export default function ProjectFormModal({ initial, onSave, onClose }: Props) {
 
           <div>
             <label className="label mb-1">Client</label>
-            <input className="input w-full" value={clientName} onChange={e => setClientName(e.target.value)}
-              placeholder="Client name" />
+            {clients && clients.length > 0 ? (
+              <select className="input w-full" value={clientName}
+                onChange={e => {
+                  const selected = clients.find(c => c.name === e.target.value)
+                  setClientName(e.target.value)
+                  if (selected?.address) setAddress(selected.address)
+                }}>
+                <option value="">No client</option>
+                {clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+              </select>
+            ) : (
+              <input className="input w-full" value={clientName} onChange={e => setClientName(e.target.value)}
+                placeholder="Client name" />
+            )}
           </div>
 
           <div>
@@ -186,8 +202,22 @@ export default function ProjectFormModal({ initial, onSave, onClose }: Props) {
 
           <div>
             <label className="label mb-1">Project Manager</label>
-            <input className="input w-full" value={managerName}
-              onChange={e => setManagerName(e.target.value)} placeholder="Manager name" />
+            {members && members.length > 0 ? (
+              <select className="input w-full" value={managerId}
+                onChange={e => {
+                  const selected = members.find(m => m.userId === e.target.value)
+                  setManagerId(e.target.value)
+                  setManagerName(selected?.user?.name ?? '')
+                }}>
+                <option value="">No PM</option>
+                {members.map(m => (
+                  <option key={m.userId} value={m.userId}>{m.user.name || m.user.email}</option>
+                ))}
+              </select>
+            ) : (
+              <input className="input w-full" value={managerName}
+                onChange={e => setManagerName(e.target.value)} placeholder="Manager name" />
+            )}
           </div>
         </div>
 

@@ -24,13 +24,15 @@ interface InlineProjectFormProps {
     id: string; name: string; clientName?: string | null
     address?: string | null; status: string
     startDate?: string | null; endDate?: string | null
-    contractValue: number; managerName?: string | null
+    contractValue: number; managerName?: string | null; managerId?: string | null
   }
+  clients?: { id: string; name: string; address?: string | null }[]
+  members?: { userId: string; user: { id: string; name: string | null; email: string } }[]
   onSave: (data: any) => Promise<void>
   onCancel: () => void
 }
 
-export default function InlineProjectForm({ project, onSave, onCancel }: InlineProjectFormProps) {
+export default function InlineProjectForm({ project, clients, members, onSave, onCancel }: InlineProjectFormProps) {
   const nameRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState(project?.name ?? '')
   const [clientName, setClientName] = useState(project?.clientName ?? '')
@@ -44,6 +46,7 @@ export default function InlineProjectForm({ project, onSave, onCancel }: InlineP
   )
   const [contractValue, setContractValue] = useState(project?.contractValue ?? 0)
   const [managerName, setManagerName] = useState(project?.managerName ?? '')
+  const [managerId, setManagerId] = useState(project?.managerId ?? '')
   const [saving, setSaving] = useState(false)
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -72,6 +75,7 @@ export default function InlineProjectForm({ project, onSave, onCancel }: InlineP
         endDate: endDate || null,
         contractValue,
         managerName: managerName || null,
+        managerId: managerId || null,
       })
     } finally { setSaving(false) }
   }
@@ -103,12 +107,27 @@ export default function InlineProjectForm({ project, onSave, onCancel }: InlineP
       <div className="flex flex-col gap-1.5">
         <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Client</span>
         <div className="flex items-center gap-2">
-          <input
-            className="input h-7 text-xs px-1.5 flex-1 min-w-0"
-            placeholder="Client name"
-            value={clientName}
-            onChange={e => setClientName(e.target.value)}
-          />
+          {clients && clients.length > 0 ? (
+            <select
+              className="input h-7 text-xs px-1.5 flex-1 min-w-0"
+              value={clientName}
+              onChange={e => {
+                const selected = clients.find(c => c.name === e.target.value)
+                setClientName(e.target.value)
+                if (selected?.address) setAddress(selected.address)
+              }}
+            >
+              <option value="">No client</option>
+              {clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+            </select>
+          ) : (
+            <input
+              className="input h-7 text-xs px-1.5 flex-1 min-w-0"
+              placeholder="Client name"
+              value={clientName}
+              onChange={e => setClientName(e.target.value)}
+            />
+          )}
           <input
             className="input h-7 text-xs px-1.5 flex-1 min-w-0"
             placeholder="Address"
@@ -153,12 +172,29 @@ export default function InlineProjectForm({ project, onSave, onCancel }: InlineP
             onChange={e => setContractValue(Number(e.target.value))}
             min={0}
           />
-          <input
-            className="input h-7 text-xs px-1.5 flex-1 min-w-0"
-            placeholder="Manager"
-            value={managerName}
-            onChange={e => setManagerName(e.target.value)}
-          />
+          {members && members.length > 0 ? (
+            <select
+              className="input h-7 text-xs px-1.5 flex-1 min-w-0"
+              value={managerId}
+              onChange={e => {
+                const selected = members.find(m => m.userId === e.target.value)
+                setManagerId(e.target.value)
+                setManagerName(selected?.user?.name ?? '')
+              }}
+            >
+              <option value="">No PM</option>
+              {members.map(m => (
+                <option key={m.userId} value={m.userId}>{m.user.name || m.user.email}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              className="input h-7 text-xs px-1.5 flex-1 min-w-0"
+              placeholder="Manager"
+              value={managerName}
+              onChange={e => setManagerName(e.target.value)}
+            />
+          )}
         </div>
       </div>
     </div>
