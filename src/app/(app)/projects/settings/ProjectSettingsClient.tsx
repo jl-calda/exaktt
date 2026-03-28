@@ -5,7 +5,6 @@ import {
   Settings, Tag, Plus, Check, X, Trash2, GripVertical,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import ProjectsSidebar from '@/components/projects/ProjectsSidebar'
 
 const PRESET_COLORS = [
   '#64748b', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6',
@@ -138,9 +137,7 @@ export default function ProjectSettingsClient({ initialCategories, initialHoursP
   }
 
   return (
-    <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
-      <ProjectsSidebar />
-      <div className="flex-1 min-w-0">
+    <>
       <main className="flex flex-col flex-1 px-4 py-4 md:px-6 md:py-5 max-w-3xl">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
@@ -321,7 +318,6 @@ export default function ProjectSettingsClient({ initialCategories, initialHoursP
           )}
         </div>
       </main>
-      </div>
-    </div>
+    </>
   )
 }

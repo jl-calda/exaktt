@@ -10,7 +10,6 @@ import {
 import { Button } from '@/components/ui/Button'
 import GanttChart from '@/components/projects/GanttChart'
 import GanttToolbar from '@/components/projects/GanttToolbar'
-import ProjectsSidebar from '@/components/projects/ProjectsSidebar'
 
 /* ── Types ── */
 type Activity = {
@@ -281,9 +280,7 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
   const sm = STATUS_META[project.status] ?? STATUS_META.PLANNING
 
   return (
-    <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
-      <ProjectsSidebar />
-      <div className="flex-1 min-w-0">
+    <>
       <main className="flex flex-col flex-1 px-4 py-4 md:px-6 md:py-5">
         {/* Title */}
         <div className="flex items-center gap-3 mb-4">
@@ -413,7 +410,6 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
           </div>
         )}
       </main>
-      </div>
-    </div>
+    </>
   )
 }
