@@ -1653,3 +1653,106 @@ export async function getTeamSchedule(teamId: string, companyId: string) {
     orderBy: { startDate: 'asc' },
   })
 }
+
+// ─── Documents ─────────────────────────────────────────────────────────────
+
+export async function getDocuments(companyId: string, docType?: string) {
+  return prisma.document.findMany({
+    where: {
+      companyId,
+      isArchived: false,
+      ...(docType ? { docType } : {}),
+    },
+    orderBy: { updatedAt: 'desc' },
+  })
+}
+
+export async function getDocumentById(id: string, companyId: string) {
+  return prisma.document.findFirst({
+    where: { id, companyId, isArchived: false },
+  })
+}
+
+export async function createDocument(companyId: string, createdById: string, data: {
+  docType: string
+  title?: string
+  ref?: string
+  tenderId?: string | null
+  poId?: string | null
+  doId?: string | null
+  blocks?: any
+  settings?: any
+}) {
+  // Snapshot company branding from Profile
+  const profile = await prisma.profile.findFirst({ where: { userId: createdById } })
+  const company = await prisma.company.findUnique({ where: { id: companyId } })
+
+  return prisma.document.create({
+    data: {
+      companyId,
+      createdById,
+      docType: data.docType,
+      title: data.title ?? 'Untitled',
+      ref: data.ref ?? null,
+      tenderId: data.tenderId ?? null,
+      poId: data.poId ?? null,
+      doId: data.doId ?? null,
+      blocks: data.blocks ?? [],
+      settings: data.settings ?? null,
+      companyName: profile?.companyName ?? company?.name ?? null,
+      companyLogo: profile?.logo ?? null,
+      companyAddr: profile?.address ?? null,
+      registrationNo: profile?.abn ?? null,
+      registrationLabel: profile?.registrationLabel ?? null,
+      accentColor: null,
+      currency: profile?.defaultCurrency ?? 'SGD',
+    },
+  })
+}
+
+export async function updateDocument(id: string, companyId: string, data: {
+  title?: string
+  ref?: string | null
+  status?: string
+  blocks?: any
+  settings?: any
+}) {
+  return prisma.document.update({
+    where: { id },
+    data: {
+      ...(data.title !== undefined ? { title: data.title } : {}),
+      ...(data.ref !== undefined ? { ref: data.ref } : {}),
+      ...(data.status !== undefined ? { status: data.status } : {}),
+      ...(data.blocks !== undefined ? { blocks: data.blocks } : {}),
+      ...(data.settings !== undefined ? { settings: data.settings } : {}),
+    },
+  })
+}
+
+export async function deleteDocument(id: string, companyId: string) {
+  return prisma.document.update({
+    where: { id },
+    data: { isArchived: true },
+  })
+}
+
+export async function getNextDocRef(companyId: string, docType: string): Promise<string> {
+  const year = new Date().getFullYear()
+
+  const seq = await prisma.$transaction(async (tx) => {
+    const existing = await tx.docSequence.findUnique({
+      where: { companyId_docType_year: { companyId, docType, year } },
+    })
+    if (existing) {
+      return tx.docSequence.update({
+        where: { id: existing.id },
+        data: { lastSeq: { increment: 1 } },
+      })
+    }
+    return tx.docSequence.create({
+      data: { companyId, docType, year, lastSeq: 1 },
+    })
+  })
+
+  return `${docType}-${year}-${String(seq.lastSeq).padStart(3, '0')}`
+}
