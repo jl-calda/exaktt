@@ -1,6 +1,7 @@
 // src/app/(app)/projects/overview/OverviewClient.tsx
 'use client'
 import { useState, useMemo, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Layers, Filter } from 'lucide-react'
 import GanttChart from '@/components/projects/GanttChart'
 import GanttToolbar from '@/components/projects/GanttToolbar'
@@ -49,6 +50,7 @@ interface Props {
 }
 
 export default function OverviewClient({ projects }: Props) {
+  const router = useRouter()
   const [viewMode, setViewMode] = useState<'days' | 'weeks' | 'months'>('weeks')
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set())
@@ -182,6 +184,8 @@ export default function OverviewClient({ projects }: Props) {
             teams={[]}
             assets={[]}
             fillHeight
+            readOnly
+            onProjectClick={(id) => router.push(`/projects/${id}`)}
             onToggleCollapse={toggleItem}
             onStartEdit={noop}
             onCancelEdit={noop}

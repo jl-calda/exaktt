@@ -28,6 +28,7 @@ type Activity = {
   teamId?: string | null; assetIds?: string[]; skills?: string[]; requiredOutput?: string[]
   estimatedHours?: number | null
   icon?: string | null
+  dependsOnIds?: string[]
 }
 type Milestone = {
   id: string; name: string; color: string; description?: string | null
@@ -68,6 +69,9 @@ interface Props {
   onDeleteMilestone: (milestoneId: string) => void
   onDeleteActivity: (milestoneId: string, activityId: string) => void
   onSaveProject?: (data: any) => Promise<void>
+  onProjectClick?: (projectId: string) => void
+  readOnly?: boolean
+  showCriticalPath?: boolean
 }
 
 export default function GanttChart({
@@ -76,7 +80,7 @@ export default function GanttChart({
   onToggleCollapse, onStartEdit, onCancelEdit,
   onSaveMilestone, onSaveActivity,
   onAddMilestone, onAddActivity, onDeleteMilestone, onDeleteActivity,
-  onSaveProject,
+  onSaveProject, onProjectClick, readOnly, showCriticalPath,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const hasEditing = editingId !== null || newRow !== null
@@ -170,18 +174,36 @@ export default function GanttChart({
     isCollapsed?: boolean
     isEditing?: boolean
     subtitle?: string | null
+    yOffset: number
     data: any
   }
 
   const isMultiProject = allProjects.length > 1 || !!projects
 
+  // Build dependedUponIds set (activities that are depended upon by others)
+  const dependedUponIds = useMemo(() => {
+    const set = new Set<string>()
+    allProjects.forEach(p => p.milestones.forEach(m =>
+      m.activities.forEach(a => (a.dependsOnIds ?? []).forEach(id => set.add(id)))
+    ))
+    return set
+  }, [allProjects])
+
   const rows: Row[] = []
+  let currentY = 0
+  const pushRow = (row: Omit<Row, 'yOffset'>) => {
+    rows.push({ ...row, yOffset: currentY } as Row)
+    const h = row.type === 'project' ? PROJECT_ROW_H
+      : (row.type === 'milestone' || row.type === 'new-milestone') ? MILESTONE_ROW_H
+      : ACTIVITY_ROW_H
+    currentY += h
+  }
   allProjects.forEach(p => {
     // Project row
     const pBar = getBarPos(p.startDate, p.endDate)
     const isProjectCollapsed = collapsedProjects?.has(p.id) ?? false
     const subtitle = [p.clientName, p.address].filter(Boolean).join(' · ') || null
-    rows.push({
+    pushRow({
       type: 'project', id: `project-${p.id}`, projectId: p.id,
       label: p.name, subtitle, color: '#64748b', icon: '📊',
       bar: pBar, isCollapsed: isProjectCollapsed,
@@ -195,7 +217,7 @@ export default function GanttChart({
       const mColor = getMilestoneColor(mi)
       const mBar = getBarPos(m.startDate, m.endDate)
       const mIcon = m.icon || getDefaultMilestoneIcon(mi)
-      rows.push({
+      pushRow({
         type: 'milestone', id: m.id, projectId: p.id, milestoneIndex: mi,
         label: m.name, color: mColor, icon: mIcon,
         bar: mBar, isCollapsed: collapsed.has(m.id), isEditing: editingId === m.id, data: m,
@@ -205,7 +227,7 @@ export default function GanttChart({
           const aColor = getActivityColor(mColor, ai)
           const aBar = getBarPos(a.startDate, a.endDate)
           const aIcon = a.icon || getDefaultActivityIcon(ai)
-          rows.push({
+          pushRow({
             type: 'activity', id: a.id, projectId: p.id, milestoneId: m.id,
             milestoneIndex: mi, activityIndex: ai,
             label: a.name, color: aColor, icon: aIcon, bar: aBar,
@@ -217,7 +239,7 @@ export default function GanttChart({
         })
         if (newRow?.type === 'activity' && newRow.milestoneId === m.id) {
           const newAi = m.activities.length
-          rows.push({
+          pushRow({
             type: 'new-activity', id: `new-activity-${m.id}`, projectId: p.id, milestoneId: m.id,
             milestoneIndex: mi, activityIndex: newAi,
             label: '', color: getActivityColor(mColor, newAi),
@@ -229,7 +251,7 @@ export default function GanttChart({
     })
     if (newRow?.type === 'milestone') {
       const newMi = p.milestones.length
-      rows.push({
+      pushRow({
         type: 'new-milestone', id: 'new-milestone', projectId: p.id,
         milestoneIndex: newMi,
         label: '', color: getMilestoneColor(newMi),
@@ -238,10 +260,88 @@ export default function GanttChart({
       })
     }
   })
+  const totalRowsH = currentY
 
   const labelW = hasEditing ? EDIT_LABEL_W : LABEL_W
 
   if (allProjects.every(p => p.milestones.length === 0) && !newRow) return null
+
+  // Critical Path Method (CPM) calculation
+  const criticalPathIds = useMemo(() => {
+    if (!showCriticalPath) return new Set<string>()
+
+    const activities = allProjects.flatMap(p => p.milestones.flatMap(m => m.activities))
+    if (activities.length === 0) return new Set<string>()
+
+    const actMap = new Map(activities.map(a => [a.id, a]))
+    const dependents = new Map<string, string[]>()
+    activities.forEach(a => dependents.set(a.id, []))
+    activities.forEach(a => {
+      (a.dependsOnIds ?? []).forEach(depId => {
+        dependents.get(depId)?.push(a.id)
+      })
+    })
+
+    // Duration in days (min 1)
+    const dur = (a: Activity) => {
+      if (!a.startDate || !a.endDate) return 1
+      return Math.max(differenceInDays(new Date(a.endDate), new Date(a.startDate)) + 1, 1)
+    }
+
+    // Topological sort (Kahn's algorithm)
+    const inDeg = new Map<string, number>()
+    activities.forEach(a => {
+      inDeg.set(a.id, (a.dependsOnIds ?? []).filter(id => actMap.has(id)).length)
+    })
+    const queue: string[] = []
+    inDeg.forEach((deg, id) => { if (deg === 0) queue.push(id) })
+    const order: string[] = []
+    while (queue.length > 0) {
+      const id = queue.shift()!
+      order.push(id)
+      ;(dependents.get(id) ?? []).forEach(depId => {
+        const newDeg = (inDeg.get(depId) ?? 1) - 1
+        inDeg.set(depId, newDeg)
+        if (newDeg === 0) queue.push(depId)
+      })
+    }
+    // Cycle detected — abort
+    if (order.length !== activities.length) return new Set<string>()
+
+    // Forward pass: ES (earliest start), EF (earliest finish)
+    const es = new Map<string, number>()
+    const ef = new Map<string, number>()
+    order.forEach(id => {
+      const a = actMap.get(id)!
+      const deps = (a.dependsOnIds ?? []).filter(d => actMap.has(d))
+      const earlyStart = deps.length > 0 ? Math.max(...deps.map(d => ef.get(d) ?? 0)) : 0
+      es.set(id, earlyStart)
+      ef.set(id, earlyStart + dur(a))
+    })
+
+    // Project duration
+    const projectEnd = Math.max(...activities.map(a => ef.get(a.id) ?? 0))
+
+    // Backward pass: LS (latest start), LF (latest finish)
+    const ls = new Map<string, number>()
+    const lf = new Map<string, number>()
+    for (let i = order.length - 1; i >= 0; i--) {
+      const id = order[i]
+      const a = actMap.get(id)!
+      const deps = dependents.get(id) ?? []
+      const lateFin = deps.length > 0 ? Math.min(...deps.map(d => ls.get(d) ?? projectEnd)) : projectEnd
+      lf.set(id, lateFin)
+      ls.set(id, lateFin - dur(a))
+    }
+
+    // Critical activities: float (LS - ES) === 0
+    const critical = new Set<string>()
+    activities.forEach(a => {
+      const float = (ls.get(a.id) ?? 0) - (es.get(a.id) ?? 0)
+      if (float === 0) critical.add(a.id)
+    })
+    return critical
+  }, [allProjects, showCriticalPath])
 
   // Row indent levels
   const getIndent = (row: Row) => {
@@ -251,7 +351,7 @@ export default function GanttChart({
   }
 
   return (
-    <div className={`card p-0 overflow-hidden mt-2 ${fillHeight ? 'min-h-[calc(100vh-280px)]' : ''}`}>
+    <div className={`card p-0 overflow-hidden mt-2 relative ${fillHeight ? 'min-h-[calc(100vh-280px)]' : ''}`}>
       {/* Header row */}
       <div className="flex border-b border-surface-200 bg-surface-100/60">
         <div className="shrink-0 h-10 flex items-center px-3 border-r border-surface-200 transition-all duration-300 ease-[var(--ease-spring)]"
@@ -311,6 +411,12 @@ export default function GanttChart({
                         teams={teams}
                         assets={assets}
                         categories={categories}
+                        siblingActivities={
+                          allProjects.flatMap(pr => pr.milestones)
+                            .find(m => m.id === row.milestoneId)
+                            ?.activities.filter(a => a.id !== row.data?.id)
+                            .map(a => ({ id: a.id, name: a.name })) ?? []
+                        }
                         onSave={async (data) => { await onSaveActivity(row.milestoneId!, data, row.data?.id) }}
                         onCancel={onCancelEdit}
                       />
@@ -350,19 +456,20 @@ export default function GanttChart({
 
                   {/* Label */}
                   <div
-                    className={`truncate flex-1 min-w-0 ${(isProject && onSaveProject) || !isProject ? 'cursor-pointer' : ''}`}
+                    className={`truncate flex-1 min-w-0 ${(isProject && (onSaveProject || onProjectClick)) || (!isProject && !readOnly) ? 'cursor-pointer' : ''}`}
                     onClick={() => {
-                      if (isProject && onSaveProject) onStartEdit(row.id)
-                      else if (!isProject) onStartEdit(row.id)
+                      if (isProject && onProjectClick) onProjectClick(row.projectId!)
+                      else if (isProject && onSaveProject) onStartEdit(row.id)
+                      else if (!isProject && !readOnly) onStartEdit(row.id)
                     }}
                   >
                     <span
                       className={`truncate block ${
                         isProject
-                          ? `text-xs font-bold text-ink ${onSaveProject ? 'hover:text-primary' : ''}`
+                          ? `text-xs font-bold text-ink ${(onSaveProject || onProjectClick) ? 'hover:text-primary' : ''}`
                           : row.type === 'milestone'
-                            ? 'text-[11px] font-semibold text-ink hover:text-primary'
-                            : 'text-[11px] text-ink-muted hover:text-primary'
+                            ? `text-[11px] font-semibold text-ink ${!readOnly ? 'hover:text-primary' : ''}`
+                            : `text-[11px] text-ink-muted ${!readOnly ? 'hover:text-primary' : ''}`
                       }`}
                     >
                       {row.label}
@@ -388,7 +495,7 @@ export default function GanttChart({
                   )}
 
                   {/* Actions */}
-                  {!isProject && (
+                  {!readOnly && !isProject && (
                     <div className="flex items-center gap-0.5 shrink-0">
                       {/* Add activity — always visible on milestones */}
                       {row.type === 'milestone' && (
@@ -444,7 +551,11 @@ export default function GanttChart({
                 )}
 
                 {/* Bar — project / milestone / activity with solid colors */}
-                {row.bar && !isEditRow && (
+                {row.bar && !isEditRow && (() => {
+                  const hasDeps = row.type === 'activity' && (row.data?.dependsOnIds?.length ?? 0) > 0
+                  const isDepTarget = row.type === 'activity' && dependedUponIds.has(row.id)
+                  const isCritical = showCriticalPath && criticalPathIds.has(row.id)
+                  return (
                   <div
                     className="absolute rounded cursor-pointer hover:brightness-110 transition-all"
                     style={{
@@ -461,12 +572,16 @@ export default function GanttChart({
                         ? '2px solid #64748bC0'
                         : row.type === 'milestone'
                           ? 'none'
-                          : `1px solid ${row.color}C0`,
+                          : hasDeps
+                            ? `2px dashed ${row.color}C0`
+                            : `1px solid ${row.color}C0`,
                       borderRadius: isProject ? 10 : row.type === 'milestone' ? 7 : 4,
+                      ...(isCritical ? { outline: '2px solid #f97316', outlineOffset: '1px' } : {}),
                     }}
                     onClick={() => {
-                      if (isProject && onSaveProject) onStartEdit(row.id)
-                      else if (!isProject) onStartEdit(row.id)
+                      if (isProject && onProjectClick) onProjectClick(row.projectId!)
+                      else if (isProject && onSaveProject) onStartEdit(row.id)
+                      else if (!isProject && !readOnly) onStartEdit(row.id)
                     }}
                   >
                     {/* Progress fill — fully opaque */}
@@ -480,8 +595,14 @@ export default function GanttChart({
                         {row.startTime}{row.endTime ? `\u2013${row.endTime}` : ''}
                       </span>
                     )}
+                    {/* Constraint indicator */}
+                    {hasDeps && (
+                      <span className="absolute -left-1 top-1/2 -translate-y-1/2 -translate-x-full text-[8px] text-amber-500" title="Has dependencies">
+                        🔗
+                      </span>
+                    )}
                   </div>
-                )}
+                  )})()}
 
                 {/* Milestone resource markers */}
                 {row.type === 'milestone' && row.bar && !isEditRow && (() => {
@@ -541,6 +662,58 @@ export default function GanttChart({
           </div>
         )
       })}
+
+      {/* Dependency arrows overlay */}
+      {(() => {
+        const rowMap = new Map(rows.map(r => [r.id, r]))
+        const arrows: { fromX: number; fromY: number; toX: number; toY: number; isCritical: boolean }[] = []
+        rows.forEach(row => {
+          if (row.type !== 'activity' || !row.bar) return
+          const deps = (row.data?.dependsOnIds ?? []) as string[]
+          deps.forEach(depId => {
+            const dep = rowMap.get(depId)
+            if (!dep?.bar) return
+            const depRowH = ACTIVITY_ROW_H
+            const rowH = ACTIVITY_ROW_H
+            arrows.push({
+              fromX: dep.bar.left + dep.bar.width,
+              fromY: dep.yOffset + depRowH / 2,
+              toX: row.bar!.left,
+              toY: row.yOffset + rowH / 2,
+              isCritical: showCriticalPath ? (criticalPathIds.has(row.id) && criticalPathIds.has(depId)) : false,
+            })
+          })
+        })
+        if (arrows.length === 0) return null
+        return (
+          <div className="absolute top-10 overflow-hidden pointer-events-none" style={{ left: labelW, right: 0, height: totalRowsH }}>
+            <svg width={totalW} height={totalRowsH} className="absolute top-0 left-0">
+              <defs>
+                <marker id="dep-arrow" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                  <path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8" opacity="0.7" />
+                </marker>
+                <marker id="dep-arrow-critical" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                  <path d="M0,0 L6,3 L0,6 Z" fill="#f97316" opacity="0.8" />
+                </marker>
+              </defs>
+              {arrows.map((a, i) => {
+                const dx = a.toX - a.fromX
+                const midX = a.fromX + dx * 0.5
+                return (
+                  <path key={i}
+                    d={`M${a.fromX},${a.fromY} C${midX},${a.fromY} ${midX},${a.toY} ${a.toX},${a.toY}`}
+                    fill="none"
+                    stroke={a.isCritical ? '#f97316' : '#94a3b8'}
+                    strokeWidth={a.isCritical ? 1.5 : 1}
+                    opacity={a.isCritical ? 0.8 : 0.5}
+                    markerEnd={a.isCritical ? 'url(#dep-arrow-critical)' : 'url(#dep-arrow)'}
+                  />
+                )
+              })}
+            </svg>
+          </div>
+        )
+      })()}
     </div>
   )
 }

@@ -15,9 +15,11 @@ interface Props {
   onAddMilestone?: () => void
   onCollapseAll: () => void
   onExpandAll: () => void
+  showCriticalPath?: boolean
+  onToggleCriticalPath?: () => void
 }
 
-export default function GanttToolbar({ viewMode, onViewModeChange, onAddMilestone, onCollapseAll, onExpandAll }: Props) {
+export default function GanttToolbar({ viewMode, onViewModeChange, onAddMilestone, onCollapseAll, onExpandAll, showCriticalPath, onToggleCriticalPath }: Props) {
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {/* View mode toggle */}
@@ -32,6 +34,17 @@ export default function GanttToolbar({ viewMode, onViewModeChange, onAddMileston
       </div>
 
       <div className="flex-1" />
+
+      {/* Critical Path toggle */}
+      {onToggleCriticalPath && (
+        <Button
+          variant={showCriticalPath ? 'primary' : 'ghost'}
+          size="xs"
+          onClick={onToggleCriticalPath}
+        >
+          Critical Path
+        </Button>
+      )}
 
       {/* Collapse/Expand */}
       <Button variant="ghost" size="xs" onClick={onCollapseAll}

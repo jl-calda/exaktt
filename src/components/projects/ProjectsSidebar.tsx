@@ -4,8 +4,10 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { FolderKanban, Layers, MapPin, UsersRound, Wrench, Settings } from 'lucide-react'
 
+const SUB_ROUTES = new Set(['overview', 'map', 'teams', 'assets', 'settings'])
+
 const NAV_ITEMS = [
-  { label: 'Projects', icon: FolderKanban, path: '/projects', exact: true },
+  { label: 'Dashboard', icon: FolderKanban, path: '/projects', exact: true },
   { label: 'Overview', icon: Layers, path: '/projects/overview' },
   { label: 'Map', icon: MapPin, path: '/projects/map' },
   { label: 'Teams', icon: UsersRound, path: '/projects/teams' },
@@ -27,8 +29,9 @@ export default function ProjectsSidebar({ counts }: Props) {
 
   const isActive = (item: typeof NAV_ITEMS[0]) => {
     if (item.exact) {
-      // /projects exact OR /projects/[id] detail pages
-      return pathname === item.path || /^\/projects\/[^/]+$/.test(pathname)
+      if (pathname === item.path) return true
+      const seg = pathname.match(/^\/projects\/([^/]+)/)?.[1]
+      return !!seg && !SUB_ROUTES.has(seg)
     }
     return pathname.startsWith(item.path)
   }

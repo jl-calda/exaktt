@@ -57,6 +57,7 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
   const [showStatusMenu, setShowStatusMenu] = useState(false)
+  const [showCriticalPath, setShowCriticalPath] = useState(false)
 
   // Inline editing state
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -337,6 +338,8 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
           }}
           onCollapseAll={collapseAll}
           onExpandAll={expandAll}
+          showCriticalPath={showCriticalPath}
+          onToggleCriticalPath={() => setShowCriticalPath(v => !v)}
         />
 
         {/* Gantt chart with inline editing */}
@@ -350,6 +353,7 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
           assets={assets}
           categories={categories}
           fillHeight
+          showCriticalPath={showCriticalPath}
           onToggleCollapse={toggleCollapse}
           onStartEdit={(id) => { setNewRow(null); setEditingId(id) }}
           onCancelEdit={cancelEdit}
