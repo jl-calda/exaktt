@@ -52,7 +52,7 @@ export default function OverviewClient({ projects }: Props) {
     [projects, statusFilter],
   )
 
-  const toggleProject = useCallback((id: string) => {
+  const toggleProjectCollapse = useCallback((id: string) => {
     setCollapsedProjects(prev => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
@@ -82,8 +82,8 @@ export default function OverviewClient({ projects }: Props) {
   const noopAsync = useCallback(async () => {}, [])
 
   return (
-    <div className="min-h-full">
-      <main className="px-4 py-4 md:px-6 md:py-5">
+    <div className="flex flex-col min-h-screen">
+      <main className="flex flex-col flex-1 px-4 py-4 md:px-6 md:py-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -122,7 +122,7 @@ export default function OverviewClient({ projects }: Props) {
           ))}
         </div>
 
-        {/* Stacked Gantt */}
+        {/* Unified Gantt — all projects on one shared timeline */}
         {filtered.length === 0 ? (
           <div className="card p-12 text-center">
             <Layers className="w-10 h-10 text-ink-faint mx-auto mb-3" />
@@ -132,62 +132,27 @@ export default function OverviewClient({ projects }: Props) {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {filtered.map(project => {
-              const isCollapsed = collapsedProjects.has(project.id)
-              const meta = STATUS_META[project.status] ?? STATUS_META.PLANNING
-
-              return (
-                <div key={project.id} className="card overflow-hidden">
-                  {/* Project header */}
-                  <button
-                    onClick={() => toggleProject(project.id)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 bg-surface-100/80 border-b border-surface-200/60 hover:bg-surface-100 transition-colors text-left"
-                  >
-                    <span className="text-ink-faint">
-                      {isCollapsed
-                        ? <span className="text-[10px]">&#9654;</span>
-                        : <span className="text-[10px]">&#9660;</span>}
-                    </span>
-                    <span className="font-semibold text-xs text-ink flex-1">{project.name}</span>
-                    {project.clientName && (
-                      <span className="text-[10px] text-ink-faint">{project.clientName}</span>
-                    )}
-                    <span className="badge text-[10px]" style={{ background: meta.color + '18', color: meta.color }}>
-                      {meta.label}
-                    </span>
-                    <span className="text-[10px] text-ink-faint">
-                      {project.milestones.length} milestone{project.milestones.length !== 1 ? 's' : ''}
-                    </span>
-                  </button>
-
-                  {/* Gantt body */}
-                  {!isCollapsed && (
-                    <div className="animate-fade-in">
-                      <GanttChart
-                        project={project}
-                        viewMode={viewMode}
-                        collapsed={collapsedItems}
-                        editingId={null}
-                        newRow={null}
-                        teams={[]}
-                        assets={[]}
-                        onToggleCollapse={toggleItem}
-                        onStartEdit={noop}
-                        onCancelEdit={noop}
-                        onSaveMilestone={noopAsync}
-                        onSaveActivity={noopAsync}
-                        onAddMilestone={noop}
-                        onAddActivity={noop}
-                        onDeleteMilestone={noop}
-                        onDeleteActivity={noop}
-                      />
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+          <GanttChart
+            projects={filtered}
+            viewMode={viewMode}
+            collapsed={collapsedItems}
+            collapsedProjects={collapsedProjects}
+            onToggleProjectCollapse={toggleProjectCollapse}
+            editingId={null}
+            newRow={null}
+            teams={[]}
+            assets={[]}
+            fillHeight
+            onToggleCollapse={toggleItem}
+            onStartEdit={noop}
+            onCancelEdit={noop}
+            onSaveMilestone={noopAsync}
+            onSaveActivity={noopAsync}
+            onAddMilestone={noop}
+            onAddActivity={noop}
+            onDeleteMilestone={noop}
+            onDeleteActivity={noop}
+          />
         )}
       </main>
     </div>
