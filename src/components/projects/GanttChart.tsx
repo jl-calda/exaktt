@@ -264,9 +264,7 @@ export default function GanttChart({
 
   const labelW = hasEditing ? EDIT_LABEL_W : LABEL_W
 
-  if (allProjects.every(p => p.milestones.length === 0) && !newRow) return null
-
-  // Critical Path Method (CPM) calculation
+  // Critical Path Method (CPM) calculation — must be before early return to satisfy React hooks rules
   const criticalPathIds = useMemo(() => {
     if (!showCriticalPath) return new Set<string>()
 
@@ -347,6 +345,8 @@ export default function GanttChart({
     })
     return critical
   }, [allProjects, showCriticalPath])
+
+  if (allProjects.every(p => p.milestones.length === 0) && !newRow) return null
 
   // Row indent levels
   const getIndent = (row: Row) => {
