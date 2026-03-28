@@ -1,12 +1,11 @@
-// src/app/(app)/products/ProductsClient.tsx — Products hub
+// src/app/(app)/products/ProductsClient.tsx — Products dashboard (grid + create)
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, FileText, Crown, Layers, Lock, Copy, BookOpen, ChevronRight, Trash2 } from 'lucide-react'
+import { Plus, Layers, Lock, Copy, Trash2 } from 'lucide-react'
 import { getLimits, atLimit } from '@/lib/limits'
-import { formatDistanceToNow, format } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 import type { Plan } from '@prisma/client'
-import { SAMPLE_SYSTEMS } from '@/lib/sample-systems'
 
 interface Props {
   user: {
@@ -35,7 +34,6 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
   const limits = getLimits(plan)
 
   const [systems,      setSystems]     = useState(initialSystems)
-  const [reports]                      = useState(initialReports)
   const [creating,        setCreating]       = useState(false)
   const [newName,         setNewName]        = useState('')
   const [newDesc,         setNewDesc]        = useState('')
@@ -47,9 +45,6 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
   const [duplicating,  setDuplicating]  = useState<string | null>(null)
   const [deleting,     setDeleting]     = useState<string | null>(null)
   const [confirmDel,   setConfirmDel]   = useState<{ id: string; name: string } | null>(null)
-  const [sampLoading,    setSampLoading]    = useState<string | null>(null)
-  const [showAllSamples, setShowAllSamples] = useState(false)
-  const [sampleCategory, setSampleCategory] = useState<string | null>(null)
 
   const systemsAtLimit = atLimit(systems.length, limits.maxSystems)
   const totalJobs      = systems.reduce((acc, s) => acc + (s._count?.jobs ?? 0), 0)
@@ -93,31 +88,11 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
     setDeleting(null)
   }
 
-  const handleFromTemplate = async (templateKey: string) => {
-    if (systemsAtLimit) { alert('System limit reached — upgrade to add more'); return }
-    setSampLoading(templateKey)
-    const res = await fetch('/api/mto/systems/from-template', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ templateKey }),
-    })
-    const { data, error } = await res.json()
-    if (data)  { setSystems(s => [data, ...s]); router.push('/products/' + data.id) }
-    if (error) alert(error)
-    setSampLoading(null)
-  }
-
-  const recentReports    = reports.slice(0, 5)
-  const sampleCategories = Array.from(new Set(SAMPLE_SYSTEMS.map(s => s.category)))
-  const filteredSamples  = sampleCategory
-    ? SAMPLE_SYSTEMS.filter(s => s.category === sampleCategory)
-    : SAMPLE_SYSTEMS
-  const visibleSamples   = showAllSamples ? filteredSamples : filteredSamples.slice(0, 6)
-
   return (
     <div className="min-h-full px-4 py-4 md:px-6 md:py-5 space-y-6 md:space-y-8">
 
       {/* ── Stats strip ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {[
           {
             label: 'Products',
@@ -125,28 +100,25 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
             sub:   plan === 'FREE' && limits.maxSystems !== -1
                      ? `${systems.length} / ${limits.maxSystems} used`
                      : null,
-            icon:  <BookOpen className="w-3.5 h-3.5" />,
             hero:  true,
             well:  'bg-emerald-100 text-emerald-600',
           },
-          { label: 'Jobs saved', value: totalJobs,      sub: null, icon: <Layers className="w-3.5 h-3.5" />, hero: false, well: 'bg-blue-100 text-blue-600' },
-          { label: 'Reports',    value: reports.length, sub: null, icon: <FileText className="w-3.5 h-3.5" />, hero: false, well: 'bg-amber-100 text-amber-600' },
-          plan === 'FREE'
-            ? { label: 'Upgrade', value: 'Pro', sub: 'Unlimited products', icon: <Crown className="w-3.5 h-3.5" />, upgrade: true, hero: false, well: 'bg-violet-100 text-violet-600' }
-            : { label: 'Plan', value: 'Pro', sub: 'All features unlocked', icon: <Crown className="w-3.5 h-3.5" />, upgrade: false, hero: false, well: 'bg-violet-100 text-violet-600' },
+          { label: 'Jobs saved', value: totalJobs, sub: null, hero: false, well: 'bg-blue-100 text-blue-600' },
+          { label: 'Reports', value: initialReports.length, sub: null, hero: false, well: 'bg-amber-100 text-amber-600' },
         ].map((s: any) => (
           <div key={s.label}
-            onClick={s.upgrade ? () => router.push('/billing') : undefined}
             className={s.hero
               ? 'card p-4 bg-primary border-transparent'
-              : `card p-4 ${s.upgrade ? 'cursor-pointer hover:shadow-panel hover:-translate-y-0.5 transition-all border-primary/20 bg-primary/5' : ''}`}>
+              : 'card p-4'}>
             <div className="flex items-center justify-between mb-2">
               <span className={s.hero ? 'text-xs text-white/70 font-medium' : 'text-xs text-ink-faint font-medium'}>{s.label}</span>
               <span className={s.hero
                 ? 'w-6 h-6 rounded-lg flex items-center justify-center bg-white/20 text-white'
-                : `w-6 h-6 rounded-lg flex items-center justify-center ${s.upgrade ? 'text-primary bg-surface-200/40' : s.well}`}>{s.icon}</span>
+                : `w-6 h-6 rounded-lg flex items-center justify-center ${s.well}`}>
+                <Layers className="w-3.5 h-3.5" />
+              </span>
             </div>
-            <div className={s.hero ? 'text-2xl font-bold text-white' : `text-2xl font-bold ${s.upgrade ? 'text-primary' : 'text-ink'}`}>{s.value}</div>
+            <div className={s.hero ? 'text-2xl font-bold text-white' : 'text-2xl font-bold text-ink'}>{s.value}</div>
             {s.sub && <div className={s.hero ? 'text-[11px] text-white/60 mt-0.5' : 'text-[11px] text-ink-faint mt-0.5'}>{s.sub}</div>}
           </div>
         ))}
@@ -195,8 +167,7 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
                   <label className="label">Icon</label>
                   <div className="flex items-center gap-1.5">
                     {/* Current icon */}
-                    <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center text-base shrink-0 shadow-sm"
-                      style={{ background: newColor + '15', border: `1px solid ${newColor}20` }}>
+                    <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center text-base shrink-0 shadow-sm bg-surface-200/40">
                       {newIcon}
                     </div>
                     {/* Quick presets */}
@@ -316,129 +287,6 @@ export default function ProductsClient({ user, initialSystems, initialReports }:
             )}
           </div>
         )}
-      </section>
-
-      {/* ── Recent Reports ───────────────────────────────────────── */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="section-title">
-            Recent Reports <span className="font-normal normal-case ml-1">{reports.length}</span>
-          </h2>
-        </div>
-
-        {recentReports.length === 0 ? (
-          <div className="card p-8 text-center">
-            <div className="text-3xl mb-2">📄</div>
-            <p className="text-xs text-ink-muted max-w-xs mx-auto">
-              Open a product, run a calculation, then click <strong>Generate Report</strong> to create your first PDF take-off.
-            </p>
-          </div>
-        ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Report</th>
-                  <th>Product</th>
-                  <th>Date</th>
-                  <th className="w-16" />
-                </tr>
-              </thead>
-              <tbody>
-                {recentReports.map((r: any) => (
-                  <tr key={r.id}>
-                    <td>
-                      <div className="font-medium text-ink text-xs">{r.title}</div>
-                      {r.jobRef && <div className="text-[11px] text-ink-faint">{r.jobRef}</div>}
-                    </td>
-                    <td className="text-xs text-ink-muted">
-                      {r.mtoSystem?.icon} {r.mtoSystem?.name}
-                    </td>
-                    <td className="text-xs text-ink-muted" suppressHydrationWarning>
-                      {format(new Date(r.reportDate), 'dd MMM yyyy')}
-                    </td>
-                    <td>
-                      <a href={`/api/mto/reports/${r.id}/pdf`} target="_blank"
-                        className="btn-ghost text-xs py-1 px-2 flex items-center gap-1">
-                        <FileText className="w-3 h-3" /> PDF
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {/* ── Sample Systems ───────────────────────────────────────── */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="section-title">Sample Systems</h2>
-            <p className="text-xs text-ink-faint mt-0.5">
-              Global templates available to all users — duplicate to your account to edit.
-            </p>
-          </div>
-          <button onClick={() => setShowAllSamples(v => !v)} className="btn-ghost text-xs">
-            {showAllSamples ? 'Show less' : `All ${SAMPLE_SYSTEMS.length} →`}
-          </button>
-        </div>
-
-        {/* Category filter pills */}
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          <button
-            onClick={() => { setSampleCategory(null); setShowAllSamples(false) }}
-            className={`filter-pill ${sampleCategory === null ? 'active' : ''}`}>
-            All <span className="opacity-60 ml-0.5">{SAMPLE_SYSTEMS.length}</span>
-          </button>
-          {sampleCategories.map(cat => (
-            <button key={cat}
-              onClick={() => { setSampleCategory(sampleCategory === cat ? null : cat); setShowAllSamples(false) }}
-              className={`filter-pill ${sampleCategory === cat ? 'active' : ''}`}>
-              {cat} <span className="opacity-60 ml-0.5">{SAMPLE_SYSTEMS.filter(s => s.category === cat).length}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-          {visibleSamples.map(s => (
-            <div key={s.key} className="relative group/card">
-              {/* Tooltip */}
-              <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-0 z-20 w-64
-                card p-3 shadow-float opacity-0 group-hover/card:opacity-100 transition-opacity duration-150">
-                <div className="font-semibold text-xs text-ink mb-1">{s.label}</div>
-                <div className="text-[11px] text-ink-faint leading-relaxed">{s.description}</div>
-                <div className="absolute top-full left-4 w-2 h-2 overflow-hidden">
-                  <div className="w-2 h-2 bg-surface-50 border-r border-b border-surface-200 rotate-45 -translate-y-1/2" />
-                </div>
-              </div>
-            <button
-              onClick={() => handleFromTemplate(s.key)}
-              disabled={sampLoading === s.key || systemsAtLimit}
-              className="card overflow-hidden flex flex-row w-full hover:shadow-panel hover:-translate-y-0.5 transition-all group disabled:opacity-50 p-0 text-left">
-              {/* Left colour strip */}
-              <div className="w-1 shrink-0 bg-surface-300" />
-              {/* Icon */}
-              <div className="flex items-center justify-center px-2.5 shrink-0 bg-surface-100">
-                <span className="text-lg">{s.template.icon}</span>
-              </div>
-              {/* Text */}
-              <div className="flex flex-col justify-center flex-1 min-w-0 px-3 py-2 gap-0.5 overflow-hidden">
-                <div className="text-[11px] font-semibold text-ink leading-tight line-clamp-1 group-hover:text-primary transition-colors">
-                  {sampLoading === s.key ? 'Opening…' : s.label}
-                </div>
-                <div className="text-[10px] text-ink-faint leading-snug line-clamp-1">
-                  {s.description}
-                </div>
-              </div>
-              <div className="flex items-center pr-3 shrink-0 text-[10px] font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                Open →
-              </div>
-            </button>
-            </div>
-          ))}
-        </div>
       </section>
 
       {/* ── Delete confirmation modal ────────────────────────────── */}
