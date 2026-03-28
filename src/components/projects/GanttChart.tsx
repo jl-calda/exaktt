@@ -358,8 +358,8 @@ export default function GanttChart({
                           <Plus className="w-3.5 h-3.5" />
                         </button>
                       )}
-                      {/* Edit + Delete — hover only */}
-                      <div className="opacity-0 group-hover/label:opacity-100 transition-opacity flex items-center gap-0.5">
+                      {/* Edit + Delete — hover on desktop, always visible on touch */}
+                      <div className="md:opacity-0 md:group-hover/label:opacity-100 transition-opacity flex items-center gap-0.5">
                         <button onClick={() => onStartEdit(row.id)} title="Edit"
                           className="p-0.5 text-ink-faint hover:text-ink">
                           <Pencil className="w-3 h-3" />
