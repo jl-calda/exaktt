@@ -1207,6 +1207,7 @@ export async function createTask(companyId: string, createdById: string, data: a
       linkedLabel: data.linkedLabel ?? null,
       checklist: data.checklist ?? [],
       ccUserIds: data.ccUserIds ?? [],
+      metadata: data.metadata ?? null,
     },
   })
   // Create notification for assignee

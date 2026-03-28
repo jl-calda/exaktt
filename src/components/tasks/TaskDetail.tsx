@@ -74,7 +74,13 @@ export default function TaskDetail({ taskId, onBack, onRefresh }: Props) {
         <div className="text-[10px] text-ink-faint mt-2 space-x-3">
           <span>From: {task.createdBy?.name}</span>
           <span>To: {task.assignee?.name}</span>
-          {task.targetDate && <span>Due: {format(new Date(task.targetDate), 'dd MMM yyyy')}</span>}
+          {task.startDate && task.targetDate ? (
+            <span>{format(new Date(task.startDate), 'dd MMM')} – {format(new Date(task.targetDate), 'dd MMM yyyy')}</span>
+          ) : task.targetDate ? (
+            <span>Due: {format(new Date(task.targetDate), 'dd MMM yyyy')}</span>
+          ) : task.startDate ? (
+            <span>Start: {format(new Date(task.startDate), 'dd MMM yyyy')}</span>
+          ) : null}
         </div>
       </div>
 
@@ -91,6 +97,23 @@ export default function TaskDetail({ taskId, onBack, onRefresh }: Props) {
             </>
           )}
         </div>
+
+        {/* Linked Source */}
+        {task.linkedUrl && (
+          <div>
+            <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wide mb-1">Source</div>
+            <a href={task.linkedUrl} className="text-xs text-primary hover:underline flex items-center gap-1.5">
+              <LinkIcon className="w-3 h-3" />
+              {task.linkedLabel || 'View linked page'}
+            </a>
+            {task.metadata?.source === 'activity' && (
+              <div className="flex items-center gap-3 mt-1 text-[10px] text-ink-faint">
+                {task.metadata.estimatedHours != null && <span>Est: {task.metadata.estimatedHours}h</span>}
+                {task.metadata.skills?.length > 0 && <span>Skills: {task.metadata.skills.join(', ')}</span>}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Checklist */}
         {(task.checklist ?? []).length > 0 && (

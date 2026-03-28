@@ -33,11 +33,21 @@ export async function POST(request: NextRequest, { params }: Ctx) {
         title: body.name,
         description: body.description || null,
         assigneeId: body.assigneeId,
+        startDate: body.startDate ?? null,
         targetDate: body.endDate ?? null,
         linkedUrl,
         linkedType: 'activity',
         linkedLabel: body.name,
         checklist,
+        metadata: {
+          source: 'activity',
+          projectId,
+          milestoneId,
+          activityId: activity.id,
+          estimatedHours: body.estimatedHours ?? null,
+          skills: body.skills ?? [],
+          teamId: body.teamId ?? null,
+        },
       })
     }
 
