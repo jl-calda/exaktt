@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, CheckCircle2, FileText, Clock, AlertTriangle, ChevronDown } from 'lucide-react'
+import { X, CheckCircle2, FileText, Clock, AlertTriangle, ChevronDown, Link2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import InlineEmojiPicker from './InlineEmojiPicker'
 
@@ -31,18 +31,20 @@ interface InlineActivityFormProps {
     estimatedHours?: number | null
     icon?: string | null
     categoryId?: string | null
+    dependsOnIds?: string[]
   }
   defaultColor: string
   defaultIcon: string
   teams: any[]
   assets: any[]
   categories?: { id: string; name: string; color: string; isDefault: boolean }[]
+  siblingActivities?: { id: string; name: string }[]
   onSave: (data: any) => Promise<void>
   onCancel: () => void
 }
 
 export default function InlineActivityForm({
-  activity, defaultColor, defaultIcon, teams, assets, categories = [], onSave, onCancel,
+  activity, defaultColor, defaultIcon, teams, assets, categories = [], siblingActivities = [], onSave, onCancel,
 }: InlineActivityFormProps) {
   const [name, setName] = useState(activity?.name ?? '')
   const [description, setDescription] = useState(activity?.description ?? '')
@@ -71,6 +73,8 @@ export default function InlineActivityForm({
   const [outputs, setOutputs] = useState<string[]>(activity?.requiredOutput ?? [])
   const [outputInput, setOutputInput] = useState('')
   const [showAssetDropdown, setShowAssetDropdown] = useState(false)
+  const [dependsOnIds, setDependsOnIds] = useState<string[]>(activity?.dependsOnIds ?? [])
+  const [showConstraints, setShowConstraints] = useState((activity?.dependsOnIds?.length ?? 0) > 0)
   const [saving, setSaving] = useState(false)
 
   const color = activity?.color ?? defaultColor
@@ -158,6 +162,7 @@ export default function InlineActivityForm({
         endTime: isWithinDay ? endTime || null : null,
         estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null,
         assetIds: selectedAssets, skills, requiredOutput: outputs,
+        dependsOnIds: showConstraints ? dependsOnIds : [],
       })
     } finally { setSaving(false) }
   }
@@ -474,6 +479,65 @@ export default function InlineActivityForm({
         </div>
       </div>
       </div>
+
+      {/* Constraints */}
+      {siblingActivities.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-1 text-[10px] text-ink-faint cursor-pointer select-none shrink-0">
+              <button
+                type="button"
+                className={`w-7 h-4 rounded-full transition-colors relative ${showConstraints ? 'bg-primary' : 'bg-surface-200 border border-surface-300'}`}
+                onClick={() => setShowConstraints(!showConstraints)}
+              >
+                <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-surface-50 shadow-sm transition-transform ${showConstraints ? 'left-3.5' : 'left-0.5'}`} />
+              </button>
+              Constraints
+            </label>
+            <Link2 size={10} className="text-ink-faint" />
+            {showConstraints && dependsOnIds.length > 0 && (
+              <span className="text-[10px] text-ink-faint">{dependsOnIds.length} dep{dependsOnIds.length !== 1 ? 's' : ''}</span>
+            )}
+          </div>
+          {showConstraints && (
+            <div className="flex flex-col gap-1 animate-fade-in">
+              {/* Selected dependencies as pills */}
+              {dependsOnIds.length > 0 && (
+                <div className="flex items-center gap-1 flex-wrap">
+                  {dependsOnIds.map(id => {
+                    const act = siblingActivities.find(a => a.id === id)
+                    if (!act) return null
+                    return (
+                      <span key={id} className="inline-flex items-center gap-0.5 rounded-full px-1.5 h-5 text-[10px] border bg-amber-50 border-amber-300 text-amber-700">
+                        <Link2 size={8} className="shrink-0" />
+                        {act.name}
+                        <button type="button" className="text-amber-500 hover:text-amber-700"
+                          onClick={() => setDependsOnIds(prev => prev.filter(d => d !== id))}>
+                          <X size={8} />
+                        </button>
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
+              {/* Checklist of sibling activities */}
+              <div className="border border-surface-200 rounded-lg py-0.5 max-h-[100px] overflow-y-auto">
+                {siblingActivities.filter(a => !dependsOnIds.includes(a.id)).map(a => (
+                  <button key={a.id} type="button"
+                    className="w-full px-2 py-1 text-left text-[10px] text-ink-muted hover:bg-surface-100 flex items-center gap-1.5 truncate"
+                    onClick={() => setDependsOnIds(prev => [...prev, a.id])}>
+                    <span className="w-3 h-3 rounded border border-surface-300 shrink-0" />
+                    <span className="truncate">{a.name}</span>
+                  </button>
+                ))}
+                {siblingActivities.filter(a => !dependsOnIds.includes(a.id)).length === 0 && (
+                  <div className="px-2 py-1 text-[10px] text-ink-faint">All activities selected</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

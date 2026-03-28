@@ -1409,6 +1409,7 @@ export async function createActivity(milestoneId: string, companyId: string, dat
   color?: string
   sortOrder?: number
   assetIds?: string[]
+  dependsOnIds?: string[]
   categoryId?: string | null
 }) {
   const milestone = await prisma.projectMilestone.findFirst({
