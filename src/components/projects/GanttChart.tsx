@@ -51,6 +51,7 @@ interface Props {
   newRow: { type: 'milestone' | 'activity'; milestoneId?: string } | null
   teams: any[]
   assets: any[]
+  categories?: { id: string; name: string; color: string; isDefault: boolean }[]
   // Project-level collapse (multi-project mode)
   collapsedProjects?: Set<string>
   onToggleProjectCollapse?: (id: string) => void
@@ -67,7 +68,7 @@ interface Props {
 }
 
 export default function GanttChart({
-  project, projects, viewMode, collapsed, editingId, newRow, teams, assets,
+  project, projects, viewMode, collapsed, editingId, newRow, teams, assets, categories,
   collapsedProjects, onToggleProjectCollapse, fillHeight,
   onToggleCollapse, onStartEdit, onCancelEdit,
   onSaveMilestone, onSaveActivity,
@@ -295,6 +296,7 @@ export default function GanttChart({
                         defaultIcon={row.icon}
                         teams={teams}
                         assets={assets}
+                        categories={categories}
                         onSave={async (data) => { await onSaveActivity(row.milestoneId!, data, row.data?.id) }}
                         onCancel={onCancelEdit}
                       />

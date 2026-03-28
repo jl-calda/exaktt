@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import {
   FolderKanban, Plus, Search, Activity, CheckCircle2, Clock, DollarSign, MapPin, Layers,
-  UsersRound, Wrench,
+  UsersRound, Wrench, Settings,
 } from 'lucide-react'
 import DataTable, { useTableSort, type Column, type GroupDef } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
@@ -185,6 +185,11 @@ export default function ProjectsClient({ initialProjects, teams }: Props) {
             <Link href="/projects/assets">
               <Button variant="secondary" size="sm" icon={<Wrench className="w-3.5 h-3.5" />}>
                 Assets
+              </Button>
+            </Link>
+            <Link href="/projects/settings">
+              <Button variant="secondary" size="sm" icon={<Settings className="w-3.5 h-3.5" />}>
+                Settings
               </Button>
             </Link>
             <Button variant="primary" size="sm" icon={<Plus className="w-3.5 h-3.5" />}

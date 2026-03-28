@@ -76,6 +76,7 @@ model Company {
   slug             String    @unique
   plan             Plan      @default(FREE)
   seatLimit        Int       @default(1)
+  hoursPerDay      Float     @default(8)
 
   // Stripe billing
   stripeCustomerId String?   @unique
@@ -118,6 +119,7 @@ model Company {
   projects               Project[]
   workTeams              WorkTeam[]
   projectAssets          ProjectAsset[]
+  activityCategories     ActivityCategory[]
 
   @@map("companies")
 }
@@ -1106,17 +1108,39 @@ model ProjectActivity {
   color          String         @default("#10b981")
   sortOrder      Int            @default(0)
   assetIds       String[]       @default([])
+  categoryId     String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  milestone  ProjectMilestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
-  assignee   User?            @relation("activityAssignee", fields: [assigneeId], references: [id])
-  team       WorkTeam?        @relation(fields: [teamId], references: [id])
+  milestone  ProjectMilestone  @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  assignee   User?             @relation("activityAssignee", fields: [assigneeId], references: [id])
+  team       WorkTeam?         @relation(fields: [teamId], references: [id])
+  category   ActivityCategory? @relation(fields: [categoryId], references: [id])
 
   @@index([milestoneId])
   @@index([teamId])
   @@index([assigneeId])
+  @@index([categoryId])
   @@map("project_activities")
+}
+
+model ActivityCategory {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  color     String   @default("#64748b")
+  sortOrder Int      @default(0)
+  isDefault Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company    Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  activities ProjectActivity[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("activity_categories")
 }
 
 model WorkTeam {
