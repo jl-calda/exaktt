@@ -241,6 +241,38 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
     }))
   }, [project.id])
 
+  const reorderMilestones = useCallback(async (_projectId: string, milestoneIds: string[]) => {
+    // Optimistic update
+    setProject(prev => {
+      const milestoneMap = new Map(prev.milestones.map(m => [m.id, m]))
+      const reordered = milestoneIds.map(id => milestoneMap.get(id)!).filter(Boolean)
+      return { ...prev, milestones: reordered }
+    })
+    await fetch(`/api/projects/${project.id}/reorder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'milestones', orderedIds: milestoneIds }),
+    })
+  }, [project.id])
+
+  const reorderActivities = useCallback(async (milestoneId: string, activityIds: string[]) => {
+    // Optimistic update
+    setProject(prev => ({
+      ...prev,
+      milestones: prev.milestones.map(m => {
+        if (m.id !== milestoneId) return m
+        const actMap = new Map(m.activities.map(a => [a.id, a]))
+        const reordered = activityIds.map(id => actMap.get(id)!).filter(Boolean)
+        return { ...m, activities: reordered }
+      }),
+    }))
+    await fetch(`/api/projects/${project.id}/reorder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'activities', parentId: milestoneId, orderedIds: activityIds }),
+    })
+  }, [project.id])
+
   const cancelEdit = useCallback(() => {
     setEditingId(null)
     setNewRow(null)
@@ -364,6 +396,8 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
           onAddActivity={(milestoneId) => { setEditingId(null); setNewRow({ type: 'activity', milestoneId }) }}
           onDeleteMilestone={deleteMilestone}
           onDeleteActivity={deleteActivity}
+          onReorderMilestones={reorderMilestones}
+          onReorderActivities={reorderActivities}
         />
 
         {/* Empty state */}

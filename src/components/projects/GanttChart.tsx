@@ -1,12 +1,12 @@
 // src/components/projects/GanttChart.tsx
 'use client'
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState, useCallback } from 'react'
 import {
   format, differenceInDays, eachDayOfInterval, eachWeekOfInterval,
   eachMonthOfInterval, startOfDay, addDays, subDays, min as minDate,
   max as maxDate,
 } from 'date-fns'
-import { ChevronDown, ChevronRight, Plus, Trash2, Pencil } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, Trash2, Pencil, GripVertical } from 'lucide-react'
 import TeamPill from './TeamPill'
 import InlineMilestoneForm from './InlineMilestoneForm'
 import InlineActivityForm from './InlineActivityForm'
@@ -70,6 +70,8 @@ interface Props {
   onDeleteActivity: (milestoneId: string, activityId: string) => void
   onSaveProject?: (data: any) => Promise<void>
   onProjectClick?: (projectId: string) => void
+  onReorderMilestones?: (projectId: string, milestoneIds: string[]) => void
+  onReorderActivities?: (milestoneId: string, activityIds: string[]) => void
   readOnly?: boolean
   showCriticalPath?: boolean
 }
@@ -80,10 +82,16 @@ export default function GanttChart({
   onToggleCollapse, onStartEdit, onCancelEdit,
   onSaveMilestone, onSaveActivity,
   onAddMilestone, onAddActivity, onDeleteMilestone, onDeleteActivity,
-  onSaveProject, onProjectClick, readOnly, showCriticalPath,
+  onSaveProject, onProjectClick, onReorderMilestones, onReorderActivities,
+  readOnly, showCriticalPath,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const hasEditing = editingId !== null || newRow !== null
+
+  // Drag-and-drop state
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const [dragType, setDragType] = useState<'milestone' | 'activity' | null>(null)
 
   // Resolve project list
   const allProjects = useMemo(
@@ -264,6 +272,61 @@ export default function GanttChart({
 
   const labelW = hasEditing ? EDIT_LABEL_W : LABEL_W
 
+  // Drag-and-drop handlers (after rows are built)
+  const handleDragStart = useCallback((e: React.DragEvent, rowId: string, type: 'milestone' | 'activity') => {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', rowId)
+    setDragId(rowId)
+    setDragType(type)
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent, rowType: string, rowId: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dragType === 'milestone' && rowType === 'milestone') setDragOverId(rowId)
+    else if (dragType === 'activity' && rowType === 'activity') setDragOverId(rowId)
+    else setDragOverId(null)
+  }, [dragType])
+
+  const handleDrop = useCallback((e: React.DragEvent, targetRow: Row) => {
+    e.preventDefault()
+    if (!dragId || !dragType) return
+
+    if (dragType === 'milestone' && targetRow.type === 'milestone' && targetRow.projectId) {
+      const proj = allProjects.find(p => p.id === targetRow.projectId)
+      if (!proj) return
+      const ids = proj.milestones.map(m => m.id)
+      const fromIdx = ids.indexOf(dragId)
+      const toIdx = ids.indexOf(targetRow.id)
+      if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return
+      ids.splice(fromIdx, 1)
+      ids.splice(toIdx, 0, dragId)
+      onReorderMilestones?.(targetRow.projectId, ids)
+    } else if (dragType === 'activity' && targetRow.type === 'activity' && targetRow.milestoneId) {
+      const sourceRow = rows.find(r => r.id === dragId)
+      if (!sourceRow || sourceRow.milestoneId !== targetRow.milestoneId) return
+      const milestone = allProjects.flatMap(p => p.milestones).find(m => m.id === targetRow.milestoneId)
+      if (!milestone) return
+      const ids = milestone.activities.map(a => a.id)
+      const fromIdx = ids.indexOf(dragId)
+      const toIdx = ids.indexOf(targetRow.id)
+      if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return
+      ids.splice(fromIdx, 1)
+      ids.splice(toIdx, 0, dragId)
+      onReorderActivities?.(targetRow.milestoneId, ids)
+    }
+
+    setDragId(null)
+    setDragOverId(null)
+    setDragType(null)
+  }, [dragId, dragType, allProjects, rows, onReorderMilestones, onReorderActivities])
+
+  const handleDragEnd = useCallback(() => {
+    setDragId(null)
+    setDragOverId(null)
+    setDragType(null)
+  }, [])
+
   // Critical Path Method (CPM) calculation — must be before early return to satisfy React hooks rules
   const criticalPathIds = useMemo(() => {
     if (!showCriticalPath) return new Set<string>()
@@ -432,9 +495,21 @@ export default function GanttChart({
                 <div
                   className={`flex items-center gap-1.5 px-2 group/label transition-colors ${
                     isProject ? 'hover:bg-surface-100/60' : 'hover:bg-surface-100/50'
-                  }`}
+                  } ${dragOverId === row.id ? 'bg-primary/[0.06] border-t-2 border-t-primary' : ''} ${dragId === row.id ? 'opacity-40' : ''}`}
                   style={{ height: rowH, paddingLeft: getIndent(row) }}
+                  draggable={!readOnly && !isProject && !isEditRow}
+                  onDragStart={e => handleDragStart(e, row.id, row.type === 'milestone' ? 'milestone' : 'activity')}
+                  onDragOver={e => handleDragOver(e, row.type, row.id)}
+                  onDrop={e => handleDrop(e, row)}
+                  onDragEnd={handleDragEnd}
                 >
+                  {/* Drag handle for milestones and activities */}
+                  {!readOnly && !isProject && (
+                    <span className="shrink-0 cursor-grab active:cursor-grabbing text-ink-faint/0 group-hover/label:text-ink-faint transition-colors">
+                      <GripVertical className="w-3 h-3" />
+                    </span>
+                  )}
+
                   {/* Collapse chevron for projects and milestones */}
                   {(isProject && isMultiProject) && (
                     <button onClick={() => onToggleProjectCollapse?.(row.projectId!)} className="shrink-0 text-ink-faint hover:text-ink">
