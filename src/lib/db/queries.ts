@@ -1295,6 +1295,26 @@ export async function getProjects(companyId: string) {
   })
 }
 
+export async function getProjectsForMap(companyId: string) {
+  return prisma.project.findMany({
+    where: { companyId, isArchived: false },
+    include: {
+      milestones: {
+        include: {
+          activities: {
+            include: {
+              team: { select: { id: true, name: true } },
+              assignee: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: { sortOrder: 'asc' },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
 export async function getProject(id: string, companyId: string) {
   return prisma.project.findFirst({
     where: { id, companyId },
