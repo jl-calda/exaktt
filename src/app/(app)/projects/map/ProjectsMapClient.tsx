@@ -4,8 +4,9 @@ import { useState, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { ArrowLeft, MapPin, Filter } from 'lucide-react'
+import { MapPin, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import ProjectsSidebar from '@/components/projects/ProjectsSidebar'
 
 /* Lazy-load map to avoid SSR issues with Leaflet */
 const MapView = dynamic(() => import('@/components/projects/MapView'), { ssr: false })
@@ -58,15 +59,12 @@ export default function ProjectsMapClient({ projects }: Props) {
   const noGeoCount = projects.length - geoProjects.length
 
   return (
-    <div className="min-h-full flex flex-col">
+    <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
+      <ProjectsSidebar />
+      <div className="flex-1 min-w-0 flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 md:px-6 flex items-center justify-between border-b border-surface-200 bg-surface-50">
         <div className="flex items-center gap-3">
-          <Link href="/projects">
-            <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-3.5 h-3.5" />}>
-              Projects
-            </Button>
-          </Link>
           <h1 className="font-semibold text-sm text-ink">Project Map</h1>
           <span className="text-[10px] text-ink-faint">
             {filtered.length} project{filtered.length !== 1 ? 's' : ''} on map
@@ -211,6 +209,7 @@ export default function ProjectsMapClient({ projects }: Props) {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   )

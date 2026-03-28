@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import Link from 'next/link'
 import {
-  ArrowLeft, Settings, Tag, Plus, Check, X, Trash2, GripVertical,
+  Settings, Tag, Plus, Check, X, Trash2, GripVertical,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import ProjectsSidebar from '@/components/projects/ProjectsSidebar'
 
 const PRESET_COLORS = [
   '#64748b', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6',
@@ -138,15 +138,12 @@ export default function ProjectSettingsClient({ initialCategories, initialHoursP
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
+      <ProjectsSidebar />
+      <div className="flex-1 min-w-0">
       <main className="flex flex-col flex-1 px-4 py-4 md:px-6 md:py-5 max-w-3xl">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Link href="/projects">
-            <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-3.5 h-3.5" />}>
-              Projects
-            </Button>
-          </Link>
           <Settings className="w-4 h-4 text-ink-faint" />
           <h1 className="font-semibold text-base text-ink">Project Settings</h1>
         </div>
@@ -324,6 +321,7 @@ export default function ProjectSettingsClient({ initialCategories, initialHoursP
           )}
         </div>
       </main>
+      </div>
     </div>
   )
 }
