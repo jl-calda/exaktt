@@ -24,7 +24,7 @@ interface InlineActivityFormProps {
   activity?: {
     id: string; name: string; description?: string | null
     status: string; progress: number; color: string
-    teamId?: string | null; assigneeName?: string | null
+    teamId?: string | null; assigneeId?: string | null; assignee?: { id: string; name?: string | null } | null; assigneeName?: string | null
     startDate?: string | null; endDate?: string | null
     isWithinDay?: boolean; startTime?: string | null; endTime?: string | null
     assetIds: string[]; skills?: string[]; requiredOutput: string[]
@@ -53,6 +53,7 @@ export default function InlineActivityForm({
   const [progress, setProgress] = useState(activity?.progress ?? 0)
   const [icon, setIcon] = useState(activity?.icon ?? defaultIcon)
   const [teamId, setTeamId] = useState(activity?.teamId ?? '')
+  const [assigneeId, setAssigneeId] = useState(activity?.assignee?.id ?? activity?.assigneeId ?? '')
   const [assigneeName, setAssigneeName] = useState(activity?.assigneeName ?? '')
   const [startDate, setStartDate] = useState(
     activity?.startDate ? new Date(activity.startDate).toISOString().split('T')[0] : ''
@@ -104,11 +105,11 @@ export default function InlineActivityForm({
     if (teamId) {
       const team = teams.find((t: any) => t.id === teamId)
       return (team?.members ?? [])
-        .map((m: any) => ({ value: m.user?.name || m.name || '', label: m.user?.name || m.name || 'Unnamed' }))
+        .map((m: any) => ({ value: m.user?.id || m.userId || '', label: m.user?.name || m.name || 'Unnamed' }))
         .filter((o: any) => o.value)
     }
     if (members.length > 0) {
-      return members.map(m => ({ value: m.user.name || m.user.email, label: m.user.name || m.user.email }))
+      return members.map(m => ({ value: m.user.id, label: m.user.name || m.user.email }))
     }
     return []
   }, [teamId, teams, members])
@@ -170,7 +171,7 @@ export default function InlineActivityForm({
       await onSave({
         name: name.trim(), description: description || null, status, progress, color, icon,
         categoryId: categoryId || null,
-        teamId: teamId || null, assigneeName: assigneeName || null,
+        teamId: teamId || null, assigneeId: assigneeId || null, assigneeName: assigneeName || null,
         startDate: startDate || null, endDate: endDate || null,
         isWithinDay, startTime: isWithinDay ? startTime || null : null,
         endTime: isWithinDay ? endTime || null : null,
@@ -267,8 +268,13 @@ export default function InlineActivityForm({
           {assigneeOptions.length > 0 ? (
             <select
               className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-full"
-              value={assigneeName}
-              onChange={e => setAssigneeName(e.target.value)}
+              value={assigneeId}
+              onChange={e => {
+                const id = e.target.value
+                setAssigneeId(id)
+                const opt = assigneeOptions.find((o: { value: string; label: string }) => o.value === id)
+                setAssigneeName(opt?.label ?? '')
+              }}
             >
               <option value="">No assignee</option>
               {assigneeOptions.map((o: { value: string; label: string }, i: number) => <option key={i} value={o.value}>{o.label}</option>)}
@@ -278,7 +284,7 @@ export default function InlineActivityForm({
               className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-full"
               placeholder="Assignee name"
               value={assigneeName}
-              onChange={e => setAssigneeName(e.target.value)}
+              onChange={e => { setAssigneeName(e.target.value); setAssigneeId('') }}
             />
           )}
         </div>
