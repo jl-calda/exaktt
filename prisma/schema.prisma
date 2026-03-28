@@ -120,6 +120,9 @@ model Company {
   workTeams              WorkTeam[]
   projectAssets          ProjectAsset[]
   activityCategories     ActivityCategory[]
+  documents              Document[]
+  docSequences           DocSequence[]
+  docTemplates           Json           @default("[]")
 
   @@map("companies")
 }
@@ -199,6 +202,7 @@ model User {
   projectsCreated            Project[]               @relation("projectCreatedBy")
   projectsManaged            Project[]               @relation("projectManager")
   activitiesAssigned         ProjectActivity[]       @relation("activityAssignee")
+  createdDocuments           Document[]              @relation("createdDocuments")
   workTeamMembers            WorkTeamMember[]
 
   @@map("users")
@@ -472,6 +476,7 @@ model Tender {
 
   items     TenderItem[]
   reports   TenderReport[]
+  documents Document[]
   projects  Project[]
 
   createdAt DateTime @default(now())
@@ -654,6 +659,7 @@ model PurchaseOrder {
 
   lines          PurchaseOrderLine[]
   deliveryOrders DeliveryOrder[]
+  documents      Document[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -694,7 +700,8 @@ model DeliveryOrder {
   deliveredDate DateTime?
   notes         String?
 
-  lines DeliveryOrderLine[]
+  lines     DeliveryOrderLine[]
+  documents Document[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1191,4 +1198,63 @@ model ProjectAsset {
 
   @@index([companyId])
   @@map("project_assets")
+}
+
+// ─── Document Builder ────────────────────────────────────────────────────────
+
+model Document {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User     @relation("createdDocuments", fields: [createdById], references: [id], onDelete: Cascade)
+
+  docType     String              // 'quotation', 'purchase_order', 'delivery_order', 'custom'
+  title       String   @default("Untitled")
+  ref         String?
+  status      String   @default("draft")  // 'draft' | 'final'
+
+  // Link to source record (polymorphic)
+  tenderId    String?
+  tender      Tender?         @relation(fields: [tenderId], references: [id], onDelete: SetNull)
+  poId        String?
+  po          PurchaseOrder?  @relation(fields: [poId], references: [id], onDelete: SetNull)
+  doId        String?
+  do          DeliveryOrder?  @relation(fields: [doId], references: [id], onDelete: SetNull)
+
+  // Content
+  blocks      Json     @default("[]")   // DocBlock[]
+  settings    Json?                      // { accentColor, currency, margins }
+
+  // Branding snapshot
+  companyName       String?
+  companyLogo       String?
+  companyAddr       String?
+  registrationNo    String?
+  registrationLabel String?
+  accentColor       String?
+  currency          String  @default("SGD")
+
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([tenderId])
+  @@index([poId])
+  @@index([doId])
+  @@map("documents")
+}
+
+model DocSequence {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  docType   String  // 'PO', 'DO', 'QUO', etc.
+  year      Int
+  lastSeq   Int     @default(0)
+
+  @@unique([companyId, docType, year])
+  @@index([companyId])
+  @@map("doc_sequences")
 }

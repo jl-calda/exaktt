@@ -1,7 +1,8 @@
 // src/components/logistics/PurchaseOrdersTab.tsx
 'use client'
 import { useState, useMemo } from 'react'
-import { Plus, Edit3, Trash2, Check, X, Package } from 'lucide-react'
+import { Plus, Edit3, Trash2, Check, X, Package, FileText, Loader2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Select } from '@/components/ui/Select'
@@ -41,11 +42,37 @@ const PO_UNITS = [
 const BLANK_LINE = (): LineItem => ({ _key: nanoid(6), libraryItemId: '', itemName: '', itemUnit: 'each', qtyOrdered: 1, unitPrice: '' })
 
 export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }: Props) {
+  const router = useRouter()
   const [filter,     setFilter]     = useState<POStatus | 'all'>('all')
   const [showModal,  setShowModal]  = useState(false)
   const [editing,    setEditing]    = useState<any | null>(null)
   const [loading,    setLoading]    = useState(false)
   const [deleteId,   setDeleteId]   = useState<string | null>(null)
+  const [creatingDoc, setCreatingDoc] = useState<string | null>(null)
+
+  async function createDocForPO(po: any) {
+    setCreatingDoc(po.id)
+    try {
+      const res = await fetch('/api/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          docType: 'purchase_order',
+          title: `Purchase Order – ${po.ref || po.supplierName || 'Untitled'}`,
+          poId: po.id,
+          blocks: [], // Will be filled with preset on the builder page
+        }),
+      })
+      const json = await res.json()
+      if (json.data?.id) {
+        router.push(`/logistics/documents/${json.data.id}`)
+      }
+    } catch (err) {
+      console.error('Failed to create document:', err)
+    } finally {
+      setCreatingDoc(null)
+    }
+  }
 
   // Form state
   const [supplierId,   setSupplierId]   = useState('')
@@ -190,6 +217,13 @@ export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }
       width: 'w-20',
       render: (po) => (
         <div className="flex gap-0.5 justify-end opacity-0 group-hover/row:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+          <Button
+            size="xs"
+            variant="ghost"
+            onClick={() => createDocForPO(po)}
+            icon={creatingDoc === po.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileText className="w-3 h-3" />}
+            title="Create PDF Document"
+          />
           <Button size="xs" variant="ghost" onClick={() => openEdit(po)} icon={<Edit3 className="w-3 h-3" />} />
           <Button size="xs" variant="danger-ghost" onClick={() => setDeleteId(po.id)} icon={<Trash2 className="w-3 h-3" />} />
         </div>
