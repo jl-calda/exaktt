@@ -77,8 +77,8 @@ export default function InlineMilestoneForm({
   }
 
   return (
-    <div className="animate-fade-in flex flex-col gap-2.5 py-3 px-3" onKeyDown={handleKeyDown}>
-      {/* Row 1: Icon + Name + Save + Cancel */}
+    <div className="animate-fade-in flex flex-col gap-3 py-3 px-3" onKeyDown={handleKeyDown}>
+      {/* Icon + Name + Save + Cancel */}
       <div className="flex items-center gap-2">
         <InlineEmojiPicker value={icon} onChange={setIcon} />
         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} title={`Auto color`} />
@@ -99,17 +99,21 @@ export default function InlineMilestoneForm({
         </Button>
       </div>
 
-      {/* Row 2: Description */}
-      <input
-        className="input h-7 text-xs min-w-0 w-full"
-        placeholder="Description (optional)"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
+      {/* Description */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Description</span>
+        <input
+          className="input h-7 text-xs min-w-0 w-full"
+          placeholder="Optional description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
 
-      {/* Row 3: Dates */}
-      <div className="flex items-center gap-2 text-xs text-ink-faint">
-        <span className="text-[10px] shrink-0">Dates</span>
+      {/* Schedule */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Schedule</span>
+        <div className="flex items-center gap-2 text-xs text-ink-faint">
         <input
           type="date" className="input h-6 text-[11px] w-[110px]"
           value={startDate}
@@ -126,6 +130,7 @@ export default function InlineMilestoneForm({
           title="Arrow Up/Down to adjust"
         />
         <span className="text-[10px] italic">Auto-filled from activities</span>
+        </div>
       </div>
     </div>
   )

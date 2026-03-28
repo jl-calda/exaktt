@@ -161,7 +161,7 @@ export default function InlineActivityForm({
   const hasUnavailableAssets = selectedAssets.some(id => unavailableAssetIds.has(id))
 
   return (
-    <div className="animate-fade-in flex flex-col gap-2.5 py-3 px-3" onKeyDown={handleKeyDown}>
+    <div className="animate-fade-in flex flex-col gap-3 py-3 px-3" onKeyDown={handleKeyDown}>
       {/* Row 1: Icon + Name + Save/Cancel */}
       <div className="flex items-center gap-2">
         <InlineEmojiPicker value={icon} onChange={setIcon} />
@@ -182,61 +182,70 @@ export default function InlineActivityForm({
         </Button>
       </div>
 
-      {/* Row 2: Status + Progress */}
-      <div className="flex items-center gap-2">
-        <select className="input h-6 text-xs px-1.5 w-28" value={status} onChange={e => setStatus(e.target.value)}>
-          {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <span className="text-[10px] text-ink-faint w-6 text-right font-mono">{progress}%</span>
-        <input
-          type="range" min={0} max={100} step={5} value={progress}
-          onChange={e => setProgress(Number(e.target.value))}
-          className="flex-1 h-1 accent-primary"
-        />
-      </div>
-
-      {/* Row 3: Team + Assignee */}
-      <div className="flex items-center gap-2">
-        <select className="input h-6 text-xs px-1.5 flex-1" value={teamId} onChange={e => setTeamId(e.target.value)}>
-          <option value="">No team</option>
-          {teams.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-        <input
-          className="input h-6 text-xs px-1.5 flex-1 min-w-0"
-          placeholder="Assignee"
-          value={assigneeName}
-          onChange={e => setAssigneeName(e.target.value)}
-        />
-      </div>
-
-      {/* Row 4: Dates + Hours */}
-      <div className="flex items-center gap-2">
-        <input
-          type="date" className="input h-6 text-xs px-1.5 w-[110px]"
-          value={startDate} onChange={e => setStartDate(e.target.value)}
-          onKeyDown={e => handleDateKey(e, startDate, setStartDate)}
-          title="Arrow Up/Down to adjust"
-        />
-        <span className="text-[10px] text-ink-faint">&rarr;</span>
-        <input
-          type="date" className="input h-6 text-xs px-1.5 w-[110px]"
-          value={endDate} onChange={e => setEndDate(e.target.value)}
-          onKeyDown={e => handleDateKey(e, endDate, setEndDate)}
-          title="Arrow Up/Down to adjust"
-        />
-        <div className="flex items-center gap-0.5 shrink-0">
-          <Clock size={10} className="text-ink-faint" />
+      {/* Status + Progress */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Status</span>
+        <div className="flex items-center gap-2">
+          <select className="input h-6 text-xs px-1.5 w-28" value={status} onChange={e => setStatus(e.target.value)}>
+            {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <span className="text-[10px] text-ink-faint w-6 text-right font-mono">{progress}%</span>
           <input
-            type="number" className="input h-6 text-xs px-1 w-12 text-right font-mono"
-            placeholder="hrs" value={estimatedHours}
-            onChange={e => setEstimatedHours(e.target.value)}
-            min={0} step={0.5}
+            type="range" min={0} max={100} step={5} value={progress}
+            onChange={e => setProgress(Number(e.target.value))}
+            className="flex-1 h-1 accent-primary"
           />
-          <span className="text-[10px] text-ink-faint">h</span>
         </div>
       </div>
 
-      {/* Row 5: Intraday toggle + times */}
+      {/* Team + Assignee */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Team</span>
+        <div className="flex items-center gap-2">
+          <select className="input h-6 text-xs px-1.5 flex-1" value={teamId} onChange={e => setTeamId(e.target.value)}>
+            <option value="">No team</option>
+            {teams.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+          <input
+            className="input h-6 text-xs px-1.5 flex-1 min-w-0"
+            placeholder="Assignee"
+            value={assigneeName}
+            onChange={e => setAssigneeName(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Schedule */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Schedule</span>
+        <div className="flex items-center gap-2">
+          <input
+            type="date" className="input h-6 text-xs px-1.5 w-[110px]"
+            value={startDate} onChange={e => setStartDate(e.target.value)}
+            onKeyDown={e => handleDateKey(e, startDate, setStartDate)}
+            title="Arrow Up/Down to adjust"
+          />
+          <span className="text-[10px] text-ink-faint">&rarr;</span>
+          <input
+            type="date" className="input h-6 text-xs px-1.5 w-[110px]"
+            value={endDate} onChange={e => setEndDate(e.target.value)}
+            onKeyDown={e => handleDateKey(e, endDate, setEndDate)}
+            title="Arrow Up/Down to adjust"
+          />
+          <div className="flex items-center gap-0.5 shrink-0">
+            <Clock size={10} className="text-ink-faint" />
+            <input
+              type="number" className="input h-6 text-xs px-1 w-12 text-right font-mono"
+              placeholder="hrs" value={estimatedHours}
+              onChange={e => setEstimatedHours(e.target.value)}
+              min={0} step={0.5}
+            />
+          <span className="text-[10px] text-ink-faint">h</span>
+        </div>
+        </div>
+      </div>
+
+      {/* Intraday toggle + times */}
       <div className="flex items-center gap-2">
         <label className="flex items-center gap-1 text-[10px] text-ink-faint cursor-pointer select-none shrink-0">
           <button
@@ -257,9 +266,10 @@ export default function InlineActivityForm({
         )}
       </div>
 
-      {/* Row 6: Skills */}
+      {/* Skills */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Skills</span>
       <div ref={skillRef} className="relative flex items-center gap-1.5 flex-wrap min-h-[24px]">
-        <span className="text-[10px] text-ink-faint tracking-wide shrink-0">Skills</span>
         {skills.map((s, i) => (
           <span key={i} className={`inline-flex items-center gap-0.5 rounded-full px-1.5 h-5 text-[10px] border ${
             missingSkills.includes(s)
@@ -307,8 +317,11 @@ export default function InlineActivityForm({
           </span>
         )}
       </div>
+      </div>
 
-      {/* Row 7: Assets + Outputs */}
+      {/* Resources */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Resources</span>
       <div className="flex items-center gap-3 min-h-[24px]">
         {/* Assets */}
         <div ref={assetRef} className="relative flex items-center gap-1 shrink-0">
@@ -403,6 +416,7 @@ export default function InlineActivityForm({
             }}
           />
         </div>
+      </div>
       </div>
     </div>
   )
