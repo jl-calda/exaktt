@@ -39,12 +39,13 @@ interface InlineActivityFormProps {
   assets: any[]
   categories?: { id: string; name: string; color: string; isDefault: boolean }[]
   siblingActivities?: { id: string; name: string }[]
+  members?: { userId: string; user: { id: string; name: string | null; email: string } }[]
   onSave: (data: any) => Promise<void>
   onCancel: () => void
 }
 
 export default function InlineActivityForm({
-  activity, defaultColor, defaultIcon, teams, assets, categories = [], siblingActivities = [], onSave, onCancel,
+  activity, defaultColor, defaultIcon, teams, assets, categories = [], siblingActivities = [], members = [], onSave, onCancel,
 }: InlineActivityFormProps) {
   const [name, setName] = useState(activity?.name ?? '')
   const [description, setDescription] = useState(activity?.description ?? '')
@@ -98,6 +99,19 @@ export default function InlineActivityForm({
     )
     return Array.from(all).sort()
   }, [teams])
+
+  const assigneeOptions = useMemo(() => {
+    if (teamId) {
+      const team = teams.find((t: any) => t.id === teamId)
+      return (team?.members ?? [])
+        .map((m: any) => ({ value: m.user?.name || m.name || '', label: m.user?.name || m.name || 'Unnamed' }))
+        .filter((o: any) => o.value)
+    }
+    if (members.length > 0) {
+      return members.map(m => ({ value: m.user.name || m.user.email, label: m.user.name || m.user.email }))
+    }
+    return []
+  }, [teamId, teams, members])
 
   const skillSuggestions = useMemo(() => {
     const q = skillInput.toLowerCase()
@@ -239,20 +253,34 @@ export default function InlineActivityForm({
         </div>
       </div>
 
-      {/* Team + Assignee */}
-      <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Team</span>
-        <div className="flex items-center gap-2">
-          <select className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 flex-1" value={teamId} onChange={e => setTeamId(e.target.value)}>
+      {/* Team + Lead By */}
+      <div className="flex items-start gap-4">
+        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+          <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Team</span>
+          <select className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-full" value={teamId} onChange={e => setTeamId(e.target.value)}>
             <option value="">No team</option>
             {teams.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
-          <input
-            className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 flex-1 min-w-0"
-            placeholder="Assignee"
-            value={assigneeName}
-            onChange={e => setAssigneeName(e.target.value)}
-          />
+        </div>
+        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+          <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Lead By</span>
+          {assigneeOptions.length > 0 ? (
+            <select
+              className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-full"
+              value={assigneeName}
+              onChange={e => setAssigneeName(e.target.value)}
+            >
+              <option value="">No assignee</option>
+              {assigneeOptions.map((o: { value: string; label: string }, i: number) => <option key={i} value={o.value}>{o.label}</option>)}
+            </select>
+          ) : (
+            <input
+              className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-full"
+              placeholder="Assignee name"
+              value={assigneeName}
+              onChange={e => setAssigneeName(e.target.value)}
+            />
+          )}
         </div>
       </div>
 

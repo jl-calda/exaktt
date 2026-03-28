@@ -36,9 +36,10 @@ interface Props {
   teams: any[]
   clients: any[]
   members: any[]
+  currency?: string
 }
 
-export default function ProjectsClient({ initialProjects, teams, clients, members }: Props) {
+export default function ProjectsClient({ initialProjects, teams, clients, members, currency }: Props) {
   const router = useRouter()
   const [projects, setProjects] = useState(initialProjects)
   const [showCreate, setShowCreate] = useState(false)
@@ -252,6 +253,7 @@ export default function ProjectsClient({ initialProjects, teams, clients, member
         <ProjectFormModal
           clients={clients}
           members={members}
+          currency={currency}
           onSave={handleCreate}
           onClose={() => setShowCreate(false)}
         />

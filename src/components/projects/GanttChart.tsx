@@ -74,6 +74,7 @@ interface Props {
   onReorderActivities?: (milestoneId: string, activityIds: string[]) => void
   clients?: { id: string; name: string; address?: string | null }[]
   members?: { userId: string; user: { id: string; name: string | null; email: string } }[]
+  currency?: string
   readOnly?: boolean
   showCriticalPath?: boolean
 }
@@ -85,7 +86,7 @@ export default function GanttChart({
   onSaveMilestone, onSaveActivity,
   onAddMilestone, onAddActivity, onDeleteMilestone, onDeleteActivity,
   onSaveProject, onProjectClick, onReorderMilestones, onReorderActivities,
-  clients, members, readOnly, showCriticalPath,
+  clients, members, currency, readOnly, showCriticalPath,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const hasEditing = editingId !== null || newRow !== null
@@ -464,6 +465,7 @@ export default function GanttChart({
                         project={row.data}
                         clients={clients}
                         members={members}
+                        currency={currency}
                         onSave={async (data) => { await onSaveProject?.(data); onCancelEdit() }}
                         onCancel={onCancelEdit}
                       />
@@ -483,6 +485,7 @@ export default function GanttChart({
                         teams={teams}
                         assets={assets}
                         categories={categories}
+                        members={members}
                         siblingActivities={
                           allProjects.flatMap(pr => pr.milestones)
                             .find(m => m.id === row.milestoneId)
