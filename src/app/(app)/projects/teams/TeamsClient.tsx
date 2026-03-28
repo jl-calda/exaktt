@@ -8,6 +8,7 @@ import {
 import DataTable, { useTableSort, type Column } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
 import TeamPill from '@/components/projects/TeamPill'
+import ProjectsSidebar from '@/components/projects/ProjectsSidebar'
 
 type Member = { id: string; name?: string | null; userId?: string | null; avatarUrl?: string | null; skills: string[]; user?: any }
 type Team = { id: string; name: string; members: Member[]; createdAt: string }
@@ -147,7 +148,9 @@ export default function TeamsClient({ initialTeams, companyUsers }: Props) {
   }, [])
 
   return (
-    <div className="min-h-full">
+    <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
+      <ProjectsSidebar counts={{ teams: teams.length }} />
+      <div className="flex-1 min-w-0">
       <main className="px-4 py-4 md:px-6 md:py-5">
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-semibold text-base text-ink">Work Teams</h1>
@@ -272,6 +275,7 @@ export default function TeamsClient({ initialTeams, companyUsers }: Props) {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X, CheckCircle2, FileText, Clock, AlertTriangle, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import InlineEmojiPicker from './InlineEmojiPicker'
@@ -75,7 +76,14 @@ export default function InlineActivityForm({
   const color = activity?.color ?? defaultColor
 
   const skillRef = useRef<HTMLDivElement>(null)
+  const skillDropdownRef = useRef<HTMLDivElement>(null)
+  const skillTriggerRef = useRef<HTMLInputElement>(null)
+  const [skillPos, setSkillPos] = useState({ top: 0, left: 0 })
+
   const assetRef = useRef<HTMLDivElement>(null)
+  const assetDropdownRef = useRef<HTMLDivElement>(null)
+  const assetTriggerRef = useRef<HTMLButtonElement>(null)
+  const [assetPos, setAssetPos] = useState({ top: 0, right: 0 })
 
   const knownSkills = useMemo(() => {
     const all = new Set<string>()
@@ -104,8 +112,13 @@ export default function InlineActivityForm({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (skillRef.current && !skillRef.current.contains(e.target as Node)) setShowSkillDropdown(false)
-      if (assetRef.current && !assetRef.current.contains(e.target as Node)) setShowAssetDropdown(false)
+      const t = e.target as Node
+      if (skillRef.current && !skillRef.current.contains(t) && (!skillDropdownRef.current || !skillDropdownRef.current.contains(t))) {
+        setShowSkillDropdown(false)
+      }
+      if (assetRef.current && !assetRef.current.contains(t) && (!assetDropdownRef.current || !assetDropdownRef.current.contains(t))) {
+        setShowAssetDropdown(false)
+      }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -300,17 +313,33 @@ export default function InlineActivityForm({
         ))}
         <div className="relative">
           <input
+            ref={skillTriggerRef}
             className="input h-5 text-[10px] px-1 w-20 min-w-0"
             placeholder="+ skill"
             value={skillInput}
-            onChange={e => { setSkillInput(e.target.value); setShowSkillDropdown(true) }}
-            onFocus={() => setShowSkillDropdown(true)}
+            onChange={e => {
+              setSkillInput(e.target.value)
+              if (skillTriggerRef.current) {
+                const r = skillTriggerRef.current.getBoundingClientRect()
+                setSkillPos({ top: r.bottom + 2, left: r.left })
+              }
+              setShowSkillDropdown(true)
+            }}
+            onFocus={() => {
+              if (skillTriggerRef.current) {
+                const r = skillTriggerRef.current.getBoundingClientRect()
+                setSkillPos({ top: r.bottom + 2, left: r.left })
+              }
+              setShowSkillDropdown(true)
+            }}
             onKeyDown={e => {
               if (e.key === 'Enter') { e.preventDefault(); addSkill(skillInput) }
             }}
           />
-          {showSkillDropdown && (skillSuggestions.length > 0 || skillInput.trim()) && (
-            <div className="absolute left-0 top-full mt-0.5 bg-surface-50 border border-surface-200 rounded-lg shadow-panel z-30 py-0.5 min-w-[140px] max-h-[120px] overflow-y-auto animate-fade-in">
+          {showSkillDropdown && (skillSuggestions.length > 0 || skillInput.trim()) && typeof document !== 'undefined' && createPortal(
+            <div ref={skillDropdownRef}
+              className="fixed z-[9999] bg-surface-50 border border-surface-200 rounded-lg py-0.5 min-w-[140px] max-h-[120px] overflow-y-auto animate-fade-in"
+              style={{ top: skillPos.top, left: skillPos.left, boxShadow: 'var(--shadow-panel)' }}>
               {skillSuggestions.map(s => (
                 <button key={s} type="button"
                   className="w-full px-2 py-1 text-left text-[10px] text-ink-muted hover:bg-surface-100 truncate"
@@ -325,7 +354,8 @@ export default function InlineActivityForm({
                   + Add &ldquo;{skillInput.trim()}&rdquo;
                 </button>
               )}
-            </div>
+            </div>,
+            document.body
           )}
         </div>
         {missingSkills.length > 0 && (
@@ -361,13 +391,21 @@ export default function InlineActivityForm({
           </div>
           {assets.length > 0 && (
             <div className="relative">
-              <button type="button"
+              <button ref={assetTriggerRef} type="button"
                 className="input h-5 text-[10px] px-1.5 flex items-center gap-0.5 text-ink-faint hover:text-ink"
-                onClick={() => setShowAssetDropdown(!showAssetDropdown)}>
+                onClick={() => {
+                  if (assetTriggerRef.current) {
+                    const r = assetTriggerRef.current.getBoundingClientRect()
+                    setAssetPos({ top: r.bottom + 2, right: window.innerWidth - r.right })
+                  }
+                  setShowAssetDropdown(!showAssetDropdown)
+                }}>
                 + <ChevronDown size={8} />
               </button>
-              {showAssetDropdown && (
-                <div className="absolute right-0 top-full mt-0.5 bg-surface-50 border border-surface-200 rounded-lg shadow-panel z-30 py-0.5 min-w-[160px] max-h-[140px] overflow-y-auto animate-fade-in">
+              {showAssetDropdown && typeof document !== 'undefined' && createPortal(
+                <div ref={assetDropdownRef}
+                  className="fixed z-[9999] bg-surface-50 border border-surface-200 rounded-lg py-0.5 min-w-[160px] max-h-[140px] overflow-y-auto animate-fade-in"
+                  style={{ top: assetPos.top, right: assetPos.right, boxShadow: 'var(--shadow-panel)' }}>
                   {assets.map((a: any) => {
                     const selected = selectedAssets.includes(a.id)
                     const unavailable = a.isAvailable === false
@@ -393,7 +431,8 @@ export default function InlineActivityForm({
                       </button>
                     )
                   })}
-                </div>
+                </div>,
+                document.body
               )}
             </div>
           )}

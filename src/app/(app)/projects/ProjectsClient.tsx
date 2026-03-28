@@ -4,13 +4,12 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import {
-  FolderKanban, Plus, Search, Activity, CheckCircle2, Clock, DollarSign, MapPin, Layers,
-  UsersRound, Wrench, Settings,
+  FolderKanban, Plus, Search, Activity, CheckCircle2, DollarSign,
 } from 'lucide-react'
 import DataTable, { useTableSort, type Column, type GroupDef } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
 import ProjectFormModal from '@/components/projects/ProjectFormModal'
-import Link from 'next/link'
+import ProjectsSidebar from '@/components/projects/ProjectsSidebar'
 
 /* ── Status meta ── */
 const STATUS_META: Record<string, { label: string; bg: string; color: string }> = {
@@ -161,42 +160,17 @@ export default function ProjectsClient({ initialProjects, teams }: Props) {
   const filterStatuses = ['ACTIVE', 'PLANNING', 'ON_HOLD', 'COMPLETED'] as const
 
   return (
-    <div className="min-h-full">
+    <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
+      <ProjectsSidebar counts={{ total: totalProjects, active: activeCount }} />
+      <div className="flex-1 min-w-0">
       <main className="px-4 py-4 md:px-6 md:py-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-semibold text-base text-ink">Projects</h1>
-          <div className="flex items-center gap-2">
-            <Link href="/projects/overview">
-              <Button variant="secondary" size="sm" icon={<Layers className="w-3.5 h-3.5" />}>
-                Overview
-              </Button>
-            </Link>
-            <Link href="/projects/map">
-              <Button variant="secondary" size="sm" icon={<MapPin className="w-3.5 h-3.5" />}>
-                Map
-              </Button>
-            </Link>
-            <Link href="/projects/teams">
-              <Button variant="secondary" size="sm" icon={<UsersRound className="w-3.5 h-3.5" />}>
-                Teams
-              </Button>
-            </Link>
-            <Link href="/projects/assets">
-              <Button variant="secondary" size="sm" icon={<Wrench className="w-3.5 h-3.5" />}>
-                Assets
-              </Button>
-            </Link>
-            <Link href="/projects/settings">
-              <Button variant="secondary" size="sm" icon={<Settings className="w-3.5 h-3.5" />}>
-                Settings
-              </Button>
-            </Link>
-            <Button variant="primary" size="sm" icon={<Plus className="w-3.5 h-3.5" />}
-              onClick={() => setShowCreate(true)}>
-              New Project
-            </Button>
-          </div>
+          <Button variant="primary" size="sm" icon={<Plus className="w-3.5 h-3.5" />}
+            onClick={() => setShowCreate(true)}>
+            New Project
+          </Button>
         </div>
 
         {/* Stat cards */}
@@ -281,6 +255,7 @@ export default function ProjectsClient({ initialProjects, teams }: Props) {
           onClose={() => setShowCreate(false)}
         />
       )}
+      </div>
     </div>
   )
 }

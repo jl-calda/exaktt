@@ -10,6 +10,7 @@ import { ChevronDown, ChevronRight, Plus, Trash2, Pencil } from 'lucide-react'
 import TeamPill from './TeamPill'
 import InlineMilestoneForm from './InlineMilestoneForm'
 import InlineActivityForm from './InlineActivityForm'
+import InlineProjectForm from './InlineProjectForm'
 import { getMilestoneColor, getActivityColor, getDefaultMilestoneIcon, getDefaultActivityIcon } from './colors'
 
 const ACTIVITY_ROW_H = 26
@@ -66,6 +67,7 @@ interface Props {
   onAddActivity: (milestoneId: string) => void
   onDeleteMilestone: (milestoneId: string) => void
   onDeleteActivity: (milestoneId: string, activityId: string) => void
+  onSaveProject?: (data: any) => Promise<void>
 }
 
 export default function GanttChart({
@@ -74,6 +76,7 @@ export default function GanttChart({
   onToggleCollapse, onStartEdit, onCancelEdit,
   onSaveMilestone, onSaveActivity,
   onAddMilestone, onAddActivity, onDeleteMilestone, onDeleteActivity,
+  onSaveProject,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const hasEditing = editingId !== null || newRow !== null
@@ -181,7 +184,9 @@ export default function GanttChart({
     rows.push({
       type: 'project', id: `project-${p.id}`, projectId: p.id,
       label: p.name, subtitle, color: '#64748b', icon: '📊',
-      bar: pBar, isCollapsed: isProjectCollapsed, data: p,
+      bar: pBar, isCollapsed: isProjectCollapsed,
+      isEditing: editingId === `project-${p.id}`,
+      data: p,
     })
 
     if (isProjectCollapsed) return
@@ -284,7 +289,13 @@ export default function GanttChart({
               {isEditRow ? (
                 <div className="collapse-wrap open">
                   <div className="bg-surface-50 border-b border-surface-200/40">
-                    {(row.type === 'milestone' || row.type === 'new-milestone') ? (
+                    {row.type === 'project' ? (
+                      <InlineProjectForm
+                        project={row.data}
+                        onSave={async (data) => { await onSaveProject?.(data); onCancelEdit() }}
+                        onCancel={onCancelEdit}
+                      />
+                    ) : (row.type === 'milestone' || row.type === 'new-milestone') ? (
                       <InlineMilestoneForm
                         milestone={row.data}
                         defaultColor={row.color}
@@ -339,13 +350,16 @@ export default function GanttChart({
 
                   {/* Label */}
                   <div
-                    className={`truncate flex-1 min-w-0 ${!isProject ? 'cursor-pointer' : ''}`}
-                    onClick={() => !isProject && onStartEdit(row.id)}
+                    className={`truncate flex-1 min-w-0 ${(isProject && onSaveProject) || !isProject ? 'cursor-pointer' : ''}`}
+                    onClick={() => {
+                      if (isProject && onSaveProject) onStartEdit(row.id)
+                      else if (!isProject) onStartEdit(row.id)
+                    }}
                   >
                     <span
                       className={`truncate block ${
                         isProject
-                          ? 'text-xs font-bold text-ink'
+                          ? `text-xs font-bold text-ink ${onSaveProject ? 'hover:text-primary' : ''}`
                           : row.type === 'milestone'
                             ? 'text-[11px] font-semibold text-ink hover:text-primary'
                             : 'text-[11px] text-ink-muted hover:text-primary'
@@ -361,6 +375,16 @@ export default function GanttChart({
                   {/* Team pill on activities */}
                   {row.type === 'activity' && (row.team || row.assigneeName) && (
                     <TeamPill team={row.team} assigneeName={row.assigneeName} assignee={row.assignee} />
+                  )}
+
+                  {/* Project edit action (single-project mode) */}
+                  {isProject && onSaveProject && (
+                    <div className="md:opacity-0 md:group-hover/label:opacity-100 transition-opacity flex items-center gap-0.5 shrink-0">
+                      <button onClick={() => onStartEdit(row.id)} title="Edit project"
+                        className="p-0.5 text-ink-faint hover:text-ink">
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    </div>
                   )}
 
                   {/* Actions */}
@@ -440,7 +464,10 @@ export default function GanttChart({
                           : `1px solid ${row.color}C0`,
                       borderRadius: isProject ? 10 : row.type === 'milestone' ? 7 : 4,
                     }}
-                    onClick={() => !isProject && onStartEdit(row.id)}
+                    onClick={() => {
+                      if (isProject && onSaveProject) onStartEdit(row.id)
+                      else if (!isProject) onStartEdit(row.id)
+                    }}
                   >
                     {/* Progress fill — fully opaque */}
                     {row.type === 'activity' && row.progress != null && row.progress > 0 && (

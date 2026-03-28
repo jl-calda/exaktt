@@ -1,11 +1,10 @@
 // src/app/(app)/projects/overview/OverviewClient.tsx
 'use client'
 import { useState, useMemo, useCallback } from 'react'
-import Link from 'next/link'
-import { ArrowLeft, Layers, Filter } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Layers, Filter } from 'lucide-react'
 import GanttChart from '@/components/projects/GanttChart'
 import GanttToolbar from '@/components/projects/GanttToolbar'
+import ProjectsSidebar from '@/components/projects/ProjectsSidebar'
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
   PLANNING:  { label: 'Planning',  color: '#64748b' },
@@ -111,16 +110,13 @@ export default function OverviewClient({ projects }: Props) {
   const noopAsync = useCallback(async () => {}, [])
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
+      <ProjectsSidebar />
+      <div className="flex-1 min-w-0">
       <main className="flex flex-col flex-1 px-4 py-4 md:px-6 md:py-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Link href="/projects">
-              <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-3.5 h-3.5" />}>
-                Projects
-              </Button>
-            </Link>
             <h1 className="font-semibold text-base text-ink">Projects Overview</h1>
             <span className="text-[10px] text-ink-faint">
               {filtered.length} project{filtered.length !== 1 ? 's' : ''}
@@ -198,6 +194,7 @@ export default function OverviewClient({ projects }: Props) {
           />
         )}
       </main>
+      </div>
     </div>
   )
 }

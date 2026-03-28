@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import DataTable, { useTableSort, type Column, type GroupDef } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
+import ProjectsSidebar from '@/components/projects/ProjectsSidebar'
 
 const CATEGORIES = [
   { value: 'vehicle',   label: 'Vehicle',   icon: '🚗' },
@@ -151,7 +152,9 @@ export default function AssetsClient({ initialAssets }: Props) {
   }, [])
 
   return (
-    <div className="min-h-full">
+    <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
+      <ProjectsSidebar counts={{ assets: assets.length }} />
+      <div className="flex-1 min-w-0">
       <main className="px-4 py-4 md:px-6 md:py-5">
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-semibold text-base text-ink">Project Assets</h1>
@@ -251,6 +254,7 @@ export default function AssetsClient({ initialAssets }: Props) {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

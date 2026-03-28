@@ -4,13 +4,13 @@ import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, differenceInDays } from 'date-fns'
 import {
-  ArrowLeft, Plus, ChevronDown, Calendar,
-  AlertTriangle, CheckCircle2, Clock, Pencil,
+  Plus, ChevronDown, Calendar,
+  AlertTriangle, CheckCircle2, Clock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import GanttChart from '@/components/projects/GanttChart'
 import GanttToolbar from '@/components/projects/GanttToolbar'
-import ProjectFormModal from '@/components/projects/ProjectFormModal'
+import ProjectsSidebar from '@/components/projects/ProjectsSidebar'
 
 /* ── Types ── */
 type Activity = {
@@ -56,8 +56,6 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
   const [viewMode, setViewMode] = useState<'days' | 'weeks' | 'months'>('weeks')
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
-  // Project edit modal (only project-level uses a modal)
-  const [editProject, setEditProject] = useState(false)
   const [showStatusMenu, setShowStatusMenu] = useState(false)
 
   // Inline editing state
@@ -120,7 +118,6 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
     if (!res.ok) return
     const updated = await res.json()
     setProject(prev => ({ ...prev, ...updated }))
-    setEditProject(false)
     setShowStatusMenu(false)
   }, [project.id])
 
@@ -251,18 +248,13 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
   const sm = STATUS_META[project.status] ?? STATUS_META.PLANNING
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
+      <ProjectsSidebar />
+      <div className="flex-1 min-w-0">
       <main className="flex flex-col flex-1 px-4 py-4 md:px-6 md:py-5">
-        {/* Back + title */}
+        {/* Title */}
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={() => router.push('/projects')} className="text-ink-faint hover:text-ink">
-            <ArrowLeft className="w-4 h-4" />
-          </button>
           <h1 className="font-semibold text-base text-ink flex-1">{project.name}</h1>
-          <Button variant="ghost" size="xs" onClick={() => setEditProject(true)}
-            icon={<Pencil className="w-3 h-3" />}>
-            Edit
-          </Button>
         </div>
 
         {/* Project info bar */}
@@ -363,6 +355,7 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
           onCancelEdit={cancelEdit}
           onSaveMilestone={saveMilestone}
           onSaveActivity={saveActivity}
+          onSaveProject={updateProject}
           onAddMilestone={() => { setEditingId(null); setNewRow({ type: 'milestone' }) }}
           onAddActivity={(milestoneId) => { setEditingId(null); setNewRow({ type: 'activity', milestoneId }) }}
           onDeleteMilestone={deleteMilestone}
@@ -382,24 +375,7 @@ export default function ProjectDetailClient({ project: initialProject, teams, as
           </div>
         )}
       </main>
-
-      {/* Only project-level editing uses a modal */}
-      {editProject && (
-        <ProjectFormModal
-          initial={{
-            name: project.name,
-            clientName: project.clientName ?? '',
-            address: project.address ?? '',
-            contractValue: project.contractValue,
-            status: project.status,
-            startDate: project.startDate ? format(new Date(project.startDate), 'yyyy-MM-dd') : '',
-            endDate: project.endDate ? format(new Date(project.endDate), 'yyyy-MM-dd') : '',
-            managerName: project.managerName ?? '',
-          }}
-          onSave={updateProject}
-          onClose={() => setEditProject(false)}
-        />
-      )}
+      </div>
     </div>
   )
 }
