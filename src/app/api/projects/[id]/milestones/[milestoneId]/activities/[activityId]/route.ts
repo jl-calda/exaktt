@@ -9,7 +9,7 @@ type Ctx = { params: Promise<{ id: string; milestoneId: string; activityId: stri
 
 export async function PATCH(request: NextRequest, { params }: Ctx) {
   try {
-    const { id: projectId, activityId } = await params
+    const { id: projectId, milestoneId, activityId } = await params
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -33,11 +33,21 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
           title: activity.name,
           description: activity.description || null,
           assigneeId: body.assigneeId,
+          startDate: activity.startDate ?? null,
           targetDate: activity.endDate ?? null,
           linkedUrl,
           linkedType: 'activity',
           linkedLabel: activity.name,
           checklist,
+          metadata: {
+            source: 'activity',
+            projectId,
+            milestoneId,
+            activityId,
+            estimatedHours: activity.estimatedHours ?? null,
+            skills: activity.skills ?? [],
+            teamId: activity.teamId ?? null,
+          },
         })
       }
     }

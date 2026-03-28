@@ -183,11 +183,15 @@ export default function TasksClient({ userId }: Props) {
                           </div>
                         </div>
 
-                        {/* Due date */}
-                        {t.targetDate && (
+                        {/* Dates */}
+                        {(t.startDate || t.targetDate) && (
                           <span className="text-[10px] text-ink-faint flex items-center gap-1 shrink-0">
                             <Clock className="w-2.5 h-2.5" />
-                            {format(new Date(t.targetDate), 'dd MMM')}
+                            {t.startDate && t.targetDate
+                              ? `${format(new Date(t.startDate), 'dd MMM')} – ${format(new Date(t.targetDate), 'dd MMM')}`
+                              : t.targetDate
+                                ? format(new Date(t.targetDate), 'dd MMM')
+                                : format(new Date(t.startDate), 'dd MMM')}
                           </span>
                         )}
 

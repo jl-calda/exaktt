@@ -154,10 +154,16 @@ export default function TaskPageClient({ taskId, userId }: Props) {
           <div className="flex items-center gap-4 mt-3 text-[10px] text-ink-faint flex-wrap">
             <span>From: <span className="text-ink-muted font-medium">{task.createdBy?.name ?? 'Unknown'}</span></span>
             <span>To: <span className="text-ink-muted font-medium">{task.assignee?.name ?? 'Unassigned'}</span></span>
-            {task.targetDate && (
+            {(task.startDate || task.targetDate) && (
               <span className="flex items-center gap-1">
                 <Clock className="w-2.5 h-2.5" />
-                Due: <span className="text-ink-muted font-medium">{format(new Date(task.targetDate), 'dd MMM yyyy')}</span>
+                {task.startDate && task.targetDate ? (
+                  <><span className="text-ink-muted font-medium">{format(new Date(task.startDate), 'dd MMM')}</span> – <span className="text-ink-muted font-medium">{format(new Date(task.targetDate), 'dd MMM yyyy')}</span></>
+                ) : task.targetDate ? (
+                  <>Due: <span className="text-ink-muted font-medium">{format(new Date(task.targetDate), 'dd MMM yyyy')}</span></>
+                ) : (
+                  <>Start: <span className="text-ink-muted font-medium">{format(new Date(task.startDate), 'dd MMM yyyy')}</span></>
+                )}
               </span>
             )}
           </div>
@@ -216,6 +222,34 @@ export default function TaskPageClient({ taskId, userId }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Linked Source */}
+      {(task.linkedUrl || task.metadata) && (
+        <div className="card mb-4">
+          <div className="card-header">
+            <span className="text-[10px] font-bold text-ink-faint uppercase tracking-wide">Linked Source</span>
+          </div>
+          <div className="px-4 py-3">
+            {task.linkedUrl && (
+              <a href={task.linkedUrl}
+                className="flex items-center gap-2 text-xs text-primary hover:underline font-medium">
+                <LinkIcon className="w-3 h-3" />
+                {task.linkedLabel || 'View linked page'}
+              </a>
+            )}
+            {task.metadata?.source === 'activity' && (
+              <div className="flex items-center gap-3 mt-2 text-[10px] text-ink-faint flex-wrap">
+                {task.metadata.estimatedHours != null && (
+                  <span>Est: <span className="text-ink-muted font-medium">{task.metadata.estimatedHours}h</span></span>
+                )}
+                {task.metadata.skills?.length > 0 && (
+                  <span>Skills: <span className="text-ink-muted font-medium">{task.metadata.skills.join(', ')}</span></span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Checklist */}
       {checklist.length > 0 && (

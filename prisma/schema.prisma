@@ -975,6 +975,7 @@ model Task {
   checklist   Json     @default("[]")
   output      Json     @default("[]")
   ccUserIds   String[] @default([])
+  metadata    Json?
 
   isArchived  Boolean  @default(false)
   createdAt   DateTime @default(now())
