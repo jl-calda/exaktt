@@ -32,11 +32,12 @@ interface Props {
   }
   clients?: { id: string; name: string; address?: string | null }[]
   members?: { userId: string; user: { id: string; name: string | null; email: string } }[]
+  currency?: string
   onSave: (data: any) => void
   onClose: () => void
 }
 
-export default function ProjectFormModal({ initial, clients, members, onSave, onClose }: Props) {
+export default function ProjectFormModal({ initial, clients, members, currency = 'SGD', onSave, onClose }: Props) {
   const [name, setName]               = useState(initial?.name ?? '')
   const [clientName, setClientName]   = useState(initial?.clientName ?? '')
   const [address, setAddress]         = useState(initial?.address ?? '')
@@ -185,7 +186,7 @@ export default function ProjectFormModal({ initial, clients, members, onSave, on
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label mb-1">Contract Value</label>
+              <label className="label mb-1">Contract Value ({currency})</label>
               <input type="number" className="input w-full" value={contractValue}
                 onChange={e => setContractValue(Number(e.target.value))} />
             </div>

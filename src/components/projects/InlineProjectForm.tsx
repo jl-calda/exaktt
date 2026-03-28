@@ -28,11 +28,12 @@ interface InlineProjectFormProps {
   }
   clients?: { id: string; name: string; address?: string | null }[]
   members?: { userId: string; user: { id: string; name: string | null; email: string } }[]
+  currency?: string
   onSave: (data: any) => Promise<void>
   onCancel: () => void
 }
 
-export default function InlineProjectForm({ project, clients, members, onSave, onCancel }: InlineProjectFormProps) {
+export default function InlineProjectForm({ project, clients, members, currency = 'SGD', onSave, onCancel }: InlineProjectFormProps) {
   const nameRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState(project?.name ?? '')
   const [clientName, setClientName] = useState(project?.clientName ?? '')
@@ -103,13 +104,13 @@ export default function InlineProjectForm({ project, clients, members, onSave, o
         </Button>
       </div>
 
-      {/* Client */}
-      <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Client</span>
-        <div className="flex items-center gap-2">
+      {/* Client & Address */}
+      <div className="flex items-start gap-4">
+        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+          <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Client</span>
           {clients && clients.length > 0 ? (
             <select
-              className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 flex-1 min-w-0"
+              className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-full"
               value={clientName}
               onChange={e => {
                 const selected = clients.find(c => c.name === e.target.value)
@@ -122,14 +123,17 @@ export default function InlineProjectForm({ project, clients, members, onSave, o
             </select>
           ) : (
             <input
-              className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 flex-1 min-w-0"
+              className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-full"
               placeholder="Client name"
               value={clientName}
               onChange={e => setClientName(e.target.value)}
             />
           )}
+        </div>
+        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+          <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Address</span>
           <input
-            className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 flex-1 min-w-0"
+            className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-full"
             placeholder="Address"
             value={address}
             onChange={e => setAddress(e.target.value)}
@@ -169,12 +173,15 @@ export default function InlineProjectForm({ project, clients, members, onSave, o
         </div>
         <div className="flex flex-col gap-1.5">
           <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Value</span>
-          <input
-            type="number" className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-28 text-right font-mono"
-            placeholder="Contract value" value={contractValue || ''}
-            onChange={e => setContractValue(Number(e.target.value))}
-            min={0}
-          />
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-ink-faint font-mono">{currency}</span>
+            <input
+              type="number" className="input h-5 text-[10px] text-ink-muted py-0 px-1.5 w-24 text-right font-mono"
+              placeholder="0" value={contractValue || ''}
+              onChange={e => setContractValue(Number(e.target.value))}
+              min={0}
+            />
+          </div>
         </div>
       </div>
 
