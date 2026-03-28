@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { X, Plus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { X, Plus, ArrowUpRight } from 'lucide-react'
 import { useTaskStore } from '@/store'
 import TaskList from './TaskList'
 import TaskDetail from './TaskDetail'
@@ -10,6 +11,7 @@ import { Button } from '@/components/ui/Button'
 type DrawerTab = 'linked' | 'all'
 
 export default function TaskDrawer() {
+  const router = useRouter()
   const { drawerOpen, closeDrawer, activeTaskId, setActiveTask, linkedFilter } = useTaskStore()
   const [creating, setCreating] = useState(false)
   const [tasks, setTasks] = useState<any[]>([])
@@ -64,6 +66,7 @@ export default function TaskDrawer() {
           </div>
           <div className="flex gap-2">
             <Button size="xs" variant="primary" icon={<Plus className="w-3 h-3" />} onClick={() => { setCreating(true); setActiveTask(null) }}>New</Button>
+            <button onClick={() => { closeDrawer(); router.push('/tasks') }} title="Open Tasks page" className="p-1.5 rounded text-ink-faint hover:text-ink hover:bg-surface-100"><ArrowUpRight className="w-4 h-4" /></button>
             <button onClick={closeDrawer} className="p-1.5 rounded text-ink-faint hover:text-ink hover:bg-surface-100"><X className="w-4 h-4" /></button>
           </div>
         </div>
