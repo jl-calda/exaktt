@@ -109,7 +109,7 @@ export default function InlineProjectForm({ project, clients, members, onSave, o
         <div className="flex items-center gap-2">
           {clients && clients.length > 0 ? (
             <select
-              className="input h-7 text-xs px-1.5 flex-1 min-w-0"
+              className="input h-6 text-[11px] text-ink-muted px-1.5 flex-1 min-w-0"
               value={clientName}
               onChange={e => {
                 const selected = clients.find(c => c.name === e.target.value)
@@ -122,14 +122,14 @@ export default function InlineProjectForm({ project, clients, members, onSave, o
             </select>
           ) : (
             <input
-              className="input h-7 text-xs px-1.5 flex-1 min-w-0"
+              className="input h-6 text-[11px] text-ink-muted px-1.5 flex-1 min-w-0"
               placeholder="Client name"
               value={clientName}
               onChange={e => setClientName(e.target.value)}
             />
           )}
           <input
-            className="input h-7 text-xs px-1.5 flex-1 min-w-0"
+            className="input h-6 text-[11px] text-ink-muted px-1.5 flex-1 min-w-0"
             placeholder="Address"
             value={address}
             onChange={e => setAddress(e.target.value)}
@@ -142,7 +142,7 @@ export default function InlineProjectForm({ project, clients, members, onSave, o
         <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Schedule</span>
         <div className="flex items-center gap-2">
           <input
-            type="date" className="input h-7 text-[11px] px-1.5 w-[110px]"
+            type="date" className="input h-6 text-[11px] text-ink-muted px-1.5 w-[110px]"
             value={startDate}
             onChange={e => setStartDate(e.target.value)}
             onKeyDown={e => handleDateKey(e, startDate, setStartDate)}
@@ -150,7 +150,7 @@ export default function InlineProjectForm({ project, clients, members, onSave, o
           />
           <span className="text-[10px] text-ink-faint">&rarr;</span>
           <input
-            type="date" className="input h-7 text-[11px] px-1.5 w-[110px]"
+            type="date" className="input h-6 text-[11px] text-ink-muted px-1.5 w-[110px]"
             value={endDate}
             onChange={e => setEndDate(e.target.value)}
             onKeyDown={e => handleDateKey(e, endDate, setEndDate)}
@@ -159,43 +159,51 @@ export default function InlineProjectForm({ project, clients, members, onSave, o
         </div>
       </div>
 
-      {/* Details */}
-      <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Details</span>
-        <div className="flex items-center gap-2">
-          <select className="input h-7 text-xs px-1.5 w-32" value={status} onChange={e => setStatus(e.target.value)}>
+      {/* Status & Value */}
+      <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Status</span>
+          <select className="input h-6 text-[11px] text-ink-muted px-1.5 w-32" value={status} onChange={e => setStatus(e.target.value)}>
             {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Value</span>
           <input
-            type="number" className="input h-7 text-xs px-1.5 w-24 text-right font-mono"
-            placeholder="Value" value={contractValue || ''}
+            type="number" className="input h-6 text-[11px] text-ink-muted px-1.5 w-28 text-right font-mono"
+            placeholder="Contract value" value={contractValue || ''}
             onChange={e => setContractValue(Number(e.target.value))}
             min={0}
           />
-          {members && members.length > 0 ? (
-            <select
-              className="input h-7 text-xs px-1.5 flex-1 min-w-0"
-              value={managerId}
-              onChange={e => {
-                const selected = members.find(m => m.userId === e.target.value)
-                setManagerId(e.target.value)
-                setManagerName(selected?.user?.name ?? '')
-              }}
-            >
-              <option value="">No PM</option>
-              {members.map(m => (
-                <option key={m.userId} value={m.userId}>{m.user.name || m.user.email}</option>
-              ))}
-            </select>
-          ) : (
-            <input
-              className="input h-7 text-xs px-1.5 flex-1 min-w-0"
-              placeholder="Manager"
-              value={managerName}
-              onChange={e => setManagerName(e.target.value)}
-            />
-          )}
         </div>
+      </div>
+
+      {/* PM */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">PM</span>
+        {members && members.length > 0 ? (
+          <select
+            className="input h-6 text-[11px] text-ink-muted px-1.5 w-48 min-w-0"
+            value={managerId}
+            onChange={e => {
+              const selected = members.find(m => m.userId === e.target.value)
+              setManagerId(e.target.value)
+              setManagerName(selected?.user?.name ?? '')
+            }}
+          >
+            <option value="">No PM</option>
+            {members.map(m => (
+              <option key={m.userId} value={m.userId}>{m.user.name || m.user.email}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            className="input h-6 text-[11px] text-ink-muted px-1.5 w-48 min-w-0"
+            placeholder="Manager"
+            value={managerName}
+            onChange={e => setManagerName(e.target.value)}
+          />
+        )}
       </div>
     </div>
   )

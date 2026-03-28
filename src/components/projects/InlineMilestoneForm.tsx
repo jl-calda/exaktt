@@ -103,7 +103,7 @@ export default function InlineMilestoneForm({
       <div className="flex flex-col gap-1.5">
         <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Description</span>
         <input
-          className="input h-7 text-xs min-w-0 w-full"
+          className="input h-6 text-[11px] text-ink-muted min-w-0 w-full"
           placeholder="Optional description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -115,7 +115,7 @@ export default function InlineMilestoneForm({
         <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Schedule</span>
         <div className="flex items-center gap-2 text-xs text-ink-faint">
         <input
-          type="date" className="input h-7 text-[11px] px-1.5 w-[110px]"
+          type="date" className="input h-6 text-[11px] text-ink-muted px-1.5 w-[110px]"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
           onKeyDown={(e) => handleDateKey(e, startDate, setStartDate)}
@@ -123,7 +123,7 @@ export default function InlineMilestoneForm({
         />
         <span>&rarr;</span>
         <input
-          type="date" className="input h-7 text-[11px] px-1.5 w-[110px]"
+          type="date" className="input h-6 text-[11px] text-ink-muted px-1.5 w-[110px]"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
           onKeyDown={(e) => handleDateKey(e, endDate, setEndDate)}
