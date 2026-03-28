@@ -348,29 +348,33 @@ export default function GanttChart({
                     <TeamPill team={row.team} assigneeName={row.assigneeName} assignee={row.assignee} />
                   )}
 
-                  {/* Hover actions (not on project rows) */}
+                  {/* Actions */}
                   {!isProject && (
-                    <div className="opacity-0 group-hover/label:opacity-100 transition-opacity flex items-center gap-0.5">
-                      <button onClick={() => onStartEdit(row.id)} title="Edit"
-                        className="p-0.5 text-ink-faint hover:text-ink">
-                        <Pencil className="w-3 h-3" />
-                      </button>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      {/* Add activity — always visible on milestones */}
                       {row.type === 'milestone' && (
                         <button onClick={() => onAddActivity(row.id)} title="Add activity"
-                          className="p-0.5 text-ink-faint hover:text-emerald-600">
-                          <Plus className="w-3 h-3" />
+                          className="p-0.5 text-ink-faint hover:text-emerald-600 hover:bg-surface-200/60 rounded transition-colors">
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       )}
-                      <button
-                        onClick={() => {
-                          if (row.type === 'milestone') onDeleteMilestone(row.id)
-                          else onDeleteActivity(row.milestoneId!, row.id)
-                        }}
-                        title="Delete"
-                        className="p-0.5 text-ink-faint hover:text-red-500"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      {/* Edit + Delete — hover only */}
+                      <div className="opacity-0 group-hover/label:opacity-100 transition-opacity flex items-center gap-0.5">
+                        <button onClick={() => onStartEdit(row.id)} title="Edit"
+                          className="p-0.5 text-ink-faint hover:text-ink">
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (row.type === 'milestone') onDeleteMilestone(row.id)
+                            else onDeleteActivity(row.milestoneId!, row.id)
+                          }}
+                          title="Delete"
+                          className="p-0.5 text-ink-faint hover:text-red-500"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
