@@ -9,7 +9,6 @@ import {
 import DataTable, { useTableSort, type Column, type GroupDef } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
 import ProjectFormModal from '@/components/projects/ProjectFormModal'
-import ProjectsSidebar from '@/components/projects/ProjectsSidebar'
 
 /* ── Status meta ── */
 const STATUS_META: Record<string, { label: string; bg: string; color: string }> = {
@@ -160,9 +159,7 @@ export default function ProjectsClient({ initialProjects, teams }: Props) {
   const filterStatuses = ['ACTIVE', 'PLANNING', 'ON_HOLD', 'COMPLETED'] as const
 
   return (
-    <div className="flex flex-col md:flex-row" style={{ minHeight: '100%' }}>
-      <ProjectsSidebar counts={{ total: totalProjects, active: activeCount }} />
-      <div className="flex-1 min-w-0">
+    <>
       <main className="px-4 py-4 md:px-6 md:py-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -255,7 +252,6 @@ export default function ProjectsClient({ initialProjects, teams }: Props) {
           onClose={() => setShowCreate(false)}
         />
       )}
-      </div>
-    </div>
+    </>
   )
 }
