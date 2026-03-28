@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getProjects, getUserCompany } from '@/lib/db/queries'
+import { getProjectsForMap, getUserCompany, getWorkTeams, getProjectAssets } from '@/lib/db/queries'
 import ProjectsMapClient from './ProjectsMapClient'
 
 export default async function ProjectsMapPage() {
@@ -13,7 +13,17 @@ export default async function ProjectsMapPage() {
   const company = await getUserCompany(user.id)
   if (!company) redirect('/auth/login')
 
-  const projects = await getProjects(company.id)
+  const [projects, teams, assets] = await Promise.all([
+    getProjectsForMap(company.id),
+    getWorkTeams(company.id),
+    getProjectAssets(company.id),
+  ])
 
-  return <ProjectsMapClient projects={projects as any[]} />
+  return (
+    <ProjectsMapClient
+      projects={projects as any[]}
+      teams={teams as any[]}
+      assets={assets as any[]}
+    />
+  )
 }
