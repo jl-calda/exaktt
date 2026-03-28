@@ -123,34 +123,34 @@ function SortableBlockWrapper({ block, branding, documentId, onUpdate, onRemove,
     <div ref={setNodeRef} style={style} className="group/block mb-2">
       <div className="border border-surface-200 rounded-lg bg-surface-50 overflow-hidden hover:border-surface-300 transition-colors">
         {/* Block toolbar */}
-        <div className="flex items-center gap-1 px-2 py-1 bg-surface-100/60 border-b border-surface-200/60">
-          <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-0.5 text-ink-faint hover:text-ink">
-            <GripVertical className="w-3 h-3" />
+        <div className="flex items-center gap-0.5 sm:gap-1 px-2 py-1.5 sm:py-1 bg-surface-100/60 border-b border-surface-200/60">
+          <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 sm:p-0.5 text-ink-faint hover:text-ink touch-manipulation">
+            <GripVertical className="w-4 h-4 sm:w-3 sm:h-3" />
           </button>
-          <Icon className="w-3 h-3 text-ink-faint" strokeWidth={1.8} />
-          <span className="text-[10px] font-medium text-ink-muted flex-1">{meta?.label ?? block.type}</span>
+          <Icon className="w-3 h-3 text-ink-faint hidden sm:block" strokeWidth={1.8} />
+          <span className="text-[10px] font-medium text-ink-muted flex-1 truncate">{meta?.label ?? block.type}</span>
           <button
             onClick={() => onMove(block.id, -1)}
             disabled={isFirst}
-            className="p-0.5 text-ink-faint hover:text-ink disabled:opacity-30"
+            className="p-1 sm:p-0.5 text-ink-faint hover:text-ink disabled:opacity-30 touch-manipulation"
             title="Move up"
           >
-            <ChevronUp className="w-3 h-3" />
+            <ChevronUp className="w-4 h-4 sm:w-3 sm:h-3" />
           </button>
           <button
             onClick={() => onMove(block.id, 1)}
             disabled={isLast}
-            className="p-0.5 text-ink-faint hover:text-ink disabled:opacity-30"
+            className="p-1 sm:p-0.5 text-ink-faint hover:text-ink disabled:opacity-30 touch-manipulation"
             title="Move down"
           >
-            <ChevronDown className="w-3 h-3" />
+            <ChevronDown className="w-4 h-4 sm:w-3 sm:h-3" />
           </button>
           <button
             onClick={() => onRemove(block.id)}
-            className="p-0.5 text-ink-faint hover:text-red-500"
+            className="p-1 sm:p-0.5 text-ink-faint hover:text-red-500 touch-manipulation"
             title="Remove block"
           >
-            <Trash2 className="w-3 h-3" />
+            <Trash2 className="w-4 h-4 sm:w-3 sm:h-3" />
           </button>
         </div>
 

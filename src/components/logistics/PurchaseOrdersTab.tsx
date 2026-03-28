@@ -216,7 +216,7 @@ export default function PurchaseOrdersTab({ pos, suppliers, library, onRefresh }
       label: '',
       width: 'w-20',
       render: (po) => (
-        <div className="flex gap-0.5 justify-end opacity-0 group-hover/row:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+        <div className="flex gap-0.5 justify-end sm:opacity-0 sm:group-hover/row:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
           <Button
             size="xs"
             variant="ghost"

@@ -110,7 +110,7 @@ export default function PreviewPane({ blocks, branding, settings, title, documen
       </div>
 
       {/* Preview area */}
-      <div className="flex-1 overflow-hidden p-4 flex items-start justify-center">
+      <div className="flex-1 overflow-hidden p-2 sm:p-4 flex items-start justify-center">
         {loading && !pdfUrl && (
           <div className="flex items-center gap-2 text-ink-faint text-[11px] py-12">
             <Loader2 className="w-4 h-4 animate-spin" /> Generating preview...
@@ -126,7 +126,7 @@ export default function PreviewPane({ blocks, branding, settings, title, documen
             ref={iframeRef}
             src={pdfUrl}
             className="w-full bg-white rounded-lg shadow-sm"
-            style={{ height: 'calc(100vh - 140px)', maxWidth: '595px' }}
+            style={{ height: 'calc(100vh - 180px)', maxWidth: '595px' }}
             title="PDF Preview"
           />
         )}

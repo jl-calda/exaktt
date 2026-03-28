@@ -223,7 +223,7 @@ export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshP
               <Button size="xs" variant="success" onClick={() => markDelivered(d)}
                 icon={<Truck className="w-3 h-3" />}>Delivered</Button>
             )}
-            <div className="flex gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
+            <div className="flex gap-0.5 sm:opacity-0 sm:group-hover/row:opacity-100 transition-opacity">
               <Button
                 size="xs"
                 variant="ghost"

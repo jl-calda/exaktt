@@ -95,7 +95,7 @@ export default function TableBlock({ block, onChange }: Props) {
                 <td className="px-1">
                   <button
                     onClick={() => removeRow(ri)}
-                    className="opacity-0 group-hover/trow:opacity-100 text-ink-faint hover:text-red-500 transition-opacity"
+                    className="sm:opacity-0 sm:group-hover/trow:opacity-100 text-ink-faint hover:text-red-500 transition-opacity touch-manipulation"
                     title="Remove row"
                   >
                     <Trash2 className="w-3 h-3" />
