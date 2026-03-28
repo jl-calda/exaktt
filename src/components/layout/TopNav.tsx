@@ -36,7 +36,7 @@ export default function TopNav({ userName, userEmail, plan }: Props) {
     : (userEmail?.[0] ?? 'U').toUpperCase()
 
   return (
-    <header className="h-14 flex items-center px-5 pl-16 md:pl-5 gap-4 sticky top-0 z-30 backdrop-blur-xl backdrop-saturate-150"
+    <header className="h-[52px] flex items-center px-5 pl-16 md:pl-5 gap-4 sticky top-0 z-30 backdrop-blur-xl backdrop-saturate-150"
       style={{ background: 'var(--sidebar-bg)', borderBottom: '1px solid var(--sidebar-border)' }}>
       <div className="flex-1 min-w-0">
         <h2 className="font-semibold text-[13px] text-ink truncate">{title}</h2>

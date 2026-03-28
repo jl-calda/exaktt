@@ -97,7 +97,7 @@ export default function Sidebar({ role }: Props) {
       {/* Mobile hamburger button */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed top-0 left-0 z-50 h-14 w-14 flex items-center justify-center text-ink-muted hover:text-ink"
+        className="md:hidden fixed top-0 left-0 z-50 h-[52px] w-14 flex items-center justify-center text-ink-muted hover:text-ink"
         style={{ background: 'var(--sidebar-bg)' }}
       >
         <Menu className="w-5 h-5" />
