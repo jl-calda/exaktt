@@ -12,7 +12,8 @@ import InlineMilestoneForm from './InlineMilestoneForm'
 import InlineActivityForm from './InlineActivityForm'
 import { getMilestoneColor, getActivityColor, getDefaultMilestoneIcon, getDefaultActivityIcon } from './colors'
 
-const ROW_H = 32
+const ACTIVITY_ROW_H = 26
+const MILESTONE_ROW_H = 32
 const PROJECT_ROW_H = 42
 const LABEL_W = 220
 const EDIT_LABEL_W = 340
@@ -269,7 +270,9 @@ export default function GanttChart({
       {rows.map((row) => {
         const isEditRow = row.isEditing || row.type === 'new-milestone' || row.type === 'new-activity'
         const isProject = row.type === 'project'
-        const rowH = isProject ? PROJECT_ROW_H : ROW_H
+        const rowH = isProject ? PROJECT_ROW_H
+          : (row.type === 'milestone' || row.type === 'new-milestone') ? MILESTONE_ROW_H
+          : ACTIVITY_ROW_H
 
         return (
           <div key={row.id} className={`flex border-b ${isProject ? 'border-surface-200 bg-surface-100/30' : 'border-surface-100'}`}>
@@ -423,8 +426,8 @@ export default function GanttChart({
                     style={{
                       left: row.bar.left,
                       width: row.bar.width,
-                      top: isProject ? 6 : row.type === 'milestone' ? 6 : 7,
-                      height: isProject ? PROJECT_ROW_H - 12 : row.type === 'milestone' ? ROW_H - 12 : ROW_H - 14,
+                      top: isProject ? 11 : row.type === 'milestone' ? 9 : 9,
+                      height: isProject ? 20 : row.type === 'milestone' ? 14 : 8,
                       background: isProject
                         ? '#64748bA0'
                         : row.type === 'milestone'
@@ -435,7 +438,7 @@ export default function GanttChart({
                         : row.type === 'milestone'
                           ? 'none'
                           : `1px solid ${row.color}C0`,
-                      borderRadius: isProject ? 6 : row.type === 'milestone' ? 6 : 4,
+                      borderRadius: isProject ? 10 : row.type === 'milestone' ? 7 : 4,
                     }}
                     onClick={() => !isProject && onStartEdit(row.id)}
                   >
@@ -453,6 +456,46 @@ export default function GanttChart({
                   </div>
                 )}
 
+                {/* Milestone resource markers */}
+                {row.type === 'milestone' && row.bar && !isEditRow && (() => {
+                  const acts = (row.data?.activities ?? []) as Activity[]
+                  const teamNames = [...new Set(acts.map((a: Activity) => a.assigneeName || a.team?.name).filter(Boolean))]
+                  const skillList = [...new Set(acts.flatMap((a: Activity) => a.skills ?? []))]
+                  const aIds = [...new Set(acts.flatMap((a: Activity) => a.assetIds ?? []))]
+                  const assetNames = aIds.map(id => assets.find((a: any) => a.id === id)?.name).filter(Boolean) as string[]
+                  if (!teamNames.length && !skillList.length && !assetNames.length) return null
+
+                  const tooltip = [
+                    teamNames.length ? `Team: ${teamNames.join(', ')}` : '',
+                    skillList.length ? `Skills: ${skillList.join(', ')}` : '',
+                    assetNames.length ? `Assets: ${assetNames.join(', ')}` : '',
+                  ].filter(Boolean).join('\n')
+
+                  return (
+                    <div
+                      className="absolute flex items-center gap-0.5 z-[2] pointer-events-auto cursor-default"
+                      style={{ left: row.bar.left + row.bar.width + 4, top: '50%', transform: 'translateY(-50%)' }}
+                      title={tooltip}
+                    >
+                      {teamNames.length > 0 && (
+                        <span className="text-[7px] px-1 h-3.5 rounded-full bg-blue-100/80 text-blue-600 inline-flex items-center gap-0.5 whitespace-nowrap">
+                          👤 {teamNames.length}
+                        </span>
+                      )}
+                      {skillList.length > 0 && (
+                        <span className="text-[7px] px-1 h-3.5 rounded-full bg-surface-200/80 text-ink-faint inline-flex items-center gap-0.5 whitespace-nowrap">
+                          🔧 {skillList.length}
+                        </span>
+                      )}
+                      {assetNames.length > 0 && (
+                        <span className="text-[7px] px-1 h-3.5 rounded-full bg-amber-100/80 text-amber-700 inline-flex items-center gap-0.5 whitespace-nowrap">
+                          📦 {assetNames.length}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })()}
+
                 {/* Dimmed bar for editing rows */}
                 {row.bar && isEditRow && (
                   <div
@@ -462,7 +505,7 @@ export default function GanttChart({
                       top: 4, bottom: 4,
                       background: `${row.color}30`,
                       border: `1px dashed ${row.color}80`,
-                      borderRadius: 6,
+                      borderRadius: 9999,
                     }}
                   />
                 )}
