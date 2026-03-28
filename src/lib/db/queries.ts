@@ -1286,7 +1286,7 @@ export async function getProjects(companyId: string) {
     where: { companyId, isArchived: false },
     include: {
       milestones: {
-        include: { activities: true },
+        include: { activities: { include: { category: true } } },
         orderBy: { sortOrder: 'asc' },
       },
     },
@@ -1301,7 +1301,7 @@ export async function getProject(id: string, companyId: string) {
       milestones: {
         include: {
           activities: {
-            include: { team: { include: { members: true } }, assignee: true },
+            include: { team: { include: { members: true } }, assignee: true, category: true },
             orderBy: { sortOrder: 'asc' },
           },
         },
@@ -1409,6 +1409,7 @@ export async function createActivity(milestoneId: string, companyId: string, dat
   color?: string
   sortOrder?: number
   assetIds?: string[]
+  categoryId?: string | null
 }) {
   const milestone = await prisma.projectMilestone.findFirst({
     where: { id: milestoneId },
@@ -1417,7 +1418,7 @@ export async function createActivity(milestoneId: string, companyId: string, dat
   if (!milestone || milestone.project.companyId !== companyId) throw new Error('Milestone not found')
   return prisma.projectActivity.create({
     data: { milestoneId, ...data },
-    include: { team: { include: { members: true } }, assignee: true },
+    include: { team: { include: { members: true } }, assignee: true, category: true },
   })
 }
 
@@ -1433,7 +1434,7 @@ export async function updateActivity(activityId: string, companyId: string, data
   return prisma.projectActivity.update({
     where: { id: activityId },
     data: safe,
-    include: { team: { include: { members: true } }, assignee: true },
+    include: { team: { include: { members: true } }, assignee: true, category: true },
   })
 }
 
@@ -1517,6 +1518,58 @@ export async function deleteTeamMember(memberId: string, companyId: string) {
   })
   if (!member || member.team.companyId !== companyId) throw new Error('Member not found')
   return prisma.workTeamMember.delete({ where: { id: memberId } })
+}
+
+// ─── Activity Categories ───────────────────────────────────────────────
+
+export async function getActivityCategories(companyId: string) {
+  return prisma.activityCategory.findMany({
+    where: { companyId, isActive: true },
+    orderBy: { sortOrder: 'asc' },
+  })
+}
+
+export async function createActivityCategory(companyId: string, data: {
+  name: string
+  color?: string
+  sortOrder?: number
+}) {
+  return prisma.activityCategory.create({
+    data: { companyId, ...data },
+  })
+}
+
+export async function updateActivityCategory(id: string, companyId: string, data: Record<string, any>) {
+  await verifyOwnership(prisma.activityCategory, id, companyId, 'Activity category')
+  const { id: _, companyId: __, createdAt: ___, ...safe } = data
+  return prisma.activityCategory.update({ where: { id }, data: safe })
+}
+
+export async function deleteActivityCategory(id: string, companyId: string) {
+  const cat = await prisma.activityCategory.findFirst({
+    where: { id, companyId },
+    include: { _count: { select: { activities: true } } },
+  })
+  if (!cat) throw new Error('Category not found')
+  if (cat.isDefault) throw new Error('Cannot delete the default category')
+  if (cat._count.activities > 0) throw new Error('Category is in use by activities')
+  return prisma.activityCategory.delete({ where: { id } })
+}
+
+export async function getCompanyHoursPerDay(companyId: string) {
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { hoursPerDay: true },
+  })
+  return company?.hoursPerDay ?? 8
+}
+
+export async function updateCompanyHoursPerDay(companyId: string, hoursPerDay: number) {
+  return prisma.company.update({
+    where: { id: companyId },
+    data: { hoursPerDay },
+    select: { hoursPerDay: true },
+  })
 }
 
 // ─── Project Assets ─────────────────────────────────────────────────────────

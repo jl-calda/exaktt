@@ -29,17 +29,19 @@ interface InlineActivityFormProps {
     assetIds: string[]; skills?: string[]; requiredOutput: string[]
     estimatedHours?: number | null
     icon?: string | null
+    categoryId?: string | null
   }
   defaultColor: string
   defaultIcon: string
   teams: any[]
   assets: any[]
+  categories?: { id: string; name: string; color: string; isDefault: boolean }[]
   onSave: (data: any) => Promise<void>
   onCancel: () => void
 }
 
 export default function InlineActivityForm({
-  activity, defaultColor, defaultIcon, teams, assets, onSave, onCancel,
+  activity, defaultColor, defaultIcon, teams, assets, categories = [], onSave, onCancel,
 }: InlineActivityFormProps) {
   const [name, setName] = useState(activity?.name ?? '')
   const [description, setDescription] = useState(activity?.description ?? '')
@@ -60,6 +62,7 @@ export default function InlineActivityForm({
   const [estimatedHours, setEstimatedHours] = useState<string>(
     activity?.estimatedHours != null ? String(activity.estimatedHours) : ''
   )
+  const [categoryId, setCategoryId] = useState(activity?.categoryId ?? '')
   const [selectedAssets, setSelectedAssets] = useState<string[]>(activity?.assetIds ?? [])
   const [skills, setSkills] = useState<string[]>(activity?.skills ?? [])
   const [skillInput, setSkillInput] = useState('')
@@ -135,6 +138,7 @@ export default function InlineActivityForm({
     try {
       await onSave({
         name: name.trim(), description: description || null, status, progress, color, icon,
+        categoryId: categoryId || null,
         teamId: teamId || null, assigneeName: assigneeName || null,
         startDate: startDate || null, endDate: endDate || null,
         isWithinDay, startTime: isWithinDay ? startTime || null : null,
@@ -214,6 +218,19 @@ export default function InlineActivityForm({
           />
         </div>
       </div>
+
+      {/* Category */}
+      {categories.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Category</span>
+          <select className="input h-6 text-xs px-1.5 w-40" value={categoryId} onChange={e => setCategoryId(e.target.value)}>
+            <option value="">General (default)</option>
+            {categories.filter(c => !c.isDefault).map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Schedule */}
       <div className="flex flex-col gap-1.5">
