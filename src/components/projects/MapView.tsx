@@ -1,7 +1,7 @@
 // src/components/projects/MapView.tsx
 'use client'
 import { useEffect, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -13,40 +13,73 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: '#9ca3af',
 }
 
+function esc(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 function createPillIcon(project: MapProject, isSelected: boolean, isDimmed: boolean) {
   const color = STATUS_COLORS[project.status] ?? '#64748b'
-  const teamCount = project.teams?.length ?? 0
-  const name = project.name.length > 20 ? project.name.slice(0, 18) + '…' : project.name
+  const teams = project.teams ?? []
+  const skills = project.skills ?? []
+  const assets = project.assetNames ?? []
+  const name = project.name.length > 24 ? project.name.slice(0, 22) + '…' : project.name
+  const addr = project.address
+    ? (project.address.length > 30 ? project.address.slice(0, 28) + '…' : project.address)
+    : ''
+  const font = 'Inter,system-ui,sans-serif'
 
-  const html = `<div style="
-    display: flex; align-items: center; gap: 5px;
-    background: ${isSelected ? '#f8fafc' : 'white'};
-    border: 1px solid ${isSelected ? color : '#e2e8f0'};
-    border-left: 3px solid ${color};
-    border-radius: 8px;
-    padding: 3px 8px 3px 6px;
-    font-family: Inter, system-ui, sans-serif;
-    font-size: 11px; font-weight: 600; color: #1e293b;
-    white-space: nowrap;
-    box-shadow: ${isSelected ? '0 2px 8px rgba(0,0,0,0.18)' : '0 1px 3px rgba(0,0,0,0.12)'};
-    opacity: ${isDimmed ? '0.35' : '1'};
-    transition: opacity 0.2s;
-    cursor: pointer;
-  ">
-    <span style="width:6px;height:6px;border-radius:50%;background:${color};flex-shrink:0;"></span>
-    <span style="overflow:hidden;text-overflow:ellipsis;">${name}</span>
-    ${teamCount > 0 ? `<span style="
-      font-size:9px; font-weight:700; color:#2563eb;
-      background:#dbeafe; border-radius:6px; padding:0 4px;
-      min-width:14px; text-align:center; flex-shrink:0;
-    ">${teamCount}</span>` : ''}
+  const teamHtml = teams.length > 0
+    ? `<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;">
+        ${teams.map(t => `<span style="display:inline-block;padding:1px 6px;border-radius:10px;background:#dbeafe;color:#2563eb;font-size:10px;font-weight:500;font-family:${font};">${esc(t)}</span>`).join('')}
+      </div>`
+    : ''
+
+  const skillHtml = skills.length > 0
+    ? `<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:3px;">
+        ${skills.slice(0, 4).map(s => `<span style="display:inline-block;padding:1px 5px;border-radius:10px;background:#f3f4f6;color:#6b7280;font-size:9px;font-family:${font};">${esc(s)}</span>`).join('')}
+        ${skills.length > 4 ? `<span style="font-size:9px;color:#9ca3af;font-family:${font};">+${skills.length - 4}</span>` : ''}
+      </div>`
+    : ''
+
+  const assetHtml = assets.length > 0
+    ? `<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:3px;">
+        ${assets.slice(0, 3).map(n => `<span style="display:inline-block;padding:1px 5px;border-radius:10px;background:#fef3c7;color:#92400e;font-size:9px;font-family:${font};">${esc(n)}</span>`).join('')}
+        ${assets.length > 3 ? `<span style="font-size:9px;color:#9ca3af;font-family:${font};">+${assets.length - 3}</span>` : ''}
+      </div>`
+    : ''
+
+  const hasDetails = addr || teams.length > 0 || skills.length > 0 || assets.length > 0
+
+  const html = `<div style="opacity:${isDimmed ? '0.35' : '1'};transition:opacity 0.2s;">
+    <div style="
+      background:white;
+      border:1px solid ${isSelected ? color : '#e2e8f0'};
+      border-left:3px solid ${color};
+      border-radius:10px;
+      padding:${hasDetails ? '8px 12px 10px' : '6px 10px 6px 8px'};
+      font-family:${font};
+      box-shadow:${isSelected ? '0 2px 8px rgba(0,0,0,0.18)' : '0 1px 4px rgba(0,0,0,0.1)'};
+      cursor:pointer;
+      max-width:200px;
+    ">
+      <div style="display:flex;align-items:center;gap:5px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:${color};flex-shrink:0;"></span>
+        <span style="font-size:12px;font-weight:700;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(name)}</span>
+      </div>
+      ${addr ? `<div style="font-size:10px;color:#6b7280;margin-top:2px;padding-left:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(addr)}</div>` : ''}
+      <div style="padding-left:11px;">
+        ${teamHtml}
+        ${skillHtml}
+        ${assetHtml}
+      </div>
+    </div>
   </div>`
 
   return L.divIcon({
     className: 'map-pill-marker',
     html,
     iconSize: [0, 0],
-    iconAnchor: [0, 14],
+    iconAnchor: [0, 20],
   })
 }
 
@@ -79,7 +112,7 @@ function FitBounds({ projects }: { projects: MapProject[] }) {
     const bounds = L.latLngBounds(
       projects.map(p => [p.latitude!, p.longitude!] as [number, number]),
     )
-    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 })
+    map.fitBounds(bounds, { padding: [80, 80], maxZoom: 14 })
     fitted.current = true
   }, [projects, map])
 
@@ -106,15 +139,12 @@ export default function MapView({ projects, selectedId, onSelect, dimmedIds }: P
 
       <style>{`
         .map-pill-marker { background: none !important; border: none !important; }
-        .map-team-tooltip { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
-        .map-team-tooltip::before { display: none !important; }
       `}</style>
 
       {projects.map(p => {
         if (p.latitude == null || p.longitude == null) return null
         const isSelected = p.id === selectedId
         const isDimmed = dimmedIds ? dimmedIds.has(p.id) : false
-        const hasTeams = (p.teams?.length ?? 0) > 0
 
         return (
           <Marker
@@ -124,71 +154,7 @@ export default function MapView({ projects, selectedId, onSelect, dimmedIds }: P
             eventHandlers={{
               click: () => onSelect(p.id),
             }}
-          >
-            {/* Always-visible team tooltip below the marker */}
-            {hasTeams && (
-              <Tooltip
-                permanent
-                direction="bottom"
-                offset={[0, 4]}
-                className="map-team-tooltip"
-              >
-                <div style={{
-                  display: 'flex', gap: '3px', flexWrap: 'wrap',
-                  opacity: isDimmed ? 0.35 : 1, transition: 'opacity 0.2s',
-                }}>
-                  {p.teams!.map(t => (
-                    <span key={t} style={{
-                      display: 'inline-block', padding: '1px 6px', borderRadius: '10px',
-                      background: '#dbeafe', color: '#2563eb', fontSize: '10px', fontWeight: 500,
-                      fontFamily: 'Inter, system-ui, sans-serif',
-                    }}>{t}</span>
-                  ))}
-                </div>
-              </Tooltip>
-            )}
-
-            {/* Detailed popup on click */}
-            <Popup>
-              <div style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: '12px', maxWidth: '220px' }}>
-                <strong>{p.name}</strong>
-                {p.address && <div style={{ color: '#6b7280', marginTop: '2px', fontSize: '11px' }}>{p.address}</div>}
-                {p.teams && p.teams.length > 0 && (
-                  <div style={{ marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
-                    {p.teams.map(t => (
-                      <span key={t} style={{
-                        display: 'inline-block', padding: '1px 6px', borderRadius: '10px',
-                        background: '#dbeafe', color: '#2563eb', fontSize: '10px', fontWeight: 500,
-                      }}>{t}</span>
-                    ))}
-                  </div>
-                )}
-                {p.skills && p.skills.length > 0 && (
-                  <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
-                    {p.skills.slice(0, 5).map(s => (
-                      <span key={s} style={{
-                        display: 'inline-block', padding: '1px 6px', borderRadius: '10px',
-                        background: '#f3f4f6', color: '#6b7280', fontSize: '10px',
-                      }}>{s}</span>
-                    ))}
-                    {p.skills.length > 5 && (
-                      <span style={{ fontSize: '10px', color: '#9ca3af' }}>+{p.skills.length - 5}</span>
-                    )}
-                  </div>
-                )}
-                {p.assetNames && p.assetNames.length > 0 && (
-                  <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
-                    {p.assetNames.map(n => (
-                      <span key={n} style={{
-                        display: 'inline-block', padding: '1px 6px', borderRadius: '10px',
-                        background: '#fef3c7', color: '#92400e', fontSize: '10px',
-                      }}>{n}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </Popup>
-          </Marker>
+          />
         )
       })}
     </MapContainer>

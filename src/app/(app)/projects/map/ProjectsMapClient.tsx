@@ -3,8 +3,8 @@
 import { useState, useMemo, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { format, isSameDay, isWithinInterval, parseISO, addDays, subDays } from 'date-fns'
-import { MapPin, Filter, Calendar, Users, Wrench, ChevronLeft, ChevronRight } from 'lucide-react'
+import { format, isSameDay, isWithinInterval, addDays, differenceInDays, startOfMonth, eachMonthOfInterval } from 'date-fns'
+import { MapPin, Filter, Calendar, Users, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import type { MapProject } from '@/components/projects/MapView'
 
@@ -75,8 +75,8 @@ function getProjectAssetIds(p: Project): string[] {
 function hasActivityOnDate(p: Project, date: Date): boolean {
   return getProjectActivities(p).some(a => {
     if (!a.startDate && !a.endDate) return false
-    const start = a.startDate ? parseISO(typeof a.startDate === 'string' ? a.startDate : new Date(a.startDate).toISOString()) : null
-    const end = a.endDate ? parseISO(typeof a.endDate === 'string' ? a.endDate : new Date(a.endDate).toISOString()) : null
+    const start = a.startDate ? new Date(a.startDate) : null
+    const end = a.endDate ? new Date(a.endDate) : null
     if (start && end) return isWithinInterval(date, { start, end })
     if (start) return isSameDay(date, start) || date >= start
     if (end) return isSameDay(date, end) || date <= end
@@ -169,14 +169,65 @@ export default function ProjectsMapClient({ projects, teams, assets }: Props) {
 
   const noGeoCount = projects.length - geoProjects.length
 
-  const stepDate = useCallback((days: number) => {
-    if (!timelineDate) {
-      setTimelineDate(format(new Date(), 'yyyy-MM-dd'))
-      return
+  // Compute date range from all activity dates for the slider
+  const dateRange = useMemo(() => {
+    let min: Date | null = null
+    let max: Date | null = null
+    projects.forEach(p => {
+      p.milestones.forEach(m => {
+        m.activities.forEach(a => {
+          if (a.startDate) {
+            const d = new Date(a.startDate)
+            if (!min || d < min) min = d
+            if (!max || d > max) max = d
+          }
+          if (a.endDate) {
+            const d = new Date(a.endDate)
+            if (!min || d < min) min = d
+            if (!max || d > max) max = d
+          }
+        })
+      })
+    })
+    if (!min || !max) {
+      // Fallback: 1 year centered on today
+      const today = new Date()
+      min = addDays(today, -30)
+      max = addDays(today, 335)
     }
-    const d = days > 0 ? addDays(new Date(timelineDate), days) : subDays(new Date(timelineDate), Math.abs(days))
+    // Add padding
+    min = addDays(min!, -7)
+    max = addDays(max!, 7)
+    const totalDays = differenceInDays(max, min)
+    return { min: min!, max: max!, totalDays }
+  }, [projects])
+
+  // Month labels for slider
+  const monthLabels = useMemo(() => {
+    const months = eachMonthOfInterval({ start: dateRange.min, end: dateRange.max })
+    return months.map(m => ({
+      label: format(m, 'MMM'),
+      year: format(m, 'yy'),
+      pct: (differenceInDays(m, dateRange.min) / dateRange.totalDays) * 100,
+    }))
+  }, [dateRange])
+
+  // Slider value (day offset from min)
+  const sliderValue = useMemo(() => {
+    if (!timelineDate) return Math.round(dateRange.totalDays / 2)
+    return differenceInDays(new Date(timelineDate), dateRange.min)
+  }, [timelineDate, dateRange])
+
+  const handleSliderChange = useCallback((value: number) => {
+    const d = addDays(dateRange.min, value)
     setTimelineDate(format(d, 'yyyy-MM-dd'))
-  }, [timelineDate])
+  }, [dateRange])
+
+  // Today position on slider
+  const todayOffset = useMemo(() => {
+    const d = differenceInDays(new Date(), dateRange.min)
+    return Math.max(0, Math.min(dateRange.totalDays, d))
+  }, [dateRange])
 
   return (
     <div className="flex-1 min-w-0 flex flex-col">
@@ -384,15 +435,17 @@ export default function ProjectsMapClient({ projects, teams, assets }: Props) {
         )}
       </div>
 
-      {/* Timeline bar */}
-      <div className="px-4 py-2.5 md:px-6 border-t border-surface-200 bg-surface-50">
-        <div className="flex items-center gap-3">
+      {/* Timeline slider bar */}
+      <div className="px-4 py-3 md:px-6 border-t border-surface-200 bg-surface-50">
+        {/* Header row */}
+        <div className="flex items-center gap-3 mb-2">
           <button
             onClick={() => {
-              setTimelineActive(!timelineActive)
-              if (!timelineDate) setTimelineDate(format(new Date(), 'yyyy-MM-dd'))
+              const next = !timelineActive
+              setTimelineActive(next)
+              if (next && !timelineDate) setTimelineDate(format(new Date(), 'yyyy-MM-dd'))
             }}
-            className={`flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors ${
+            className={`flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors shrink-0 ${
               timelineActive
                 ? 'bg-primary text-white'
                 : 'bg-surface-100 text-ink-muted hover:text-ink hover:bg-surface-200'
@@ -402,53 +455,93 @@ export default function ProjectsMapClient({ projects, teams, assets }: Props) {
             Timeline
           </button>
 
-          {timelineActive && (
-            <>
-              <div className="flex items-center gap-1">
-                <button onClick={() => stepDate(-1)}
-                  className="p-1 rounded hover:bg-surface-100 text-ink-faint hover:text-ink">
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <input
-                  type="date"
-                  value={timelineDate}
-                  onChange={e => setTimelineDate(e.target.value)}
-                  className="input h-6 text-[11px] text-ink-muted py-0 px-2 w-36"
-                />
-                <button onClick={() => stepDate(1)}
-                  className="p-1 rounded hover:bg-surface-100 text-ink-faint hover:text-ink">
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setTimelineDate(format(new Date(), 'yyyy-MM-dd'))}
-                  className="text-[10px] text-primary font-medium px-1.5 hover:underline"
-                >
-                  Today
-                </button>
-              </div>
+          {timelineActive && timelineDate && (
+            <span className="text-xs font-semibold text-ink">
+              {format(new Date(timelineDate), 'EEE, d MMM yyyy')}
+            </span>
+          )}
 
-              {/* Team locations summary */}
-              {teamLocations.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
-                  <span className="text-[10px] text-ink-faint shrink-0">Teams:</span>
-                  {teamLocations.map((loc, i) => (
-                    <button
-                      key={`${loc.teamName}-${loc.projectId}-${i}`}
-                      onClick={() => setSelected(loc.projectId)}
-                      className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors cursor-pointer shrink-0"
-                      title={`${loc.teamName} at ${loc.projectName}`}
-                    >
-                      {loc.teamName} → {loc.projectName}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {timelineActive && timelineDate && teamLocations.length === 0 && (
-                <span className="text-[10px] text-ink-faint">No team activity on this date</span>
-              )}
-            </>
+          {timelineActive && (
+            <button
+              onClick={() => {
+                setTimelineDate(format(new Date(), 'yyyy-MM-dd'))
+              }}
+              className="text-[10px] text-primary font-medium px-1.5 hover:underline shrink-0"
+            >
+              Today
+            </button>
+          )}
+
+          {/* Team locations summary */}
+          {timelineActive && teamLocations.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
+              <span className="text-[10px] text-ink-faint shrink-0">Teams:</span>
+              {teamLocations.map((loc, i) => (
+                <button
+                  key={`${loc.teamName}-${loc.projectId}-${i}`}
+                  onClick={() => setSelected(loc.projectId)}
+                  className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors cursor-pointer shrink-0"
+                  title={`${loc.teamName} at ${loc.projectName}`}
+                >
+                  {loc.teamName} → {loc.projectName}
+                </button>
+              ))}
+            </div>
+          )}
+          {timelineActive && timelineDate && teamLocations.length === 0 && (
+            <span className="text-[10px] text-ink-faint">No team activity on this date</span>
           )}
         </div>
+
+        {/* Slider */}
+        {timelineActive && (
+          <div className="relative">
+            {/* Month labels */}
+            <div className="relative h-4 mb-1">
+              {monthLabels.map((m, i) => (
+                <span
+                  key={i}
+                  className="absolute text-[10px] text-ink-faint font-medium"
+                  style={{ left: `${m.pct}%`, transform: 'translateX(-50%)' }}
+                >
+                  {m.label}
+                </span>
+              ))}
+            </div>
+
+            {/* Slider track */}
+            <div className="relative h-8 flex items-center">
+              {/* Today marker */}
+              <div
+                className="absolute top-0 bottom-0 w-px bg-primary/40 z-10"
+                style={{ left: `${(todayOffset / dateRange.totalDays) * 100}%` }}
+                title="Today"
+              />
+
+              <input
+                type="range"
+                min={0}
+                max={dateRange.totalDays}
+                step={1}
+                value={sliderValue}
+                onChange={e => handleSliderChange(Number(e.target.value))}
+                className="w-full h-1.5 appearance-none bg-surface-200 rounded-full cursor-pointer
+                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
+                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:border-2
+                  [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer
+                  [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full
+                  [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white
+                  [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
+              />
+            </div>
+
+            {/* Date range labels */}
+            <div className="flex justify-between mt-0.5">
+              <span className="text-[10px] text-ink-faint">{format(dateRange.min, 'd MMM yyyy')}</span>
+              <span className="text-[10px] text-ink-faint">{format(dateRange.max, 'd MMM yyyy')}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
