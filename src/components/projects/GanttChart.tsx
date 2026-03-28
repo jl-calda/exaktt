@@ -13,7 +13,7 @@ import InlineActivityForm from './InlineActivityForm'
 import { getMilestoneColor, getActivityColor, getDefaultMilestoneIcon, getDefaultActivityIcon } from './colors'
 
 const ROW_H = 32
-const PROJECT_ROW_H = 36
+const PROJECT_ROW_H = 42
 const LABEL_W = 220
 const EDIT_LABEL_W = 340
 const COL_WIDTHS = { days: 40, weeks: 120, months: 200 }
@@ -35,6 +35,7 @@ type Milestone = {
 }
 type Project = {
   id: string; name: string
+  clientName?: string | null; address?: string | null
   startDate?: string | null; endDate?: string | null
   milestones: Milestone[]
 }
@@ -163,6 +164,7 @@ export default function GanttChart({
     endTime?: string | null
     isCollapsed?: boolean
     isEditing?: boolean
+    subtitle?: string | null
     data: any
   }
 
@@ -173,9 +175,10 @@ export default function GanttChart({
     // Project row
     const pBar = getBarPos(p.startDate, p.endDate)
     const isProjectCollapsed = collapsedProjects?.has(p.id) ?? false
+    const subtitle = [p.clientName, p.address].filter(Boolean).join(' · ') || null
     rows.push({
       type: 'project', id: `project-${p.id}`, projectId: p.id,
-      label: p.name, color: '#64748b', icon: '📊',
+      label: p.name, subtitle, color: '#64748b', icon: '📊',
       bar: pBar, isCollapsed: isProjectCollapsed, data: p,
     })
 
@@ -330,18 +333,25 @@ export default function GanttChart({
                   )}
 
                   {/* Label */}
-                  <span
-                    className={`truncate flex-1 ${
-                      isProject
-                        ? 'text-xs font-bold text-ink'
-                        : row.type === 'milestone'
-                          ? 'text-[11px] font-semibold text-ink cursor-pointer hover:text-primary'
-                          : 'text-[11px] text-ink-muted cursor-pointer hover:text-primary'
-                    }`}
+                  <div
+                    className={`truncate flex-1 min-w-0 ${!isProject ? 'cursor-pointer' : ''}`}
                     onClick={() => !isProject && onStartEdit(row.id)}
                   >
-                    {row.label}
-                  </span>
+                    <span
+                      className={`truncate block ${
+                        isProject
+                          ? 'text-xs font-bold text-ink'
+                          : row.type === 'milestone'
+                            ? 'text-[11px] font-semibold text-ink hover:text-primary'
+                            : 'text-[11px] text-ink-muted hover:text-primary'
+                      }`}
+                    >
+                      {row.label}
+                    </span>
+                    {isProject && row.subtitle && (
+                      <span className="text-[10px] text-ink-faint truncate block leading-tight">{row.subtitle}</span>
+                    )}
+                  </div>
 
                   {/* Team pill on activities */}
                   {row.type === 'activity' && (row.team || row.assigneeName) && (

@@ -15,10 +15,18 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
   CANCELLED: { label: 'Cancelled', color: '#9ca3af' },
 }
 
+type SortOption = 'created' | 'name' | 'status' | 'startDate' | 'client'
+
+const STATUS_ORDER: Record<string, number> = {
+  PLANNING: 0, ACTIVE: 1, ON_HOLD: 2, COMPLETED: 3, CANCELLED: 4,
+}
+
 type Project = {
   id: string
   name: string
   clientName?: string | null
+  address?: string | null
+  createdAt?: string | null
   status: string
   startDate?: string | null
   endDate?: string | null
@@ -46,11 +54,32 @@ export default function OverviewClient({ projects }: Props) {
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set())
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set())
+  const [sortBy, setSortBy] = useState<SortOption>('created')
 
-  const filtered = useMemo(
-    () => statusFilter ? projects.filter(p => p.status === statusFilter) : projects,
-    [projects, statusFilter],
-  )
+  const filtered = useMemo(() => {
+    const result = statusFilter ? projects.filter(p => p.status === statusFilter) : [...projects]
+    switch (sortBy) {
+      case 'name':
+        result.sort((a, b) => a.name.localeCompare(b.name))
+        break
+      case 'status':
+        result.sort((a, b) => (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99))
+        break
+      case 'startDate':
+        result.sort((a, b) => {
+          if (!a.startDate) return 1
+          if (!b.startDate) return -1
+          return new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+        })
+        break
+      case 'client':
+        result.sort((a, b) => (a.clientName ?? '').localeCompare(b.clientName ?? ''))
+        break
+      default:
+        break
+    }
+    return result
+  }, [projects, statusFilter, sortBy])
 
   const toggleProjectCollapse = useCallback((id: string) => {
     setCollapsedProjects(prev => {
@@ -106,7 +135,7 @@ export default function OverviewClient({ projects }: Props) {
           />
         </div>
 
-        {/* Status filters */}
+        {/* Status filters + Sort */}
         <div className="flex items-center gap-1.5 flex-wrap mb-4">
           <Filter className="w-3 h-3 text-ink-faint" />
           <button onClick={() => setStatusFilter(null)}
@@ -120,6 +149,20 @@ export default function OverviewClient({ projects }: Props) {
               {STATUS_META[st].label}
             </button>
           ))}
+          <div className="flex items-center gap-1.5 ml-auto">
+            <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide">Sort</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="input text-[11px] py-0.5 px-2 pr-6 h-6"
+            >
+              <option value="created">Date Created</option>
+              <option value="name">Name (A-Z)</option>
+              <option value="status">Status</option>
+              <option value="startDate">Start Date</option>
+              <option value="client">Client Name</option>
+            </select>
+          </div>
         </div>
 
         {/* Unified Gantt — all projects on one shared timeline */}
