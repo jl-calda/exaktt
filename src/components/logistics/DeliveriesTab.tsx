@@ -1,15 +1,12 @@
 // src/components/logistics/DeliveriesTab.tsx
 'use client'
 import { useState, useMemo } from 'react'
-import { Plus, Edit3, Trash2, Check, X, Truck, FileText, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Truck, FileText, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
-import { Select } from '@/components/ui/Select'
-import { Modal } from '@/components/ui/Modal'
 import DataTable, { useTableSort, type Column } from '@/components/ui/DataTable'
 import { format } from 'date-fns'
-import { nanoid } from 'nanoid'
 
 type DOStatus = 'PENDING' | 'PARTIAL' | 'DELIVERED' | 'CANCELLED'
 
@@ -25,8 +22,6 @@ const STATUS_TABS: Array<{ id: DOStatus | 'all'; label: string }> = [
   { id: 'PARTIAL', label: 'Partial' }, { id: 'DELIVERED', label: 'Delivered' },
 ]
 
-interface LineItem { _key: string; poLineId: string | null; libraryItemId: string; itemName: string; itemUnit: string; qtyExpected: number; qtyDelivered: number }
-
 interface Props {
   dos:         any[]
   pos:         any[]
@@ -35,23 +30,40 @@ interface Props {
   onRefreshPos: () => void
 }
 
-const DO_UNITS = [
-  'each', 'pcs', 'm', 'mm', 'kg', 'L', 'set', 'pack',
-].map(u => ({ value: u, label: u }))
-
-const BLANK_LINE = (): LineItem => ({ _key: nanoid(6), poLineId: null, libraryItemId: '', itemName: '', itemUnit: 'each', qtyExpected: 1, qtyDelivered: 0 })
-
 export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshPos }: Props) {
   const router = useRouter()
-  const [filter,    setFilter]    = useState<DOStatus | 'all'>('all')
-  const [showModal, setShowModal] = useState(false)
-  const [editing,   setEditing]   = useState<any | null>(null)
-  const [loading,   setLoading]   = useState(false)
-  const [deleteId,  setDeleteId]  = useState<string | null>(null)
-  const [creatingDoc, setCreatingDoc] = useState<string | null>(null)
+  const [filter,      setFilter]      = useState<DOStatus | 'all'>('all')
+  const [deleteId,    setDeleteId]    = useState<string | null>(null)
+  const [creatingNew, setCreatingNew] = useState(false)
+  const [navigatingId, setNavigatingId] = useState<string | null>(null)
 
-  async function createDocForDO(doItem: any) {
-    setCreatingDoc(doItem.id)
+  // Create a new DO document and navigate to the doc builder
+  async function handleNewDO() {
+    setCreatingNew(true)
+    try {
+      const res = await fetch('/api/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          docType: 'delivery_order',
+          title: 'Delivery Order',
+          blocks: [],
+        }),
+      })
+      const json = await res.json()
+      if (json.data?.id) {
+        router.push(`/logistics/documents/${json.data.id}`)
+      }
+    } catch (err) {
+      console.error('Failed to create document:', err)
+    } finally {
+      setCreatingNew(false)
+    }
+  }
+
+  // Open an existing DO in the doc builder (create a linked document)
+  async function openInBuilder(doItem: any) {
+    setNavigatingId(doItem.id)
     try {
       const res = await fetch('/api/documents', {
         method: 'POST',
@@ -70,76 +82,8 @@ export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshP
     } catch (err) {
       console.error('Failed to create document:', err)
     } finally {
-      setCreatingDoc(null)
+      setNavigatingId(null)
     }
-  }
-
-  // Form state
-  const [poId,         setPoId]         = useState('')
-  const [ref,          setRef]          = useState('')
-  const [expectedDate, setExpectedDate] = useState('')
-  const [doStatus,     setDoStatus]     = useState<DOStatus>('PENDING')
-  const [notes,        setNotes]        = useState('')
-  const [lines,        setLines]        = useState<LineItem[]>([BLANK_LINE()])
-
-  const filtered = filter === 'all' ? dos : dos.filter(d => d.status === filter)
-
-  const openCreate = () => {
-    setEditing(null)
-    setPoId(''); setRef(''); setExpectedDate(''); setDoStatus('PENDING'); setNotes('')
-    setLines([BLANK_LINE()])
-    setShowModal(true)
-  }
-
-  const openEdit = (doItem: any) => {
-    setEditing(doItem)
-    setPoId(doItem.poId ?? '')
-    setRef(doItem.ref ?? '')
-    setExpectedDate(doItem.expectedDate ? format(new Date(doItem.expectedDate), 'yyyy-MM-dd') : '')
-    setDoStatus(doItem.status)
-    setNotes(doItem.notes ?? '')
-    setLines((doItem.lines ?? []).map((l: any) => ({
-      _key: l.id, poLineId: l.poLineId ?? null, libraryItemId: l.libraryItemId ?? '',
-      itemName: l.itemName, itemUnit: l.itemUnit, qtyExpected: l.qtyExpected, qtyDelivered: l.qtyDelivered,
-    })))
-    setShowModal(true)
-  }
-
-  // When PO is selected, prefill lines from PO lines
-  const handlePoSelect = (id: string) => {
-    setPoId(id)
-    if (!id) { setLines([BLANK_LINE()]); return }
-    const po = pos.find(p => p.id === id)
-    if (!po?.lines?.length) return
-    setLines(po.lines.map((l: any) => ({
-      _key: nanoid(6), poLineId: l.id, libraryItemId: l.libraryItemId ?? '',
-      itemName: l.itemName, itemUnit: l.itemUnit, qtyExpected: l.qtyOrdered, qtyDelivered: 0,
-    })))
-  }
-
-  const addLine    = () => setLines(ls => [...ls, BLANK_LINE()])
-  const removeLine = (key: string) => setLines(ls => ls.filter(l => l._key !== key))
-  const updateLine = (key: string, patch: Partial<LineItem>) => setLines(ls => ls.map(l => l._key === key ? { ...l, ...patch } : l))
-
-  const save = async () => {
-    if (!lines.some(l => l.itemName.trim())) return
-    setLoading(true)
-    const payload = {
-      poId: poId || null,
-      ref: ref.trim() || null,
-      expectedDate: expectedDate || null,
-      status: doStatus,
-      notes: notes.trim() || null,
-      lines: lines.filter(l => l.itemName.trim()).map(({ _key, ...l }) => l),
-    }
-    if (editing) {
-      await fetch('/api/logistics/do', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editing.id, ...payload }) })
-    } else {
-      await fetch('/api/logistics/do', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-    }
-    setLoading(false)
-    setShowModal(false)
-    onRefresh()
   }
 
   const markDelivered = async (doItem: any) => {
@@ -158,7 +102,8 @@ export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshP
     onRefresh()
   }
 
-  /* ── DataTable columns ── */
+  const filtered = filter === 'all' ? dos : dos.filter(d => d.status === filter)
+
   const columns = useMemo<Column<any>[]>(() => [
     {
       key: 'ref',
@@ -217,6 +162,7 @@ export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshP
       width: 'w-32',
       render: (d) => {
         const isPending = ['PENDING', 'PARTIAL'].includes(d.status)
+        const isNav = navigatingId === d.id
         return (
           <div className="flex gap-0.5 justify-end items-center" onClick={e => e.stopPropagation()}>
             {isPending && (
@@ -227,22 +173,20 @@ export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshP
               <Button
                 size="xs"
                 variant="ghost"
-                onClick={() => createDocForDO(d)}
-                icon={creatingDoc === d.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileText className="w-3 h-3" />}
-                title="Create PDF Document"
+                onClick={() => openInBuilder(d)}
+                icon={isNav ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileText className="w-3 h-3" />}
+                title="Open in doc builder"
               />
-              <Button size="xs" variant="ghost" onClick={() => openEdit(d)} icon={<Edit3 className="w-3 h-3" />} />
               <Button size="xs" variant="danger-ghost" onClick={() => setDeleteId(d.id)} icon={<Trash2 className="w-3 h-3" />} />
             </div>
           </div>
         )
       },
     },
-  ], [])
+  ], [navigatingId])
 
   const { sorted, sortKey, sortDir, onSort } = useTableSort(filtered, columns)
 
-  /* ── Nested lines renderer ── */
   const renderExpandedLines = (doItem: any) => (
     <div className="px-10 pb-3 pt-1">
       <table className="w-full text-xs">
@@ -298,7 +242,7 @@ export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshP
               ))}
             </div>
             <div className="flex-1" />
-            <Button size="sm" onClick={openCreate} icon={<Plus className="w-3.5 h-3.5" />}>New Delivery</Button>
+            <Button size="sm" onClick={handleNewDO} disabled={creatingNew} icon={creatingNew ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}>New Delivery</Button>
           </>
         }
         emptyIcon="🚚"
@@ -306,83 +250,6 @@ export default function DeliveriesTab({ dos, pos, library, onRefresh, onRefreshP
         emptyMessage={dos.length === 0 ? 'Create your first delivery order to get started.' : 'Try adjusting the filter above.'}
       />
 
-      {/* Create / Edit modal */}
-      <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Delivery Order' : 'New Delivery Order'} maxWidth="max-w-2xl">
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">Link to Purchase Order</label>
-              <select className="input" value={poId} onChange={e => handlePoSelect(e.target.value)}>
-                <option value="">— optional —</option>
-                {pos.filter(p => p.status !== 'CANCELLED').map(p => (
-                  <option key={p.id} value={p.id}>{p.ref || `PO-${p.id.slice(0, 6).toUpperCase()}`}{p.supplierName ? ` · ${p.supplierName}` : ''}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="label">DO Reference</label>
-              <input className="input" value={ref} onChange={e => setRef(e.target.value)} placeholder="e.g. DO-2025-001" />
-            </div>
-            <div>
-              <label className="label">Expected Date</label>
-              <input className="input" type="date" value={expectedDate} onChange={e => setExpectedDate(e.target.value)} />
-            </div>
-            <div>
-              <label className="label">Status</label>
-              <select className="input" value={doStatus} onChange={e => setDoStatus(e.target.value as DOStatus)}>
-                {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-              </select>
-            </div>
-            <div className="col-span-2">
-              <label className="label">Notes</label>
-              <input className="input" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Optional" />
-            </div>
-          </div>
-
-          <div className="border-t border-surface-200 pt-4">
-            <div className="text-[10px] font-semibold text-ink-faint uppercase tracking-wide mb-3">Line Items</div>
-            <div className="space-y-2">
-              {lines.map(line => (
-                <div key={line._key} className="flex gap-2 items-end">
-                  <div className="flex-1 min-w-0">
-                    <label className="label">Material</label>
-                    <input value={line.itemName} onChange={e => updateLine(line._key, { itemName: e.target.value })}
-                      list={`dlib-${line._key}`} placeholder="Material name…" className="input text-xs py-1.5" />
-                    <datalist id={`dlib-${line._key}`}>
-                      {library.map(item => <option key={item.id} value={item.name} />)}
-                    </datalist>
-                  </div>
-                  <div className="w-20">
-                    <label className="label">Unit</label>
-                    <Select options={DO_UNITS} value={line.itemUnit} onChange={e => updateLine(line._key, { itemUnit: e.target.value })} className="text-xs py-1.5" />
-                  </div>
-                  <div className="w-20">
-                    <label className="label">Expected</label>
-                    <input className="input text-xs py-1.5" type="number" min={0} step="any" value={line.qtyExpected} onChange={e => updateLine(line._key, { qtyExpected: parseFloat(e.target.value) || 0 })} />
-                  </div>
-                  <div className="w-20">
-                    <label className="label">Delivered</label>
-                    <input className="input text-xs py-1.5" type="number" min={0} step="any" value={line.qtyDelivered} onChange={e => updateLine(line._key, { qtyDelivered: parseFloat(e.target.value) || 0 })} />
-                  </div>
-                  <Button size="xs" variant="danger" onClick={() => removeLine(line._key)} icon={<X className="w-3 h-3" />} />
-                </div>
-              ))}
-              <button onClick={addLine}
-                className="w-full flex items-center justify-center gap-1.5 border-2 border-dashed border-surface-300 rounded py-2 text-xs text-ink-faint hover:border-primary hover:text-primary transition-colors">
-                <Plus className="w-3 h-3" /> Add Line
-              </button>
-            </div>
-          </div>
-
-          <div className="flex gap-2 justify-end pt-1">
-            <Button size="sm" variant="secondary" onClick={() => setShowModal(false)} icon={<X className="w-3.5 h-3.5" />}>Cancel</Button>
-            <Button size="sm" variant="success" onClick={save} disabled={loading || !lines.some(l => l.itemName.trim())}
-              icon={<Check className="w-3.5 h-3.5" />}>
-              {loading ? 'Saving…' : editing ? 'Save' : 'Create DO'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
       <ConfirmModal
         open={deleteId !== null}
         title="Delete delivery order?"

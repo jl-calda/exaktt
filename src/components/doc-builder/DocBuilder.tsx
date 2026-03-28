@@ -1,13 +1,11 @@
 // src/components/doc-builder/DocBuilder.tsx
 'use client'
-import { useState, useRef, useEffect } from 'react'
-import { Save, Loader2, FileText, Plus, Eye, PenLine, X } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { Save, Loader2, FileText, Plus, Download, X } from 'lucide-react'
 import { arrayMove } from '@dnd-kit/sortable'
 import type { DocBlock, DocBranding, DocSettings } from '@/lib/doc-builder/types'
-import DndProvider from './dnd/DndProvider'
 import BlockPalette from './BlockPalette'
-import EditorPane from './EditorPane'
-import PreviewPane from './PreviewPane'
+import PageCanvas, { PAGE_SIZES, type PageSizeKey } from './PageCanvas'
 
 interface Props {
   documentId?: string
@@ -18,10 +16,10 @@ interface Props {
   branding: DocBranding
   settings?: DocSettings | null
   docType: string
-  onSave?: (data: { title: string; ref: string | null; status: string; blocks: DocBlock[] }) => Promise<void>
+  onSave?: (data: { title: string; ref: string | null; status: string; blocks: DocBlock[]; settings?: DocSettings }) => Promise<void>
 }
 
-type MobileTab = 'editor' | 'preview' | 'blocks'
+type MobileTab = 'canvas' | 'blocks'
 
 export default function DocBuilder({
   documentId,
@@ -40,27 +38,66 @@ export default function DocBuilder({
   const [status, setStatus] = useState(initialStatus ?? 'draft')
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
-  const [mobileTab, setMobileTab] = useState<MobileTab>('editor')
+  const [downloading, setDownloading] = useState(false)
+  const [mobileTab, setMobileTab] = useState<MobileTab>('canvas')
   const [showPalette, setShowPalette] = useState(false)
+  const [pageSize, setPageSize] = useState<PageSizeKey>((settings?.pageSize as PageSizeKey) ?? 'A4')
+  const [zoom, setZoom] = useState(100)
   const autoSaveRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  useEffect(() => { setDirty(true) }, [blocks, title, ref, status])
+  // Track initial load vs actual changes
+  const isInitialMount = useRef(true)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+    setDirty(true)
+  }, [blocks, title, ref, status])
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (dirty) {
+        e.preventDefault()
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?'
+      }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [dirty])
 
   useEffect(() => {
     if (!dirty || !onSave || !documentId) return
     if (autoSaveRef.current) clearTimeout(autoSaveRef.current)
     autoSaveRef.current = setTimeout(async () => {
       try {
-        await onSave({ title, ref: ref || null, status, blocks })
+        await onSave({ title, ref: ref || null, status, blocks, settings: { ...settings, pageSize } })
         setDirty(false)
       } catch {}
     }, 2000)
     return () => { if (autoSaveRef.current) clearTimeout(autoSaveRef.current) }
-  }, [blocks, title, ref, status, dirty, onSave, documentId])
+  }, [blocks, title, ref, status, dirty, onSave, documentId, pageSize, settings])
 
   function handleAddBlock(block: DocBlock) {
     setBlocks(prev => [...prev, block])
-    setMobileTab('editor')
+    setMobileTab('canvas')
+    setShowPalette(false)
+  }
+
+  function handleInsertBlock(block: DocBlock, afterId?: string) {
+    if (!afterId) {
+      setBlocks(prev => [...prev, block])
+    } else {
+      setBlocks(prev => {
+        const idx = prev.findIndex(b => b.id === afterId)
+        if (idx < 0) return [...prev, block]
+        const next = [...prev]
+        next.splice(idx + 1, 0, block)
+        return next
+      })
+    }
+    setMobileTab('canvas')
     setShowPalette(false)
   }
 
@@ -95,14 +132,53 @@ export default function DocBuilder({
     if (!onSave) return
     setSaving(true)
     try {
-      await onSave({ title, ref: ref || null, status, blocks })
+      await onSave({ title, ref: ref || null, status, blocks, settings: { ...settings, pageSize } })
       setDirty(false)
     } finally {
       setSaving(false)
     }
   }
 
-  const blockIds = blocks.map(b => b.id)
+  const handleDownload = useCallback(async () => {
+    setDownloading(true)
+    try {
+      if (documentId) {
+        // Download from server API
+        const res = await fetch(`/api/documents/${documentId}/pdf`)
+        if (!res.ok) throw new Error('PDF download failed')
+        const blob = await res.blob()
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = (title || 'document').replace(/[^a-z0-9_-]/gi, '_') + '.pdf'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(a.href)
+      } else {
+        // Generate client-side
+        const { pdf } = await import('@react-pdf/renderer')
+        const { RenderDocument } = await import('@/lib/pdf/render')
+        const React = await import('react')
+        const element = React.createElement(RenderDocument, {
+          title,
+          blocks,
+          branding,
+          settings: { ...settings, pageSize },
+        })
+        const blob = await pdf(element as any).toBlob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = (title || 'document').replace(/[^a-z0-9_-]/gi, '_') + '.pdf'
+        a.click()
+        URL.revokeObjectURL(url)
+      }
+    } catch (err) {
+      console.error('Download error:', err)
+    } finally {
+      setDownloading(false)
+    }
+  }, [documentId, title, blocks, branding, settings, pageSize])
 
   return (
     <div className="flex flex-col h-full">
@@ -118,9 +194,32 @@ export default function DocBuilder({
         <input
           value={ref}
           onChange={e => setRef(e.target.value)}
-          className="input text-[10px] w-20 sm:w-32 hidden sm:block"
+          className="input text-[10px] w-20 sm:w-28 hidden sm:block"
           placeholder="Reference"
         />
+
+        {/* Page size selector */}
+        <select
+          value={pageSize}
+          onChange={e => setPageSize(e.target.value as PageSizeKey)}
+          className="text-[10px] px-1.5 py-1 border border-surface-200 rounded bg-surface-50 hidden sm:block"
+        >
+          {Object.entries(PAGE_SIZES).map(([key, s]) => (
+            <option key={key} value={key}>{s.label}</option>
+          ))}
+        </select>
+
+        {/* Zoom control */}
+        <select
+          value={zoom}
+          onChange={e => setZoom(Number(e.target.value))}
+          className="text-[10px] px-1.5 py-1 border border-surface-200 rounded bg-surface-50 hidden lg:block"
+        >
+          <option value={75}>75%</option>
+          <option value={100}>100%</option>
+          <option value={125}>125%</option>
+        </select>
+
         <select
           value={status}
           onChange={e => setStatus(e.target.value)}
@@ -129,7 +228,20 @@ export default function DocBuilder({
           <option value="draft">Draft</option>
           <option value="final">Final</option>
         </select>
-        {dirty && <span className="text-[9px] text-ink-faint hidden sm:inline">Unsaved</span>}
+
+        {dirty && <span className="text-[10px] text-ink-faint hidden sm:inline">Unsaved</span>}
+
+        {/* Download PDF */}
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="btn-ghost inline-flex items-center gap-1 px-2 py-1.5 text-[10px] sm:text-[11px]"
+          title="Download PDF"
+        >
+          {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+          <span className="hidden sm:inline">PDF</span>
+        </button>
+
         {onSave && (
           <button
             onClick={handleManualSave}
@@ -145,20 +257,12 @@ export default function DocBuilder({
       {/* ── Mobile tab bar (visible < lg) ── */}
       <div className="flex lg:hidden border-b border-surface-200 bg-surface-50">
         <button
-          onClick={() => setMobileTab('editor')}
+          onClick={() => setMobileTab('canvas')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium transition-colors ${
-            mobileTab === 'editor' ? 'text-primary border-b-2 border-primary' : 'text-ink-muted'
+            mobileTab === 'canvas' ? 'text-primary border-b-2 border-primary' : 'text-ink-muted'
           }`}
         >
-          <PenLine className="w-3.5 h-3.5" /> Editor
-        </button>
-        <button
-          onClick={() => setMobileTab('preview')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium transition-colors ${
-            mobileTab === 'preview' ? 'text-primary border-b-2 border-primary' : 'text-ink-muted'
-          }`}
-        >
-          <Eye className="w-3.5 h-3.5" /> Preview
+          <FileText className="w-3.5 h-3.5" /> Document
         </button>
         <button
           onClick={() => setMobileTab('blocks')}
@@ -173,7 +277,7 @@ export default function DocBuilder({
       {/* ── Main content ── */}
       <div className="flex flex-1 overflow-hidden relative">
 
-        {/* ── Desktop: Left palette (hidden on mobile) ── */}
+        {/* ── Desktop: Left palette sidebar ── */}
         <aside className="hidden lg:block w-48 shrink-0 border-r border-surface-200 bg-surface-50 overflow-y-auto">
           <BlockPalette onAddBlock={handleAddBlock} />
         </aside>
@@ -185,20 +289,21 @@ export default function DocBuilder({
           </div>
         )}
 
-        {/* ── Editor (center on desktop, full on mobile editor tab) ── */}
-        <div className={`flex-1 overflow-y-auto bg-surface-100/30 ${
-          mobileTab !== 'editor' ? 'hidden lg:block' : ''
-        }`}>
-          <DndProvider items={blockIds} onReorder={handleReorder}>
-            <EditorPane
-              blocks={blocks}
-              branding={branding}
-              documentId={documentId}
-              onUpdate={handleUpdateBlock}
-              onRemove={handleRemoveBlock}
-              onMove={handleMoveBlock}
-            />
-          </DndProvider>
+        {/* ── Page Canvas (center, takes up remaining space) ── */}
+        <div className={`flex-1 overflow-hidden ${mobileTab !== 'canvas' ? 'hidden lg:block' : ''}`}>
+          <PageCanvas
+            blocks={blocks}
+            branding={branding}
+            settings={settings}
+            documentId={documentId}
+            pageSize={pageSize}
+            zoom={zoom}
+            onUpdate={handleUpdateBlock}
+            onRemove={handleRemoveBlock}
+            onMove={handleMoveBlock}
+            onReorder={handleReorder}
+            onInsertBlock={handleInsertBlock}
+          />
 
           {/* Mobile: floating add block button */}
           <div className="lg:hidden fixed bottom-4 right-4 z-20">
@@ -211,24 +316,11 @@ export default function DocBuilder({
           </div>
 
           {/* Mobile: floating palette sheet */}
-          {showPalette && mobileTab === 'editor' && (
+          {showPalette && mobileTab === 'canvas' && (
             <div className="lg:hidden fixed bottom-20 right-4 z-20 w-56 max-h-[60vh] bg-surface-50 border border-surface-200 rounded-xl shadow-lg overflow-y-auto animate-fade-in">
               <BlockPalette onAddBlock={handleAddBlock} />
             </div>
           )}
-        </div>
-
-        {/* ── Preview (right on desktop, full on mobile preview tab) ── */}
-        <div className={`lg:w-[45%] lg:shrink-0 lg:border-l border-surface-200 overflow-hidden ${
-          mobileTab !== 'preview' ? 'hidden lg:block' : 'flex-1'
-        }`}>
-          <PreviewPane
-            blocks={blocks}
-            branding={branding}
-            settings={settings}
-            title={title}
-            documentId={documentId}
-          />
         </div>
       </div>
     </div>

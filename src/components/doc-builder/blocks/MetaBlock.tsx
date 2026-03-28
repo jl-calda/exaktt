@@ -28,31 +28,33 @@ export default function MetaBlock({ block, onChange }: Props) {
   }
 
   return (
-    <div className="p-3 space-y-1">
+    <div className="flex flex-col items-end mb-4">
       {fields.map((f, i) => (
-        <div key={i} className="flex items-center gap-2 group/meta">
+        <div key={i} className="flex items-center gap-2 group/meta mb-0.5">
           <input
             value={f.label}
             onChange={e => updateField(i, 'label', e.target.value)}
-            className="w-28 text-[10px] text-ink-faint bg-transparent outline-none text-right font-medium"
+            className="w-24 text-[11px] text-ink-faint bg-transparent outline-none text-right tracking-wide
+              hover:bg-surface-50 focus:bg-surface-50 rounded px-1 py-0.5 transition-colors"
             placeholder="Label"
           />
           <input
             value={f.value}
             onChange={e => updateField(i, 'value', e.target.value)}
-            className="flex-1 text-[10px] text-ink font-semibold bg-transparent outline-none"
+            className="w-40 text-[11px] text-ink font-semibold bg-transparent outline-none
+              hover:bg-surface-50 focus:bg-surface-50 rounded px-1 py-0.5 transition-colors"
             placeholder="Value"
           />
           <button
             onClick={() => removeField(i)}
-            className="opacity-0 group-hover/meta:opacity-100 text-ink-faint hover:text-red-500 transition-opacity"
+            className="opacity-0 group-hover/meta:opacity-100 text-ink-faint hover:text-red-500 transition-opacity p-0.5"
           >
             <Trash2 className="w-2.5 h-2.5" />
           </button>
         </div>
       ))}
-      <button onClick={addField} className="btn-ghost text-[10px] inline-flex items-center gap-1 px-2 py-0.5 mt-1">
-        <Plus className="w-3 h-3" /> Add Field
+      <button onClick={addField} className="text-[10px] text-ink-faint hover:text-ink mt-1 px-1 py-0.5 hover:bg-surface-50 rounded transition-colors inline-flex items-center gap-1">
+        <Plus className="w-2.5 h-2.5" /> Add Field
       </button>
     </div>
   )

@@ -15,58 +15,60 @@ export default function DataSnapshotBlock({ block, onChange }: Props) {
 
   if (!d.snapshot) {
     return (
-      <div className="p-4 flex flex-col items-center justify-center text-center gap-2 text-ink-faint">
+      <div className="py-6 flex flex-col items-center justify-center text-center text-ink-faint gap-2 border border-dashed border-surface-200 rounded-lg mb-4">
         <Database className="w-5 h-5" />
-        <div className="text-[10px]">No data snapshot loaded</div>
+        <div className="text-[11px]">No data snapshot loaded</div>
         <input
           value={d.label}
           onChange={e => onChange({ ...d, label: e.target.value })}
-          className="input text-[10px] w-48 text-center"
+          className="text-[11px] text-center bg-transparent outline-none hover:bg-surface-50 focus:bg-surface-50 rounded px-2 py-0.5 transition-colors w-48"
           placeholder="Block label"
         />
       </div>
     )
   }
 
-  // Render snapshot preview
+  // Render as document-style data section
   if (Array.isArray(d.snapshot)) {
     return (
-      <div className="p-3 space-y-1">
+      <div className="mb-4">
         <input
           value={d.label}
           onChange={e => onChange({ ...d, label: e.target.value })}
-          className="bg-transparent outline-none text-[11px] font-semibold text-ink w-full"
+          className="text-[13px] font-bold text-ink bg-transparent outline-none w-full mb-2
+            hover:bg-surface-50 focus:bg-surface-50 rounded px-0.5 transition-colors"
           placeholder="Label"
         />
-        <div className="text-[10px] text-ink-muted">
-          {d.snapshot.length} items • {d.sourceType}
-        </div>
-        <div className="mt-1 space-y-0.5 max-h-32 overflow-y-auto">
-          {d.snapshot.slice(0, 5).map((item: any, i: number) => (
-            <div key={i} className="text-[10px] text-ink-muted px-1 py-0.5 bg-surface-50 rounded">
-              {item.name ?? item.label ?? JSON.stringify(item).slice(0, 60)}
+        <div className="space-y-0">
+          {d.snapshot.map((item: any, i: number) => (
+            <div key={i} className="flex items-center justify-between py-1.5 border-b border-surface-200/60 text-[11px]">
+              <span className="text-ink">{item.name ?? item.label ?? JSON.stringify(item).slice(0, 60)}</span>
+              {item.value != null && <span className="text-ink-muted">{String(item.value)}</span>}
             </div>
           ))}
-          {d.snapshot.length > 5 && (
-            <div className="text-[9px] text-ink-faint px-1">+{d.snapshot.length - 5} more</div>
-          )}
         </div>
       </div>
     )
   }
 
+  // Object — render as key-value pairs
   return (
-    <div className="p-3 space-y-1">
+    <div className="mb-4">
       <input
         value={d.label}
         onChange={e => onChange({ ...d, label: e.target.value })}
-        className="bg-transparent outline-none text-[11px] font-semibold text-ink w-full"
+        className="text-[13px] font-bold text-ink bg-transparent outline-none w-full mb-2
+          hover:bg-surface-50 focus:bg-surface-50 rounded px-0.5 transition-colors"
         placeholder="Label"
       />
-      <div className="text-[10px] text-ink-muted">{d.sourceType}</div>
-      <pre className="text-[9px] text-ink-faint bg-surface-50 rounded p-2 max-h-32 overflow-y-auto">
-        {JSON.stringify(d.snapshot, null, 2)}
-      </pre>
+      <div className="space-y-0">
+        {Object.entries(d.snapshot).map(([key, val], i) => (
+          <div key={i} className="flex py-1 text-[11px]">
+            <span className="w-28 text-ink-faint shrink-0">{key}</span>
+            <span className="text-ink">{String(val)}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

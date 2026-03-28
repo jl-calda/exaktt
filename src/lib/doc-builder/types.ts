@@ -73,6 +73,23 @@ export type FooterBlockData = {
   customText?: string
 }
 
+export type CellData = {
+  value: string
+  formula?: string
+  format?: 'text' | 'number' | 'currency' | 'percent'
+  bold?: boolean
+  align?: 'left' | 'center' | 'right'
+}
+
+export type SpreadsheetBlockData = {
+  columns: number
+  rows: number
+  cells: Record<string, CellData>
+  columnWidths?: Record<string, number>
+}
+
+export type PageBreakBlockData = Record<string, never>
+
 // ─── Discriminated Union ─────────────────────────────────────────────────────
 
 export type DocBlock =
@@ -87,6 +104,8 @@ export type DocBlock =
   | { type: 'spacer';        id: string; data: SpacerBlockData }
   | { type: 'divider';       id: string; data: DividerBlockData }
   | { type: 'footer';        id: string; data: FooterBlockData }
+  | { type: 'spreadsheet';   id: string; data: SpreadsheetBlockData }
+  | { type: 'page_break';    id: string; data: PageBreakBlockData }
 
 export type DocBlockType = DocBlock['type']
 
@@ -95,7 +114,7 @@ export type DocBlockType = DocBlock['type']
 export type DocSettings = {
   accentColor?: string
   currency?: string
-  pageSize?: 'A4' | 'LETTER'
+  pageSize?: 'A4' | 'LETTER' | 'LEGAL'
   margins?: { top: number; right: number; bottom: number; left: number }
 }
 
