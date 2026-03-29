@@ -143,21 +143,6 @@ export function createBlankPreset(): DocBlock[] {
 export function createQuotationPreset(ctx: PresetContext): DocBlock[] {
   const report = ctx.sourceData?.report
   const tender = ctx.sourceData?.tender
-  const tenderItems = ctx.sourceData?.tenderItems ?? []
-
-  // Build line items from tender items
-  const lines = tenderItems.map((ti: any, i: number) => {
-    const job = ti.job
-    const system = ti.system
-    const amount = job?.lastResults?.totals?.grandTotal ?? 0
-    return {
-      no: i + 1,
-      description: `${system?.name ?? 'System'} — ${job?.name ?? 'Job'}`,
-      amount,
-      total: amount,
-    }
-  })
-
   // Build text content blocks from templates/existing sections
   const existingSections = report?.sections ?? []
   const textBlocks: DocBlock[] = existingSections
@@ -196,38 +181,18 @@ export function createQuotationPreset(ctx: PresetContext): DocBlock[] {
       address: report?.clientAddr ?? '',
     }},
     { type: 'divider', id: uid(), data: { style: 'line' } },
-    ...(lines.length > 0 ? [{
-      type: 'table' as const,
-      id: uid(),
-      data: {
-        columns: [
-          { key: 'no', label: '#', width: '30px', align: 'center' as const },
-          { key: 'description', label: 'Description', align: 'left' as const },
-          { key: 'amount', label: 'Amount', width: '100px', align: 'right' as const, format: 'currency' as const },
-          { key: 'total', label: 'Total', width: '100px', align: 'right' as const, format: 'currency' as const },
-        ],
-        rows: lines,
-        showTotals: true,
-        totalLabel: 'Subtotal',
-        currency,
-      },
-    }] : [{
-      type: 'table' as const,
-      id: uid(),
-      data: {
-        columns: [
-          { key: 'no', label: '#', width: '30px', align: 'center' as const },
-          { key: 'description', label: 'Description', align: 'left' as const },
-          { key: 'qty', label: 'Qty', width: '50px', align: 'center' as const, format: 'number' as const },
-          { key: 'unitPrice', label: 'Unit Price', width: '100px', align: 'right' as const, format: 'currency' as const },
-          { key: 'total', label: 'Total', width: '100px', align: 'right' as const, format: 'currency' as const },
-        ],
-        rows: [],
-        showTotals: true,
-        totalLabel: 'Subtotal',
-        currency,
-      },
-    }]),
+    { type: 'table' as const, id: uid(), data: {
+      columns: [
+        { key: 'no', label: '#', width: '30px', align: 'center' as const },
+        { key: 'description', label: 'Description', align: 'left' as const },
+        { key: 'amount', label: 'Amount', width: '100px', align: 'right' as const, format: 'currency' as const },
+        { key: 'total', label: 'Total', width: '100px', align: 'right' as const, format: 'currency' as const },
+      ],
+      rows: [],
+      showTotals: true,
+      totalLabel: 'Subtotal',
+      currency,
+    }},
     ...textBlocks,
     ...(report?.paymentTerms ? [{
       type: 'rich_text' as const,

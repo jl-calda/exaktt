@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getTender, getTenderReportById, getProfile, getUserCompany } from '@/lib/db/queries'
 import { prisma } from '@/lib/db/prisma'
 import { createQuotationPreset } from '@/lib/doc-builder/presets'
-import type { DocBlock, DocBranding } from '@/lib/doc-builder/types'
+import type { DocBlock, DocBranding, DocEstimate } from '@/lib/doc-builder/types'
 import TenderDocBuilderClient from './TenderDocBuilderClient'
 
 export default async function TenderReportPage({ params }: { params: Promise<{ id: string; reportId: string }> }) {
@@ -28,6 +28,22 @@ export default async function TenderReportPage({ params }: { params: Promise<{ i
   if (!report) redirect(`/tenders/${id}`)
 
   const templates = ((company as any).tenderTemplates ?? []) as { id: string; name: string; category: string; blockTitle?: string; blockContent?: string }[]
+
+  // Build estimates from tender items (linked systems/jobs)
+  const tenderItems = (tender as any).items ?? []
+  const estimates: DocEstimate[] = tenderItems.map((ti: any) => {
+    const job = ti.job
+    const system = ti.system
+    const amount = job?.lastResults?.totals?.grandTotal ?? 0
+    return {
+      id: ti.id,
+      systemName: system?.name ?? 'Unknown System',
+      jobName: job?.name ?? 'Unknown Job',
+      description: `${system?.name ?? 'System'} — ${job?.name ?? 'Job'}`,
+      amount,
+      resultSnapshot: job?.lastResults ?? null,
+    }
+  })
 
   const branding: DocBranding = {
     companyName: (report as any).companyName ?? company.name,
@@ -80,6 +96,7 @@ export default async function TenderReportPage({ params }: { params: Promise<{ i
       branding={branding}
       blocks={blocks}
       templates={templates}
+      estimates={estimates}
     />
   )
 }

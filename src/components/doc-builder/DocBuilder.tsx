@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Save, Loader2, FileText, Plus, Download, X } from 'lucide-react'
 import { arrayMove } from '@dnd-kit/sortable'
-import type { DocBlock, DocBranding, DocSettings } from '@/lib/doc-builder/types'
+import type { DocBlock, DocBranding, DocSettings, DocEstimate } from '@/lib/doc-builder/types'
 import BlockPalette, { type TemplateBlock } from './BlockPalette'
 import PageCanvas, { PAGE_SIZES, type PageSizeKey } from './PageCanvas'
 
@@ -17,6 +17,7 @@ interface Props {
   settings?: DocSettings | null
   docType: string
   templates?: TemplateBlock[]
+  estimates?: DocEstimate[]
   onSave?: (data: { title: string; ref: string | null; status: string; blocks: DocBlock[]; settings?: DocSettings }) => Promise<void>
 }
 
@@ -32,6 +33,7 @@ export default function DocBuilder({
   settings,
   docType,
   templates,
+  estimates,
   onSave,
 }: Props) {
   const [blocks, setBlocks] = useState<DocBlock[]>(initialBlocks)
@@ -300,6 +302,7 @@ export default function DocBuilder({
             documentId={documentId}
             pageSize={pageSize}
             zoom={zoom}
+            estimates={estimates}
             onUpdate={handleUpdateBlock}
             onRemove={handleRemoveBlock}
             onMove={handleMoveBlock}

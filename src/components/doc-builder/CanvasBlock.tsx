@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Trash2, ChevronUp, ChevronDown, Settings } from 'lucide-react'
-import type { DocBlock, DocBranding } from '@/lib/doc-builder/types'
+import type { DocBlock, DocBranding, DocEstimate } from '@/lib/doc-builder/types'
 import { BLOCK_MAP } from '@/lib/doc-builder/block-registry'
 
 // Block editor components
@@ -22,6 +22,7 @@ interface Props {
   block: DocBlock
   branding: DocBranding
   documentId?: string
+  estimates?: DocEstimate[]
   onUpdate: (id: string, data: any) => void
   onRemove: (id: string) => void
   onMove: (id: string, dir: -1 | 1) => void
@@ -30,7 +31,7 @@ interface Props {
   zoom: number
 }
 
-export default function CanvasBlock({ block, branding, documentId, onUpdate, onRemove, onMove, isFirst, isLast, zoom }: Props) {
+export default function CanvasBlock({ block, branding, documentId, estimates, onUpdate, onRemove, onMove, isFirst, isLast, zoom }: Props) {
   const [showSettings, setShowSettings] = useState(false)
   const {
     attributes,
@@ -143,7 +144,7 @@ export default function CanvasBlock({ block, branding, documentId, onUpdate, onR
       case 'rich_text':
         return <RichTextBlock block={block} onChange={d => onUpdate(block.id, d)} documentId={documentId} />
       case 'table':
-        return <TableBlock block={block} onChange={d => onUpdate(block.id, d)} />
+        return <TableBlock block={block} onChange={d => onUpdate(block.id, d)} estimates={estimates} />
       case 'image':
         return <ImageBlock block={block} onChange={d => onUpdate(block.id, d)} documentId={documentId} />
       case 'signature':

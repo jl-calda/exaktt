@@ -109,6 +109,17 @@ export type DocBlock =
 
 export type DocBlockType = DocBlock['type']
 
+// ─── Estimate (for inserting calculator results into tables) ─────────────────
+
+export type DocEstimate = {
+  id: string
+  systemName: string
+  jobName: string
+  description: string
+  amount: number
+  resultSnapshot?: any
+}
+
 // ─── Document Settings ───────────────────────────────────────────────────────
 
 export type DocSettings = {

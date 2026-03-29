@@ -6,7 +6,7 @@ import { ArrowLeft, Flag } from 'lucide-react'
 import Link from 'next/link'
 import DocBuilder from '@/components/doc-builder/DocBuilder'
 import CreateProjectFromTenderModal from '@/components/projects/CreateProjectFromTenderModal'
-import type { DocBlock, DocBranding, DocSettings } from '@/lib/doc-builder/types'
+import type { DocBlock, DocBranding, DocSettings, DocEstimate } from '@/lib/doc-builder/types'
 
 type TenderStatus = 'DRAFT' | 'SUBMITTED' | 'WON' | 'LOST' | 'CANCELLED'
 
@@ -39,9 +39,10 @@ interface Props {
   branding: DocBranding
   blocks: DocBlock[]
   templates?: { id: string; name: string; category: string; blockTitle?: string; blockContent?: string }[]
+  estimates?: DocEstimate[]
 }
 
-export default function TenderDocBuilderClient({ tender, report, branding, blocks, templates }: Props) {
+export default function TenderDocBuilderClient({ tender, report, branding, blocks, templates, estimates }: Props) {
   const router = useRouter()
   const [tenderStatus, setTenderStatus] = useState<TenderStatus>((tender.status as TenderStatus) ?? 'DRAFT')
   const [showStatusMenu, setShowStatusMenu] = useState(false)
@@ -134,6 +135,7 @@ export default function TenderDocBuilderClient({ tender, report, branding, block
           branding={branding}
           docType="quotation"
           templates={templates}
+          estimates={estimates}
           onSave={handleSave}
         />
       </div>

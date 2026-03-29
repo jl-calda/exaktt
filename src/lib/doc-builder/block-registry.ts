@@ -159,19 +159,6 @@ export const BLOCK_REGISTRY: BlockMeta[] = [
     }),
   },
 
-  // ── Data ─────────────────────────────────────────────
-  {
-    type: 'data_snapshot',
-    label: 'Data Snapshot',
-    icon: 'Database',
-    category: 'data',
-    description: 'Snapshot of calculator run, BOM, or material list',
-    createDefault: () => ({
-      type: 'data_snapshot', id: uid(),
-      data: { sourceType: '', sourceId: '', label: 'Data', snapshot: null },
-    }),
-  },
-
   // ── Signature ────────────────────────────────────────
   {
     type: 'signature',
