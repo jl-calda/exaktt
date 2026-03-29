@@ -2,9 +2,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getUserCompany } from '@/lib/db/queries'
 import { prisma } from '@/lib/db/prisma'
-import SettingsProfileClient from './SettingsProfileClient'
+import ProfileClient from './ProfileClient'
 
-export default async function SettingsProfilePage() {
+export default async function ProfilePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
@@ -37,7 +37,7 @@ export default async function SettingsProfilePage() {
   ])
 
   return (
-    <SettingsProfileClient
+    <ProfileClient
       initialUser={dbUser as any}
       initialEmployee={employee as any}
       departments={departments as any[]}

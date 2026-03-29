@@ -14,6 +14,7 @@ const TITLES: Record<string, string> = {
   '/logistics': 'Logistics',
   '/finance':   'Finance',
   '/people':    'People',
+  '/profile':   'Profile',
   '/settings':  'Settings',
   '/billing':   'Billing',
 }
@@ -51,7 +52,7 @@ export default function TopNav({ userName, userEmail, plan }: Props) {
         </button>
         <NotificationBell />
 
-        <Link href="/settings/profile" className="flex items-center gap-2 pl-1.5 ml-0.5 border-l border-surface-200 hover:opacity-80 transition-opacity">
+        <Link href="/profile" className="flex items-center gap-2 pl-1.5 ml-0.5 border-l border-surface-200 hover:opacity-80 transition-opacity">
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 shadow-sm ring-2 ring-surface-200/40"
             style={{ background: 'var(--color-primary)' }}
