@@ -255,13 +255,14 @@ export default function CanvasBlock({ block, branding, documentId, estimates, on
 
   return (
     <div ref={setNodeRef} style={style} className="group/block relative">
-      {/* Hover gutter — drag handle + actions */}
-      <div className="absolute -left-10 top-0 bottom-0 w-9 flex flex-col items-center pt-1 gap-0.5
-        opacity-100 sm:opacity-0 sm:group-hover/block:opacity-100 transition-opacity">
+      {/* Hover toolbar — horizontal, above block */}
+      <div className="absolute -top-8 left-0 h-7 flex items-center gap-0.5 px-1
+        bg-surface-50 border border-surface-200 rounded-lg shadow-sm
+        opacity-100 sm:opacity-0 sm:group-hover/block:opacity-100 transition-opacity z-10">
         <button
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing p-1 text-ink-faint hover:text-ink rounded hover:bg-surface-100 touch-manipulation"
+          className="cursor-grab active:cursor-grabbing p-1.5 text-ink-faint hover:text-ink rounded-md hover:bg-surface-100 touch-manipulation"
           title="Drag to reorder"
         >
           <GripVertical className="w-3.5 h-3.5" />
@@ -269,34 +270,35 @@ export default function CanvasBlock({ block, branding, documentId, estimates, on
         <button
           onClick={() => onMove(block.id, -1)}
           disabled={isFirst}
-          className="p-0.5 text-ink-faint hover:text-ink disabled:opacity-20 rounded hover:bg-surface-100 touch-manipulation"
+          className="p-1.5 text-ink-faint hover:text-ink disabled:opacity-20 rounded-md hover:bg-surface-100 touch-manipulation"
           title="Move up"
         >
-          <ChevronUp className="w-3 h-3" />
+          <ChevronUp className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => onMove(block.id, 1)}
           disabled={isLast}
-          className="p-0.5 text-ink-faint hover:text-ink disabled:opacity-20 rounded hover:bg-surface-100 touch-manipulation"
+          className="p-1.5 text-ink-faint hover:text-ink disabled:opacity-20 rounded-md hover:bg-surface-100 touch-manipulation"
           title="Move down"
         >
-          <ChevronDown className="w-3 h-3" />
+          <ChevronDown className="w-3.5 h-3.5" />
         </button>
         {hasSettings && (
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className={`p-0.5 rounded hover:bg-surface-100 touch-manipulation ${showSettings ? 'text-primary' : 'text-ink-faint hover:text-ink'}`}
+            className={`p-1.5 rounded-md hover:bg-surface-100 touch-manipulation ${showSettings ? 'text-primary' : 'text-ink-faint hover:text-ink'}`}
             title="Block settings"
           >
-            <Settings className="w-3 h-3" />
+            <Settings className="w-3.5 h-3.5" />
           </button>
         )}
+        <div className="w-px h-4 bg-surface-200 mx-0.5" />
         <button
           onClick={() => onRemove(block.id)}
-          className="p-0.5 text-ink-faint hover:text-red-500 rounded hover:bg-red-50 touch-manipulation"
+          className="p-1.5 text-ink-faint hover:text-red-500 rounded-md hover:bg-red-50 touch-manipulation"
           title="Remove block"
         >
-          <Trash2 className="w-3 h-3" />
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
 
