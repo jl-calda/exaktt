@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Save, Loader2, FileText, Plus, Download, X } from 'lucide-react'
 import { arrayMove } from '@dnd-kit/sortable'
 import type { DocBlock, DocBranding, DocSettings } from '@/lib/doc-builder/types'
-import BlockPalette from './BlockPalette'
+import BlockPalette, { type TemplateBlock } from './BlockPalette'
 import PageCanvas, { PAGE_SIZES, type PageSizeKey } from './PageCanvas'
 
 interface Props {
@@ -16,6 +16,7 @@ interface Props {
   branding: DocBranding
   settings?: DocSettings | null
   docType: string
+  templates?: TemplateBlock[]
   onSave?: (data: { title: string; ref: string | null; status: string; blocks: DocBlock[]; settings?: DocSettings }) => Promise<void>
 }
 
@@ -30,6 +31,7 @@ export default function DocBuilder({
   branding,
   settings,
   docType,
+  templates,
   onSave,
 }: Props) {
   const [blocks, setBlocks] = useState<DocBlock[]>(initialBlocks)
@@ -279,13 +281,13 @@ export default function DocBuilder({
 
         {/* ── Desktop: Left palette sidebar ── */}
         <aside className="hidden lg:block w-48 shrink-0 border-r border-surface-200 bg-surface-50 overflow-y-auto">
-          <BlockPalette onAddBlock={handleAddBlock} />
+          <BlockPalette onAddBlock={handleAddBlock} templates={templates} />
         </aside>
 
         {/* ── Mobile: Blocks tab ── */}
         {mobileTab === 'blocks' && (
           <div className="absolute inset-0 z-10 bg-surface-50 overflow-y-auto lg:hidden">
-            <BlockPalette onAddBlock={handleAddBlock} />
+            <BlockPalette onAddBlock={handleAddBlock} templates={templates} />
           </div>
         )}
 
@@ -318,7 +320,7 @@ export default function DocBuilder({
           {/* Mobile: floating palette sheet */}
           {showPalette && mobileTab === 'canvas' && (
             <div className="lg:hidden fixed bottom-20 right-4 z-20 w-56 max-h-[60vh] bg-surface-50 border border-surface-200 rounded-xl shadow-lg overflow-y-auto animate-fade-in">
-              <BlockPalette onAddBlock={handleAddBlock} />
+              <BlockPalette onAddBlock={handleAddBlock} templates={templates} />
             </div>
           )}
         </div>
