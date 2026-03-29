@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { label: 'Overview', icon: Layers, path: '/tenders', exact: true },
   { label: 'All Tenders', icon: List, path: '/tenders/all' },
   { label: 'Quotations', icon: ClipboardList, path: '/tenders/quotations' },
-  { label: 'Settings', icon: Settings, path: '/tenders/settings' },
+  { label: 'Settings', icon: Settings, path: '/settings/tenders' },
 ]
 
 interface Props {
