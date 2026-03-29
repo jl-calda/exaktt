@@ -2,8 +2,9 @@
 'use client'
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Flag, FileText, Calculator, Paperclip, StickyNote } from 'lucide-react'
+import { ArrowLeft, Flag, FileText, Calculator, Paperclip, StickyNote, ClipboardList } from 'lucide-react'
 import Link from 'next/link'
+import { useTaskStore } from '@/store'
 import DocBuilder from '@/components/doc-builder/DocBuilder'
 import CreateProjectFromTenderModal from '@/components/projects/CreateProjectFromTenderModal'
 import ReportCalculatorTab from '@/components/tenders/ReportCalculatorTab'
@@ -64,6 +65,7 @@ interface Props {
 
 export default function TenderDocBuilderClient({ tender, report, branding, blocks, templates, estimates, systems, allJobs, globalTags, plan, userId, tenderId }: Props) {
   const router = useRouter()
+  const openTaskDrawer = useTaskStore(s => s.openDrawer)
   const [activeTab, setActiveTab] = useState<ReportTab>('document')
   const [tenderStatus, setTenderStatus] = useState<TenderStatus>((tender.status as TenderStatus) ?? 'DRAFT')
   const [showStatusMenu, setShowStatusMenu] = useState(false)
@@ -113,6 +115,18 @@ export default function TenderDocBuilderClient({ tender, report, branding, block
         <div className="flex-1 min-w-0">
           <span className="text-[11px] text-ink-faint truncate">{tender.name}</span>
         </div>
+
+        {/* Assign Task */}
+        <button
+          onClick={() => openTaskDrawer(`/tenders/${tender.id}/report/${report.id}`, {
+            createMode: true,
+            linkedLabel: `${tender.name} — ${report.reference || report.title}`,
+          })}
+          className="btn-ghost text-[10px] inline-flex items-center gap-1 px-2 py-1"
+          title="Assign task for this report"
+        >
+          <ClipboardList className="w-3 h-3" /> Assign Task
+        </button>
 
         {/* Tender status dropdown */}
         <div className="relative">

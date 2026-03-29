@@ -209,8 +209,10 @@ interface TaskStore {
   activeTaskId: string | null
   filter: 'assigned' | 'created' | 'all'
   linkedFilter: string | null
+  linkedLabel: string | null
+  createMode: boolean
   unreadCount: number
-  openDrawer: (linkedFilter?: string | null) => void
+  openDrawer: (linkedFilter?: string | null, opts?: { createMode?: boolean; linkedLabel?: string }) => void
   closeDrawer: () => void
   setActiveTask: (id: string | null) => void
   setUnreadCount: (n: number) => void
@@ -222,9 +224,16 @@ export const useTaskStore = create<TaskStore>((set) => ({
   activeTaskId: null,
   filter: 'assigned',
   linkedFilter: null,
+  linkedLabel: null,
+  createMode: false,
   unreadCount: 0,
-  openDrawer: (linkedFilter = null) => set({ drawerOpen: true, linkedFilter }),
-  closeDrawer: () => set({ drawerOpen: false, activeTaskId: null, linkedFilter: null }),
+  openDrawer: (linkedFilter = null, opts) => set({
+    drawerOpen: true,
+    linkedFilter,
+    createMode: opts?.createMode ?? false,
+    linkedLabel: opts?.linkedLabel ?? null,
+  }),
+  closeDrawer: () => set({ drawerOpen: false, activeTaskId: null, linkedFilter: null, createMode: false, linkedLabel: null }),
   setActiveTask: (id) => set({ activeTaskId: id }),
   setUnreadCount: (n) => set({ unreadCount: n }),
   incrementUnread: () => set((st) => ({ unreadCount: st.unreadCount + 1 })),

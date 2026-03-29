@@ -8,11 +8,12 @@ import { Select } from '@/components/ui/Select'
 
 interface Props {
   linkedUrl?: string | null
+  linkedLabel?: string | null
   onSave: () => void
   onCancel: () => void
 }
 
-export default function TaskForm({ linkedUrl, onSave, onCancel }: Props) {
+export default function TaskForm({ linkedUrl, linkedLabel, onSave, onCancel }: Props) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [assigneeId, setAssigneeId] = useState('')
@@ -37,7 +38,8 @@ export default function TaskForm({ linkedUrl, onSave, onCancel }: Props) {
         title, description: description || null, assigneeId, priority,
         targetDate: targetDate || null,
         linkedUrl: linkedUrl || null,
-        linkedType: linkedUrl?.includes('/tenders') ? 'tender' : linkedUrl?.includes('/products') ? 'product' : null,
+        linkedType: linkedUrl?.includes('/report/') ? 'tender_report' : linkedUrl?.includes('/tenders') ? 'tender' : linkedUrl?.includes('/products') ? 'product' : null,
+        linkedLabel: linkedLabel || null,
         checklist: checklist.filter(c => c.text.trim()),
       }),
     })
@@ -69,6 +71,7 @@ export default function TaskForm({ linkedUrl, onSave, onCancel }: Props) {
             : linkedUrl.includes('/products/') ? '📦 Linked to Product'
             : '🔗 Linked to Page'}
           </span>
+          {linkedLabel && <span className="text-ink-muted">— {linkedLabel}</span>}
         </div>
       )}
       {/* Checklist */}
