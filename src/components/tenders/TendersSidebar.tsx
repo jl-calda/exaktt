@@ -2,12 +2,13 @@
 'use client'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Layers, ClipboardList, Settings } from 'lucide-react'
+import { Layers, List, ClipboardList, Settings } from 'lucide-react'
 
-const SUB_ROUTES = new Set(['quotations', 'settings'])
+const SUB_ROUTES = new Set(['all', 'quotations', 'settings'])
 
 const NAV_ITEMS = [
   { label: 'Overview', icon: Layers, path: '/tenders', exact: true },
+  { label: 'All Tenders', icon: List, path: '/tenders/all' },
   { label: 'Quotations', icon: ClipboardList, path: '/tenders/quotations' },
   { label: 'Settings', icon: Settings, path: '/tenders/settings' },
 ]
