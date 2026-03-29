@@ -771,18 +771,36 @@ export async function getTenders(companyId: string) {
     where:   { companyId, isArchived: false },
     select:  {
       id: true, name: true,
-      reference: true,
+      reference: true, assigneeId: true,
       submissionDate: true, status: true, createdAt: true, updatedAt: true,
+      assignee: { select: { id: true, name: true, avatarUrl: true } },
       _count: { select: { items: true } },
     },
     orderBy: { updatedAt: 'desc' },
   })
 }
 
+export async function getTenderTaskCounts(companyId: string) {
+  const tasks = await prisma.task.findMany({
+    where: { companyId, linkedType: 'tender', isArchived: false },
+    select: { linkedUrl: true },
+  })
+  const counts: Record<string, number> = {}
+  for (const t of tasks) {
+    if (t.linkedUrl) {
+      // linkedUrl is like /tenders/{id} — extract the id
+      const id = t.linkedUrl.split('/').pop()
+      if (id) counts[id] = (counts[id] || 0) + 1
+    }
+  }
+  return counts
+}
+
 export async function getTender(id: string, companyId: string) {
   return prisma.tender.findFirst({
     where:   { id, companyId, isArchived: false },
     include: {
+      assignee: { select: { id: true, name: true, avatarUrl: true } },
       items: {
         orderBy: { sortOrder: 'asc' },
         include: {
@@ -797,6 +815,7 @@ export async function getTender(id: string, companyId: string) {
 export async function createTender(companyId: string, createdById: string, data: {
   name: string;
   projectName?: string; reference?: string; submissionDate?: Date | null; notes?: string;
+  assigneeId?: string | null;
 }) {
   return prisma.tender.create({ data: { companyId, createdById, ...data } })
 }
@@ -806,6 +825,7 @@ export async function updateTender(id: string, companyId: string, data: Partial<
   projectName: string; reference: string;
   submissionDate: Date | null; status: string; notes: string;
   predefinedItems: any[];
+  assigneeId: string | null;
 }>) {
   await verifyOwnership(prisma.tender, id, companyId, 'Tender')
   return prisma.tender.update({ where: { id }, data: data as any })

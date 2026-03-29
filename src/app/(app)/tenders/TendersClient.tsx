@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus, ChevronRight, CalendarDays, Check,
-  FileText, Layers, ClipboardList,
+  FileText, ClipboardList, CheckSquare,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { usePermissions } from '@/lib/hooks/usePermissions'
@@ -21,12 +21,20 @@ const STATUS_META: Record<TenderStatus, { label: string; bg: string; color: stri
 
 const KANBAN_COLUMNS: TenderStatus[] = ['DRAFT', 'SUBMITTED', 'WON', 'LOST']
 
+interface Member {
+  id: string
+  name: string | null
+  email: string
+}
+
 interface Props {
   initialTenders: any[]
   initialReports?: any[]
+  members?: Member[]
+  taskCounts?: Record<string, number>
 }
 
-export default function TendersClient({ initialTenders, initialReports }: Props) {
+export default function TendersClient({ initialTenders, initialReports, members = [], taskCounts = {} }: Props) {
   const router = useRouter()
   const { canWrite } = usePermissions()
 
@@ -36,6 +44,7 @@ export default function TendersClient({ initialTenders, initialReports }: Props)
   const [newName,  setNewName]  = useState('')
   const [newRef,   setNewRef]   = useState('')
   const [newDate,  setNewDate]  = useState('')
+  const [newAssignee, setNewAssignee] = useState('')
 
   const [allReports] = useState(initialReports ?? [])
   const [calMonth, setCalMonth] = useState(new Date())
@@ -80,6 +89,7 @@ export default function TendersClient({ initialTenders, initialReports }: Props)
         name:           newName.trim(),
         reference:      newRef.trim() || undefined,
         submissionDate: newDate || undefined,
+        assigneeId:     newAssignee || undefined,
       }),
     })
     const { data, error } = await res.json()
@@ -89,7 +99,12 @@ export default function TendersClient({ initialTenders, initialReports }: Props)
   }
 
   const resetForm = () => {
-    setNewName(''); setNewRef(''); setNewDate('')
+    setNewName(''); setNewRef(''); setNewDate(''); setNewAssignee('')
+  }
+
+  const getInitials = (name: string | null) => {
+    if (!name) return '?'
+    return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
   }
 
   return (
@@ -152,6 +167,17 @@ export default function TendersClient({ initialTenders, initialReports }: Props)
                 <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
                   className="input" />
               </div>
+              {members.length > 0 && (
+                <div className="col-span-2">
+                  <label className="label">Assign to</label>
+                  <select value={newAssignee} onChange={e => setNewAssignee(e.target.value)} className="input">
+                    <option value="">Unassigned</option>
+                    {members.map(m => (
+                      <option key={m.id} value={m.id}>{m.name || m.email}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <button type="submit" disabled={loading || !newName.trim()} className="btn-primary">
@@ -177,16 +203,42 @@ export default function TendersClient({ initialTenders, initialReports }: Props)
                 <span className="text-[10px] text-ink-faint">({items.length})</span>
               </div>
               <div className="space-y-2">
-                {items.map(t => (
-                  <button key={t.id} onClick={() => router.push(`/tenders/${t.id}`)}
-                    className="w-full text-left p-2.5 rounded-lg border border-surface-200 hover:border-primary/30 hover:bg-primary/5 transition-all">
-                    <div className="font-medium text-xs text-ink truncate">{t.name}</div>
-                    <div className="flex items-center gap-2 mt-1 text-[10px] text-ink-faint">
-                      {t.reference && <span className="font-mono">{t.reference}</span>}
-                      {t._count?.items > 0 && <span>{t._count.items} est.</span>}
-                    </div>
-                  </button>
-                ))}
+                {items.map(t => {
+                  const tc = taskCounts[t.id] || 0
+                  const assignee = t.assignee
+                  return (
+                    <button key={t.id} onClick={() => router.push(`/tenders/${t.id}`)}
+                      className="w-full text-left p-2.5 rounded-lg border border-surface-200 hover:border-primary/30 hover:bg-primary/5 transition-all">
+                      <div className="font-medium text-xs text-ink truncate">{t.name}</div>
+                      <div className="flex items-center gap-2 mt-1 text-[10px] text-ink-faint">
+                        {t.reference && <span className="font-mono">{t.reference}</span>}
+                        {t._count?.items > 0 && <span>{t._count.items} est.</span>}
+                      </div>
+                      {(assignee || tc > 0) && (
+                        <div className="flex items-center justify-between mt-1.5">
+                          {assignee ? (
+                            <div className="flex items-center gap-1.5" title={assignee.name || 'Assignee'}>
+                              {assignee.avatarUrl ? (
+                                <img src={assignee.avatarUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
+                              ) : (
+                                <span className="w-4 h-4 rounded-full bg-surface-200 text-ink-faint text-[8px] font-bold flex items-center justify-center">
+                                  {getInitials(assignee.name)}
+                                </span>
+                              )}
+                              <span className="text-[10px] text-ink-faint truncate max-w-[80px]">{assignee.name?.split(' ')[0]}</span>
+                            </div>
+                          ) : <div />}
+                          {tc > 0 && (
+                            <div className="flex items-center gap-0.5 text-[10px] text-ink-faint">
+                              <CheckSquare className="w-3 h-3" />
+                              <span>{tc}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
                 {items.length === 0 && <div className="text-[10px] text-ink-faint text-center py-4">No tenders</div>}
               </div>
             </div>
