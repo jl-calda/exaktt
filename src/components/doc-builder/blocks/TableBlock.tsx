@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Plus, Trash2, Calculator } from 'lucide-react'
 import type { DocBlock, TableColumn, DocEstimate } from '@/lib/doc-builder/types'
 
+
 type Block = Extract<DocBlock, { type: 'table' }>
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 export default function TableBlock({ block, onChange, estimates }: Props) {
   const { columns, rows, showTotals, totalLabel, currency } = block.data
   const [showEstimatePicker, setShowEstimatePicker] = useState(false)
+  const [selectedEstimate, setSelectedEstimate] = useState<DocEstimate | null>(null)
 
   function updateRow(idx: number, key: string, value: string) {
     const next = [...rows]
@@ -56,35 +58,74 @@ export default function TableBlock({ block, onChange, estimates }: Props) {
     })
   }
 
-  function addEstimate(est: DocEstimate) {
-    // Map estimate fields to the closest matching columns
+  function addEstimateSummary(est: DocEstimate) {
     const row: Record<string, any> = {}
-    const colKeys = columns.map(c => c.key)
-
-    // Auto-number if there's a '#' or 'no' column
     const noCol = columns.find(c => c.key === 'no' || c.label === '#')
     if (noCol) row[noCol.key] = rows.length + 1
-
-    // Description column
-    const descCol = columns.find(c =>
-      c.key === 'description' || c.key === 'item' || c.label.toLowerCase().includes('description')
-    )
+    const descCol = columns.find(c => c.key === 'description' || c.key === 'item' || c.label.toLowerCase().includes('description'))
     if (descCol) row[descCol.key] = est.description
-
-    // Amount/total columns — fill with the estimate total
     for (const col of columns) {
-      if (col.format === 'currency' || col.key === 'amount' || col.key === 'total' || col.key === 'unitPrice') {
-        row[col.key] = est.amount
-      }
-    }
-
-    // Fill remaining columns with empty
-    for (const col of columns) {
+      if (col.format === 'currency' || col.key === 'amount' || col.key === 'total' || col.key === 'unitPrice') row[col.key] = est.amount
       if (row[col.key] === undefined) row[col.key] = ''
     }
-
     onChange({ ...block.data, rows: [...rows, row] })
     setShowEstimatePicker(false)
+    setSelectedEstimate(null)
+  }
+
+  function addEstimateBreakdown(est: DocEstimate) {
+    const snap = est.resultSnapshot
+    if (!snap?.bom?.length) { addEstimateSummary(est); return }
+
+    let cols = [...columns]
+    const hasUnit = cols.some(c => c.key === 'unit')
+    const hasQty = cols.some(c => c.key === 'qty')
+    const hasUnitPrice = cols.some(c => c.key === 'unitPrice')
+    const descIdx = cols.findIndex(c => c.key === 'description' || c.key === 'item')
+    const insertAt = descIdx >= 0 ? descIdx + 1 : 1
+
+    const newCols: TableColumn[] = []
+    if (!hasUnit) newCols.push({ key: 'unit', label: 'Unit', width: '50px', align: 'center' as const })
+    if (!hasQty) newCols.push({ key: 'qty', label: 'Qty', width: '60px', align: 'right' as const, format: 'number' as const })
+    if (!hasUnitPrice) newCols.push({ key: 'unitPrice', label: 'Unit Price', width: '90px', align: 'right' as const, format: 'currency' as const })
+    if (newCols.length > 0) cols = [...cols.slice(0, insertAt), ...newCols, ...cols.slice(insertAt)]
+
+    const startNum = rows.length + 1
+    const bomRows: Record<string, any>[] = snap.bom.map((m: any, i: number) => {
+      const row: Record<string, any> = {}
+      for (const col of cols) {
+        if (col.key === 'no' || col.label === '#') row[col.key] = startNum + i
+        else if (col.key === 'description' || col.key === 'item') row[col.key] = m.name + (m.productCode ? ` — ${m.productCode}` : '')
+        else if (col.key === 'unit') row[col.key] = m.unit ?? ''
+        else if (col.key === 'qty') row[col.key] = m.grandTotal ?? 0
+        else if (col.key === 'unitPrice') row[col.key] = m.unitPrice ?? 0
+        else if (col.format === 'currency' || col.key === 'amount' || col.key === 'total') row[col.key] = m.lineTotal ?? 0
+        else row[col.key] = ''
+      }
+      return row
+    })
+
+    const summaryRows: Record<string, any>[] = []
+    const totals = snap.totals
+    if (totals) {
+      const makeSummaryRow = (label: string, amount: number) => {
+        const row: Record<string, any> = {}
+        for (const col of cols) {
+          if (col.key === 'description' || col.key === 'item') row[col.key] = label
+          else if (col.format === 'currency' || col.key === 'amount' || col.key === 'total') row[col.key] = amount
+          else row[col.key] = ''
+        }
+        return row
+      }
+      if (totals.materialCost > 0) summaryRows.push(makeSummaryRow('Material Cost', totals.materialCost))
+      if (totals.labourCost > 0) summaryRows.push(makeSummaryRow('Labour Cost', totals.labourCost))
+      if (totals.thirdPartyCost > 0) summaryRows.push(makeSummaryRow('Third Party Cost', totals.thirdPartyCost))
+      summaryRows.push(makeSummaryRow('Grand Total', totals.grandTotal))
+    }
+
+    onChange({ ...block.data, columns: cols, rows: [...rows, ...bomRows, ...summaryRows] })
+    setShowEstimatePicker(false)
+    setSelectedEstimate(null)
   }
 
   // Calculate totals for currency columns
@@ -221,27 +262,44 @@ export default function TableBlock({ block, onChange, estimates }: Props) {
 
             {showEstimatePicker && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowEstimatePicker(false)} />
-                <div className="absolute left-0 bottom-full mb-1 z-50 card p-1 shadow-panel min-w-[260px] max-h-[200px] overflow-y-auto animate-fade-in">
+                <div className="fixed inset-0 z-40" onClick={() => { setShowEstimatePicker(false); setSelectedEstimate(null) }} />
+                <div className="absolute left-0 bottom-full mb-1 z-50 card p-1 shadow-panel min-w-[280px] max-h-[240px] overflow-y-auto animate-fade-in">
                   {availableEstimates.length === 0 ? (
                     <div className="px-3 py-2 text-[10px] text-ink-faint text-center">
                       {estimates.length === 0 ? 'No estimates linked to this tender' : 'All estimates already added'}
                     </div>
                   ) : (
                     availableEstimates.map(est => (
-                      <button
-                        key={est.id}
-                        onClick={() => addEstimate(est)}
-                        className="w-full text-left px-3 py-2 rounded-md hover:bg-surface-100 transition-colors flex items-center justify-between gap-2"
-                      >
-                        <div className="min-w-0">
-                          <div className="text-[11px] font-medium text-ink truncate">{est.description}</div>
-                          <div className="text-[10px] text-ink-faint">{est.systemName} — {est.jobName}</div>
-                        </div>
-                        <span className="text-[10px] font-mono text-ink-muted shrink-0">
-                          {est.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        </span>
-                      </button>
+                      <div key={est.id}>
+                        <button
+                          onClick={() => setSelectedEstimate(selectedEstimate?.id === est.id ? null : est)}
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-surface-100 transition-colors flex items-center justify-between gap-2"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-[11px] font-medium text-ink truncate">{est.description}</div>
+                            <div className="text-[10px] text-ink-faint">{est.systemName} — {est.jobName}</div>
+                          </div>
+                          <span className="text-[10px] font-mono text-ink-muted shrink-0">
+                            {est.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </span>
+                        </button>
+                        {selectedEstimate?.id === est.id && (
+                          <div className="flex gap-1.5 px-3 pb-2 animate-fade-in">
+                            <button
+                              onClick={() => addEstimateSummary(est)}
+                              className="flex-1 text-[10px] font-medium text-ink-muted hover:text-ink px-2 py-1.5 rounded-md bg-surface-100 hover:bg-surface-200 transition-colors"
+                            >
+                              Summary
+                            </button>
+                            <button
+                              onClick={() => addEstimateBreakdown(est)}
+                              className="flex-1 text-[10px] font-medium text-primary hover:text-primary/80 px-2 py-1.5 rounded-md bg-primary/5 hover:bg-primary/10 transition-colors"
+                            >
+                              Breakdown
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     ))
                   )}
                 </div>

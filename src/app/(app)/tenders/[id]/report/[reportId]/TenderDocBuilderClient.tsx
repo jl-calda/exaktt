@@ -2,11 +2,23 @@
 'use client'
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Flag } from 'lucide-react'
+import { ArrowLeft, Flag, FileText, Calculator, Paperclip, StickyNote } from 'lucide-react'
 import Link from 'next/link'
 import DocBuilder from '@/components/doc-builder/DocBuilder'
 import CreateProjectFromTenderModal from '@/components/projects/CreateProjectFromTenderModal'
+import ReportCalculatorTab from '@/components/tenders/ReportCalculatorTab'
+import ReportAttachmentsTab from '@/components/tenders/ReportAttachmentsTab'
+import ReportNotesTab from '@/components/tenders/ReportNotesTab'
 import type { DocBlock, DocBranding, DocSettings, DocEstimate } from '@/lib/doc-builder/types'
+
+type ReportTab = 'document' | 'calculator' | 'attachments' | 'notes'
+
+const REPORT_TABS: { key: ReportTab; label: string; icon: typeof FileText }[] = [
+  { key: 'document',    label: 'Document',    icon: FileText },
+  { key: 'calculator',  label: 'Calculator',  icon: Calculator },
+  { key: 'attachments', label: 'Attachments', icon: Paperclip },
+  { key: 'notes',       label: 'Notes',       icon: StickyNote },
+]
 
 type TenderStatus = 'DRAFT' | 'SUBMITTED' | 'WON' | 'LOST' | 'CANCELLED'
 
@@ -35,18 +47,28 @@ interface Props {
     status: string
     sections: any
     currency: string
+    notes?: string | null
+    attachments?: any[]
   }
   branding: DocBranding
   blocks: DocBlock[]
   templates?: { id: string; name: string; category: string; blockTitle?: string; blockContent?: string }[]
   estimates?: DocEstimate[]
+  systems?: any[]
+  allJobs?: any[]
+  globalTags?: any[]
+  plan?: any
+  userId?: string
+  tenderId?: string
 }
 
-export default function TenderDocBuilderClient({ tender, report, branding, blocks, templates, estimates }: Props) {
+export default function TenderDocBuilderClient({ tender, report, branding, blocks, templates, estimates, systems, allJobs, globalTags, plan, userId, tenderId }: Props) {
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState<ReportTab>('document')
   const [tenderStatus, setTenderStatus] = useState<TenderStatus>((tender.status as TenderStatus) ?? 'DRAFT')
   const [showStatusMenu, setShowStatusMenu] = useState(false)
   const [showCreateProject, setShowCreateProject] = useState(false)
+  const [currentEstimates, setCurrentEstimates] = useState(estimates ?? [])
 
   const tenderMeta = TENDER_STATUS_META[tenderStatus] ?? TENDER_STATUS_META.DRAFT
   const transitions = TENDER_TRANSITIONS[tenderStatus] ?? []
@@ -124,20 +146,71 @@ export default function TenderDocBuilderClient({ tender, report, branding, block
         </div>
       </div>
 
-      {/* DocBuilder */}
+      {/* Tab bar */}
+      <div className="flex items-center gap-1 px-4 py-1 border-b border-surface-200 bg-surface-50">
+        {REPORT_TABS.map(tab => {
+          const Icon = tab.icon
+          const active = activeTab === tab.key
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`tab-pill inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-md transition-all ${
+                active ? 'active' : ''
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" strokeWidth={active ? 2.2 : 1.8} />
+              {tab.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Tab content */}
       <div className="flex-1 overflow-hidden">
-        <DocBuilder
-          documentId={report.id}
-          initialBlocks={blocks}
-          initialTitle={report.title}
-          initialRef={report.reference}
-          initialStatus={report.status}
-          branding={branding}
-          docType="quotation"
-          templates={templates}
-          estimates={estimates}
-          onSave={handleSave}
-        />
+        {activeTab === 'document' && (
+          <DocBuilder
+            documentId={report.id}
+            initialBlocks={blocks}
+            initialTitle={report.title}
+            initialRef={report.reference}
+            initialStatus={report.status}
+            branding={branding}
+            docType="quotation"
+            templates={templates}
+            estimates={currentEstimates}
+            onSave={handleSave}
+          />
+        )}
+
+        {activeTab === 'calculator' && (
+          <ReportCalculatorTab
+            systems={systems ?? []}
+            allJobs={allJobs ?? []}
+            globalTags={globalTags ?? []}
+            plan={plan}
+            tenderId={tenderId ?? tender.id}
+            onEstimateAdded={(est: DocEstimate) => {
+              setCurrentEstimates(prev => [...prev, est])
+            }}
+          />
+        )}
+
+        {activeTab === 'attachments' && (
+          <ReportAttachmentsTab
+            reportId={report.id}
+            tenderId={tender.id}
+            initialAttachments={report.attachments ?? []}
+          />
+        )}
+
+        {activeTab === 'notes' && (
+          <ReportNotesTab
+            reportId={report.id}
+            tenderId={tender.id}
+            initialNotes={report.notes ?? null}
+          />
+        )}
       </div>
 
       {/* Create project from won tender */}
