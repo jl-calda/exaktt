@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: 'Map', icon: MapPin, path: '/projects/map' },
   { label: 'Teams', icon: UsersRound, path: '/projects/teams' },
   { label: 'Assets', icon: Wrench, path: '/projects/assets' },
-  { label: 'Settings', icon: Settings, path: '/projects/settings' },
+  { label: 'Settings', icon: Settings, path: '/settings/projects' },
 ]
 
 interface Props {
