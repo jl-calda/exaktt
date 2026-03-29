@@ -138,8 +138,100 @@ export function createBlankPreset(): DocBlock[] {
   ]
 }
 
+// ─── Quotation (Tender Report) ──────────────────────────────────────────────
+
+export function createQuotationPreset(ctx: PresetContext): DocBlock[] {
+  const report = ctx.sourceData?.report
+  const tender = ctx.sourceData?.tender
+  // Build text content blocks from templates/existing sections
+  const existingSections = report?.sections ?? []
+  const textBlocks: DocBlock[] = existingSections
+    .filter((s: any) => s.type === 'text_block')
+    .map((s: any) => ({
+      type: 'rich_text' as const,
+      id: uid(),
+      data: {
+        tiptapJson: {
+          type: 'doc',
+          content: [
+            ...(s.title ? [{ type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: s.title }] }] : []),
+            ...(s.content ? [{ type: 'paragraph', content: [{ type: 'text', text: s.content }] }] : [{ type: 'paragraph' }]),
+          ],
+        },
+      },
+    }))
+
+  const currency = report?.currency ?? ctx.branding?.currency ?? 'SGD'
+
+  return [
+    { type: 'header', id: uid(), data: { showLogo: true, showRegistration: true, showContact: true } },
+    { type: 'meta', id: uid(), data: { fields: [
+      { label: 'Document', value: 'QUOTATION' },
+      { label: 'Reference', value: report?.reference ?? '' },
+      { label: 'Date', value: report?.date ? new Date(report.date).toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' }) },
+      { label: 'Valid Until', value: report?.validUntil ? new Date(report.validUntil).toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' }) : '' },
+      { label: 'Prepared By', value: report?.preparedBy ?? '' },
+      { label: 'Revision', value: report?.revisionNo ?? '1' },
+    ]}},
+    { type: 'recipient', id: uid(), data: {
+      label: 'To:',
+      name: report?.clientName ?? '',
+      contact: report?.clientContact ?? '',
+      email: report?.clientEmail ?? '',
+      address: report?.clientAddr ?? '',
+    }},
+    { type: 'divider', id: uid(), data: { style: 'line' } },
+    { type: 'table' as const, id: uid(), data: {
+      columns: [
+        { key: 'no', label: '#', width: '30px', align: 'center' as const },
+        { key: 'description', label: 'Description', align: 'left' as const },
+        { key: 'amount', label: 'Amount', width: '100px', align: 'right' as const, format: 'currency' as const },
+        { key: 'total', label: 'Total', width: '100px', align: 'right' as const, format: 'currency' as const },
+      ],
+      rows: [],
+      showTotals: true,
+      totalLabel: 'Subtotal',
+      currency,
+    }},
+    ...textBlocks,
+    ...(report?.paymentTerms ? [{
+      type: 'rich_text' as const,
+      id: uid(),
+      data: {
+        tiptapJson: { type: 'doc', content: [
+          { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Payment Terms' }] },
+          { type: 'paragraph', content: [{ type: 'text', text: report.paymentTerms }] },
+        ]},
+      },
+    }] : []),
+    ...(report?.disclaimer ? [{
+      type: 'rich_text' as const,
+      id: uid(),
+      data: {
+        tiptapJson: { type: 'doc', content: [
+          { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Disclaimer' }] },
+          { type: 'paragraph', content: [{ type: 'text', text: report.disclaimer }] },
+        ]},
+      },
+    }] : []),
+    ...(report?.notes ? [{
+      type: 'rich_text' as const,
+      id: uid(),
+      data: {
+        tiptapJson: { type: 'doc', content: [
+          { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Notes' }] },
+          { type: 'paragraph', content: [{ type: 'text', text: report.notes }] },
+        ]},
+      },
+    }] : []),
+    { type: 'signature', id: uid(), data: { leftLabel: 'Prepared By', rightLabel: 'Accepted By', showDate: true } },
+    { type: 'footer', id: uid(), data: { showPageNumbers: true, showCompanyName: true } },
+  ]
+}
+
 export const PRESET_MAP: Record<string, (ctx: PresetContext) => DocBlock[]> = {
   purchase_order: createPOPreset,
   delivery_order: createDOPreset,
+  quotation: createQuotationPreset,
   custom: () => createBlankPreset(),
 }

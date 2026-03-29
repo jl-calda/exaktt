@@ -1,7 +1,7 @@
 // src/components/doc-builder/PageCanvas.tsx
 'use client'
 import React from 'react'
-import type { DocBlock, DocBranding, DocSettings } from '@/lib/doc-builder/types'
+import type { DocBlock, DocBranding, DocSettings, DocEstimate } from '@/lib/doc-builder/types'
 import DndProvider from './dnd/DndProvider'
 import CanvasBlock from './CanvasBlock'
 
@@ -20,6 +20,7 @@ interface Props {
   documentId?: string
   pageSize: PageSizeKey
   zoom: number
+  estimates?: DocEstimate[]
   onUpdate: (id: string, data: any) => void
   onRemove: (id: string) => void
   onMove: (id: string, dir: -1 | 1) => void
@@ -28,7 +29,7 @@ interface Props {
 }
 
 export default function PageCanvas({
-  blocks, branding, settings, documentId, pageSize, zoom,
+  blocks, branding, settings, documentId, pageSize, zoom, estimates,
   onUpdate, onRemove, onMove, onReorder, onInsertBlock,
 }: Props) {
   const size = PAGE_SIZES[pageSize]
@@ -67,6 +68,7 @@ export default function PageCanvas({
                   block={block}
                   branding={branding}
                   documentId={documentId}
+                  estimates={estimates}
                   onUpdate={onUpdate}
                   onRemove={onRemove}
                   onMove={onMove}

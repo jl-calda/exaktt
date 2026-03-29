@@ -334,6 +334,33 @@ function SpreadsheetPdf({ block, ctx }: { block: Extract<DocBlock, { type: 'spre
   )
 }
 
+// ─── Multi Column Block ─────────────────────────────────────────────────────
+
+function MultiColumnPdf({ block }: { block: Extract<DocBlock, { type: 'multi_column' }> }) {
+  const C = colors()
+  const { columns, cells, gap = 16 } = block.data
+  const colWidth = `${Math.floor(100 / columns)}%` as any
+
+  return (
+    <View style={{ flexDirection: 'row', gap: gap * 0.75, marginBottom: 10 }}>
+      {cells.slice(0, columns).map((cell, i) => (
+        <View key={i} style={{ width: colWidth }}>
+          {cell.type === 'text' ? (
+            renderTiptapToPdf(cell.tiptapJson)
+          ) : cell.url ? (
+            <View>
+              <Image src={cell.url} style={{ objectFit: 'contain', maxHeight: 200 }} />
+              {cell.caption && (
+                <Text style={{ fontSize: 7, color: C.muted, textAlign: 'center', marginTop: 2 }}>{cell.caption}</Text>
+              )}
+            </View>
+          ) : null}
+        </View>
+      ))}
+    </View>
+  )
+}
+
 // ─── Page Break Block ───────────────────────────────────────────────────────
 
 function PageBreakPdf() {
@@ -357,6 +384,7 @@ export function renderBlock(block: DocBlock, ctx: BlockRenderContext, key: numbe
     case 'footer':        return <FooterPdf key={key} block={block} ctx={ctx} />
     case 'spreadsheet':   return <SpreadsheetPdf key={key} block={block} ctx={ctx} />
     case 'page_break':    return <PageBreakPdf key={key} />
+    case 'multi_column':  return <MultiColumnPdf key={key} block={block} />
     default:              return null
   }
 }

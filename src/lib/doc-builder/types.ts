@@ -90,6 +90,16 @@ export type SpreadsheetBlockData = {
 
 export type PageBreakBlockData = Record<string, never>
 
+export type ColumnCellContent =
+  | { type: 'text'; tiptapJson: any }
+  | { type: 'image'; url: string; caption?: string }
+
+export type MultiColumnBlockData = {
+  columns: number               // 2, 3, or 4
+  cells: ColumnCellContent[]    // one per column
+  gap?: number                  // gap in px, default 16
+}
+
 // ─── Discriminated Union ─────────────────────────────────────────────────────
 
 export type DocBlock =
@@ -106,8 +116,20 @@ export type DocBlock =
   | { type: 'footer';        id: string; data: FooterBlockData }
   | { type: 'spreadsheet';   id: string; data: SpreadsheetBlockData }
   | { type: 'page_break';    id: string; data: PageBreakBlockData }
+  | { type: 'multi_column';  id: string; data: MultiColumnBlockData }
 
 export type DocBlockType = DocBlock['type']
+
+// ─── Estimate (for inserting calculator results into tables) ─────────────────
+
+export type DocEstimate = {
+  id: string
+  systemName: string
+  jobName: string
+  description: string
+  amount: number
+  resultSnapshot?: any
+}
 
 // ─── Document Settings ───────────────────────────────────────────────────────
 
