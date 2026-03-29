@@ -3,9 +3,115 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Save, Loader2, FileText, Plus, Download, X } from 'lucide-react'
 import { arrayMove } from '@dnd-kit/sortable'
-import type { DocBlock, DocBranding, DocSettings, DocEstimate } from '@/lib/doc-builder/types'
+import type { DocBlock, DocBranding, DocSettings, DocEstimate, TableColumn } from '@/lib/doc-builder/types'
 import BlockPalette, { type TemplateBlock } from './BlockPalette'
 import PageCanvas, { PAGE_SIZES, type PageSizeKey } from './PageCanvas'
+
+let _uid = 0
+function uid() { _uid++; return `blk_${Date.now()}_${_uid}` }
+
+function insertEstimateIntoTable(
+  table: Extract<DocBlock, { type: 'table' }>,
+  est: DocEstimate,
+  mode: 'summary' | 'breakdown',
+): Extract<DocBlock, { type: 'table' }> {
+  const { columns, rows } = table.data
+  const snap = est.resultSnapshot
+  const startNum = rows.length + 1
+
+  if (mode === 'summary') {
+    const row: Record<string, any> = {}
+    const noCol = columns.find(c => c.key === 'no' || c.label === '#')
+    if (noCol) row[noCol.key] = startNum
+    const descCol = columns.find(c => c.key === 'description' || c.key === 'item' || c.label.toLowerCase().includes('description'))
+    if (descCol) row[descCol.key] = est.description
+    for (const col of columns) {
+      if (col.format === 'currency' || col.key === 'amount' || col.key === 'total') row[col.key] = est.amount
+      if (row[col.key] === undefined) row[col.key] = ''
+    }
+    return { ...table, data: { ...table.data, rows: [...rows, row] } }
+  }
+
+  // Breakdown mode — insert BOM rows + cost summary
+  if (!snap?.bom?.length) {
+    // No BOM data — fall back to summary
+    return insertEstimateIntoTable(table, est, 'summary')
+  }
+
+  // Ensure table has unit/qty/unitPrice columns
+  let cols = [...columns]
+  const hasUnit = cols.some(c => c.key === 'unit')
+  const hasQty = cols.some(c => c.key === 'qty')
+  const hasUnitPrice = cols.some(c => c.key === 'unitPrice')
+  const descIdx = cols.findIndex(c => c.key === 'description' || c.key === 'item')
+  const insertAt = descIdx >= 0 ? descIdx + 1 : 1
+
+  const newCols: TableColumn[] = []
+  if (!hasUnit) newCols.push({ key: 'unit', label: 'Unit', width: '50px', align: 'center' })
+  if (!hasQty) newCols.push({ key: 'qty', label: 'Qty', width: '60px', align: 'right', format: 'number' })
+  if (!hasUnitPrice) newCols.push({ key: 'unitPrice', label: 'Unit Price', width: '90px', align: 'right', format: 'currency' })
+  if (newCols.length > 0) {
+    cols = [...cols.slice(0, insertAt), ...newCols, ...cols.slice(insertAt)]
+  }
+
+  // Build BOM rows
+  const bomRows: Record<string, any>[] = snap.bom.map((m: any, i: number) => {
+    const row: Record<string, any> = {}
+    for (const col of cols) {
+      if (col.key === 'no' || col.label === '#') row[col.key] = startNum + i
+      else if (col.key === 'description' || col.key === 'item') row[col.key] = m.name + (m.productCode ? ` — ${m.productCode}` : '')
+      else if (col.key === 'unit') row[col.key] = m.unit ?? ''
+      else if (col.key === 'qty') row[col.key] = m.grandTotal ?? 0
+      else if (col.key === 'unitPrice') row[col.key] = m.unitPrice ?? 0
+      else if (col.format === 'currency' || col.key === 'amount' || col.key === 'total') row[col.key] = m.lineTotal ?? 0
+      else row[col.key] = ''
+    }
+    return row
+  })
+
+  // Cost summary rows
+  const summaryRows: Record<string, any>[] = []
+  const totals = snap.totals
+  if (totals) {
+    const makeSummaryRow = (label: string, amount: number) => {
+      const row: Record<string, any> = {}
+      for (const col of cols) {
+        if (col.key === 'description' || col.key === 'item') row[col.key] = label
+        else if (col.format === 'currency' || col.key === 'amount' || col.key === 'total') row[col.key] = amount
+        else row[col.key] = ''
+      }
+      return row
+    }
+    if (totals.materialCost > 0) summaryRows.push(makeSummaryRow('Material Cost', totals.materialCost))
+    if (totals.labourCost > 0) summaryRows.push(makeSummaryRow('Labour Cost', totals.labourCost))
+    if (totals.thirdPartyCost > 0) summaryRows.push(makeSummaryRow('Third Party Cost', totals.thirdPartyCost))
+    summaryRows.push(makeSummaryRow('Grand Total', totals.grandTotal))
+  }
+
+  return {
+    ...table,
+    data: { ...table.data, columns: cols, rows: [...rows, ...bomRows, ...summaryRows] },
+  }
+}
+
+function createTableWithEstimate(est: DocEstimate, mode: 'summary' | 'breakdown'): Extract<DocBlock, { type: 'table' }> {
+  const base: Extract<DocBlock, { type: 'table' }> = {
+    type: 'table',
+    id: uid(),
+    data: {
+      columns: [
+        { key: 'no', label: '#', width: '30px', align: 'center' as const },
+        { key: 'description', label: 'Description', align: 'left' as const },
+        { key: 'amount', label: 'Amount', width: '100px', align: 'right' as const, format: 'currency' as const },
+        { key: 'total', label: 'Total', width: '100px', align: 'right' as const, format: 'currency' as const },
+      ],
+      rows: [],
+      showTotals: true,
+      totalLabel: 'Subtotal',
+    },
+  }
+  return insertEstimateIntoTable(base, est, mode)
+}
 
 interface Props {
   documentId?: string
@@ -130,6 +236,25 @@ export default function DocBuilder({
       if (oldIdx < 0 || newIdx < 0) return prev
       return arrayMove(prev, oldIdx, newIdx)
     })
+  }
+
+  function handleInsertEstimate(est: DocEstimate, mode: 'summary' | 'breakdown') {
+    setBlocks(prev => {
+      // Find last table block, or create one
+      const lastTableIdx = prev.map((b, i) => b.type === 'table' ? i : -1).filter(i => i >= 0).pop()
+      if (lastTableIdx != null) {
+        const table = prev[lastTableIdx] as Extract<DocBlock, { type: 'table' }>
+        const updated = insertEstimateIntoTable(table, est, mode)
+        const next = [...prev]
+        next[lastTableIdx] = updated
+        return next
+      }
+      // No table exists — create one with the estimate data
+      const newTable = createTableWithEstimate(est, mode)
+      return [...prev, newTable]
+    })
+    setMobileTab('canvas')
+    setShowPalette(false)
   }
 
   async function handleManualSave() {
@@ -283,13 +408,13 @@ export default function DocBuilder({
 
         {/* ── Desktop: Left palette sidebar ── */}
         <aside className="hidden lg:block w-48 shrink-0 border-r border-surface-200 bg-surface-50 overflow-y-auto">
-          <BlockPalette onAddBlock={handleAddBlock} templates={templates} />
+          <BlockPalette onAddBlock={handleAddBlock} templates={templates} estimates={estimates} onInsertEstimate={handleInsertEstimate} />
         </aside>
 
         {/* ── Mobile: Blocks tab ── */}
         {mobileTab === 'blocks' && (
           <div className="absolute inset-0 z-10 bg-surface-50 overflow-y-auto lg:hidden">
-            <BlockPalette onAddBlock={handleAddBlock} templates={templates} />
+            <BlockPalette onAddBlock={handleAddBlock} templates={templates} estimates={estimates} onInsertEstimate={handleInsertEstimate} />
           </div>
         )}
 
@@ -323,7 +448,7 @@ export default function DocBuilder({
           {/* Mobile: floating palette sheet */}
           {showPalette && mobileTab === 'canvas' && (
             <div className="lg:hidden fixed bottom-20 right-4 z-20 w-56 max-h-[60vh] bg-surface-50 border border-surface-200 rounded-xl shadow-lg overflow-y-auto animate-fade-in">
-              <BlockPalette onAddBlock={handleAddBlock} templates={templates} />
+              <BlockPalette onAddBlock={handleAddBlock} templates={templates} estimates={estimates} onInsertEstimate={handleInsertEstimate} />
             </div>
           )}
         </div>

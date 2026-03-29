@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getTender, getTenderReportById, getProfile, getUserCompany } from '@/lib/db/queries'
+import { getTender, getTenderReportById, getProfile, getUserCompany, getMtoSystems, getMtoJobs, getGlobalTags, getUserWithPlan } from '@/lib/db/queries'
 import { prisma } from '@/lib/db/prisma'
 import { createQuotationPreset } from '@/lib/doc-builder/presets'
 import type { DocBlock, DocBranding, DocEstimate } from '@/lib/doc-builder/types'
@@ -18,10 +18,14 @@ export default async function TenderReportPage({ params }: { params: Promise<{ i
   const company = await getUserCompany(user.id)
   if (!company) redirect('/auth/login')
 
-  const [tender, report, profile] = await Promise.all([
+  const [tender, report, profile, systems, allJobs, globalTags, userData] = await Promise.all([
     getTender(id, company.id),
     getTenderReportById(reportId, company.id),
     getProfile(user.id),
+    getMtoSystems(company.id),
+    getMtoJobs(company.id),
+    getGlobalTags(company.id),
+    getUserWithPlan(user.id),
   ])
 
   if (!tender) redirect('/tenders')
@@ -82,6 +86,9 @@ export default async function TenderReportPage({ params }: { params: Promise<{ i
     })
   }
 
+  // Extract plan from userData
+  const plan = (userData as any)?.companyMembers?.[0]?.company?.plan ?? null
+
   return (
     <TenderDocBuilderClient
       tender={{ id: (tender as any).id, name: (tender as any).name, status: (tender as any).status }}
@@ -92,11 +99,19 @@ export default async function TenderReportPage({ params }: { params: Promise<{ i
         status: (report as any).status,
         sections: blocks,
         currency: (report as any).currency ?? 'SGD',
+        notes: (report as any).notes ?? null,
+        attachments: (report as any).attachments ?? [],
       }}
       branding={branding}
       blocks={blocks}
       templates={templates}
       estimates={estimates}
+      systems={systems as any[]}
+      allJobs={allJobs as any[]}
+      globalTags={globalTags as any[]}
+      plan={plan}
+      userId={user.id}
+      tenderId={id}
     />
   )
 }
