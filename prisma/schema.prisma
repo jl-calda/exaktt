@@ -127,8 +127,95 @@ model Company {
   documents              Document[]
   docSequences           DocSequence[]
   docTemplates           Json           @default("[]")
+  departments            Department[]
+  employees              Employee[]
 
   @@map("companies")
+}
+
+// ─── HR: Department ──────────────────────────────────────────────────────────
+
+model Department {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  color     String   @default("#64748b")
+  sortOrder Int      @default(0)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employees Employee[]
+
+  @@unique([companyId, name])
+  @@map("departments")
+}
+
+// ─── HR: Employee ────────────────────────────────────────────────────────────
+
+model Employee {
+  id             String    @id @default(cuid())
+  companyId      String
+  userId         String?   @unique  // null = non-user employee (site worker, etc.)
+
+  // Name
+  firstName      String
+  middleName     String?
+  lastName       String
+  suffix         String?            // Jr., Sr., III, etc.
+
+  // Work info
+  employeeId     String?            // company-assigned ID (e.g. EMP-001)
+  jobTitle       String?
+  departmentId   String?
+  hireDate       DateTime?
+  status         String   @default("ACTIVE")  // ACTIVE, INACTIVE, TERMINATED
+
+  // Singapore compliance
+  nricFin        String?            // NRIC or FIN
+  workPassType   String?            // CITIZEN, PR, EP, S_PASS, WORK_PERMIT, DEP_PASS
+  workPassExpiry DateTime?
+
+  // Identity
+  ethnicity      String?
+  avatarUrl      String?            // for non-user employees; user employees use User.avatarUrl
+
+  // Compensation (OWNER-only visibility)
+  salaryType     String?            // MONTHLY, ANNUAL, HOURLY, DAILY
+  salaryAmount   Float?
+  currency       String   @default("SGD")
+  bankName       String?
+  bankAccountNo  String?
+
+  // Benefits & Insurance
+  benefits       Json     @default("[]")  // [{type, provider, policyNo, coverage, expiryDate}]
+
+  // CPF (Singapore-specific)
+  cpfAccountNo   String?
+  cpfContribRate String?            // FULL, GRADUATED, EXEMPT
+
+  // Education & Certifications
+  education      Json     @default("[]")  // [{degree, institution, year, field}]
+  certifications Json     @default("[]")  // [{name, issuedBy, issueDate, expiryDate, certNumber}]
+
+  // Skills
+  skills         String[] @default([])
+
+  // Emergency contact
+  emergencyName     String?
+  emergencyPhone    String?
+  emergencyRelation String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([departmentId])
+  @@map("employees")
 }
 
 model CompanyMember {
@@ -171,12 +258,18 @@ model User {
   email     String   @unique
   name      String?
   avatarUrl String?
+  phone       String?
+  bio         String?
+  dateOfBirth DateTime?
+  nationality String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
   companyMembers   CompanyMember[]
   profile          Profile?
+  employee         Employee?
 
   // "Created by" audit trail
   createdSystems             MtoSystem[]             @relation("createdByUser")

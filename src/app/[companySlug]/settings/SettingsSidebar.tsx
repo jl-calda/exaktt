@@ -3,12 +3,14 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   Building2, Users2, DollarSign, FileText, FolderKanban,
-  Globe, Palette, User2,
+  Globe, Palette, User2, UserCircle,
 } from 'lucide-react'
 
 const SETTINGS_NAV = [
+  { label: 'Profile', href: '/settings/profile', icon: UserCircle, roles: ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'] },
   { label: 'Company Info', href: '/settings/info', icon: Building2, roles: ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'] },
   { label: 'Team', href: '/settings/team', icon: Users2, roles: ['OWNER', 'ADMIN'] },
+  { label: 'Departments', href: '/settings/departments', icon: Building2, roles: ['OWNER'] },
   { label: 'Labour Rates', href: '/settings/labour', icon: DollarSign, roles: ['OWNER'] },
   { label: 'Tenders', href: '/settings/tenders', icon: FileText, roles: ['OWNER', 'ADMIN'] },
   { label: 'Projects', href: '/settings/projects', icon: FolderKanban, roles: ['OWNER', 'ADMIN'] },
