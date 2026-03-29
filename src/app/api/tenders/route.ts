@@ -27,12 +27,12 @@ export async function POST(req: NextRequest) {
   try {
     const ctx = await requireAccess(user.id, 'tenders', 'write')
     const body = await req.json()
-    const { name, projectName, reference, submissionDate, notes } = body
+    const { name, projectName, reference, submissionDate, notes, assigneeId } = body
     if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
     const tender = await createTender(ctx.companyId, ctx.userId, {
       name: name.trim(), projectName, reference,
       submissionDate: submissionDate ? new Date(submissionDate) : null,
-      notes,
+      notes, assigneeId: assigneeId || null,
     })
     return NextResponse.json({ data: tender })
   } catch (e) {

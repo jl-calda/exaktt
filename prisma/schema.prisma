@@ -204,6 +204,7 @@ model User {
   activitiesAssigned         ProjectActivity[]       @relation("activityAssignee")
   createdDocuments           Document[]              @relation("createdDocuments")
   workTeamMembers            WorkTeamMember[]
+  assignedTenders            Tender[]                @relation("tenderAssignee")
 
   @@map("users")
 }
@@ -464,6 +465,8 @@ model Tender {
   company        Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdById    String
   createdBy      User          @relation("createdByUser", fields: [createdById], references: [id], onDelete: Cascade)
+  assigneeId     String?
+  assignee       User?         @relation("tenderAssignee", fields: [assigneeId], references: [id])
 
   name           String
   projectName    String?
