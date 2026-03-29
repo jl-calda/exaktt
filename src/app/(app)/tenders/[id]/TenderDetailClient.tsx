@@ -2,11 +2,12 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, Trash2, CalendarDays, X, FileText, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, CalendarDays, X, FileText, ChevronRight, ClipboardList } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import { NumberInput } from '@/components/ui/Input'
 import { format } from 'date-fns'
 import { usePermissions } from '@/lib/hooks/usePermissions'
+import { useTaskStore } from '@/store'
 import DataTable, { useTableSort, type Column, type GroupDef } from '@/components/ui/DataTable'
 
 type TenderStatus = 'DRAFT' | 'SUBMITTED' | 'WON' | 'LOST' | 'CANCELLED'
@@ -43,6 +44,7 @@ interface TableRow {
 export default function TenderDetailClient({ tender: initialTender, allJobs, profile, tenderReports, clients }: Props) {
   const router = useRouter()
   const { canWrite } = usePermissions()
+  const openTaskDrawer = useTaskStore(s => s.openDrawer)
 
   const [tender,      setTender]      = useState(initialTender)
   const [items,       setItems]       = useState<any[]>(initialTender.items ?? [])
@@ -342,6 +344,12 @@ export default function TenderDetailClient({ tender: initialTender, allJobs, pro
               )}
             </div>
           </div>
+          <button
+            onClick={() => openTaskDrawer(`/tenders/${tender.id}`, { createMode: true, linkedLabel: tender.name })}
+            className="btn-secondary text-xs flex items-center gap-1.5 flex-shrink-0"
+          >
+            <ClipboardList className="w-3.5 h-3.5" /> Assign Task
+          </button>
         </div>
 
         {/* Unified Estimates + Quotations table */}

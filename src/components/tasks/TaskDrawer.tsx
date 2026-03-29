@@ -12,16 +12,19 @@ type DrawerTab = 'linked' | 'all'
 
 export default function TaskDrawer() {
   const router = useRouter()
-  const { drawerOpen, closeDrawer, activeTaskId, setActiveTask, linkedFilter } = useTaskStore()
+  const { drawerOpen, closeDrawer, activeTaskId, setActiveTask, linkedFilter, createMode, linkedLabel: storeLinkedLabel } = useTaskStore()
   const [creating, setCreating] = useState(false)
   const [tasks, setTasks] = useState<any[]>([])
   const [allTasks, setAllTasks] = useState<any[]>([])
   const [drawerTab, setDrawerTab] = useState<DrawerTab>(linkedFilter ? 'linked' : 'all')
 
-  // Reset tab when drawer opens with different filter
+  // Reset tab when drawer opens with different filter; auto-open create mode
   useEffect(() => {
-    if (drawerOpen) setDrawerTab(linkedFilter ? 'linked' : 'all')
-  }, [drawerOpen, linkedFilter])
+    if (drawerOpen) {
+      setDrawerTab(linkedFilter ? 'linked' : 'all')
+      if (createMode) setCreating(true)
+    }
+  }, [drawerOpen, linkedFilter, createMode])
 
   // Fetch linked tasks
   useEffect(() => {
@@ -92,7 +95,7 @@ export default function TaskDrawer() {
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {creating ? (
-            <TaskForm linkedUrl={linkedFilter} onSave={() => { setCreating(false); refresh() }} onCancel={() => setCreating(false)} />
+            <TaskForm linkedUrl={linkedFilter} linkedLabel={storeLinkedLabel} onSave={() => { setCreating(false); refresh() }} onCancel={() => setCreating(false)} />
           ) : activeTaskId ? (
             <TaskDetail taskId={activeTaskId} onBack={() => setActiveTask(null)} onRefresh={refresh} />
           ) : (
