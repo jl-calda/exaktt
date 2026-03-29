@@ -1,6 +1,7 @@
 // src/components/layout/TopNav.tsx
 'use client'
 import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { Sun, Moon } from 'lucide-react'
 import NotificationBell from '@/components/tasks/NotificationBell'
 import { useTheme } from '@/components/ThemeProvider'
@@ -50,7 +51,7 @@ export default function TopNav({ userName, userEmail, plan }: Props) {
         </button>
         <NotificationBell />
 
-        <div className="flex items-center gap-2 pl-1.5 ml-0.5 border-l border-surface-200">
+        <Link href="/settings/profile" className="flex items-center gap-2 pl-1.5 ml-0.5 border-l border-surface-200 hover:opacity-80 transition-opacity">
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 shadow-sm ring-2 ring-surface-200/40"
             style={{ background: 'var(--color-primary)' }}
@@ -63,7 +64,7 @@ export default function TopNav({ userName, userEmail, plan }: Props) {
               <div className="text-[11px] text-ink-faint mt-0.5 capitalize">{plan.toLowerCase()}</div>
             )}
           </div>
-        </div>
+        </Link>
       </div>
     </header>
   )

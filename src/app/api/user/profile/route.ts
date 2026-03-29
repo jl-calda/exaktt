@@ -64,26 +64,18 @@ export async function PATCH(request: NextRequest) {
       }
 
       if (employeeFields && Object.keys(employeeFields).length > 0) {
-        // Ensure employee record exists
-        let employee = await tx.employee.findUnique({ where: { userId: authUser.id } })
+        // Only update if employee record exists (created by HR/Owner)
+        const employee = await tx.employee.findUnique({ where: { userId: authUser.id } })
         if (!employee) {
-          employee = await tx.employee.create({
-            data: {
-              companyId: company.id,
-              userId: authUser.id,
-              firstName: employeeFields.firstName || authUser.email?.split('@')[0] || '',
-              lastName: employeeFields.lastName || '',
-            },
-          })
+          return { user: updatedUser, employee: null }
         }
 
+        // Self-service fields only — no compensation, CPF, benefits, or work info (HR-managed)
         const allowed = [
           'firstName', 'middleName', 'lastName', 'suffix',
-          'jobTitle', 'departmentId', 'employeeId', 'ethnicity',
+          'ethnicity',
           'nricFin', 'workPassType',
-          'salaryType', 'salaryAmount', 'currency', 'bankName', 'bankAccountNo',
-          'cpfAccountNo', 'cpfContribRate',
-          'education', 'certifications', 'skills', 'benefits',
+          'education', 'certifications', 'skills',
           'emergencyName', 'emergencyPhone', 'emergencyRelation',
         ] as const
         const data: Record<string, unknown> = {}
@@ -93,9 +85,6 @@ export async function PATCH(request: NextRequest) {
           }
         }
         // Handle date fields separately
-        if (employeeFields.hireDate !== undefined) {
-          data.hireDate = employeeFields.hireDate ? new Date(employeeFields.hireDate) : null
-        }
         if (employeeFields.workPassExpiry !== undefined) {
           data.workPassExpiry = employeeFields.workPassExpiry ? new Date(employeeFields.workPassExpiry) : null
         }

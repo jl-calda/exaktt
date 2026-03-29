@@ -36,24 +36,10 @@ export default async function SettingsProfilePage() {
     }),
   ])
 
-  // Auto-create employee record if missing
-  let employeeData = employee
-  if (!employeeData) {
-    employeeData = await prisma.employee.create({
-      data: {
-        companyId: company.id,
-        userId: user.id,
-        firstName: dbUser?.name?.split(' ')[0] ?? '',
-        lastName: dbUser?.name?.split(' ').slice(1).join(' ') || dbUser?.email?.split('@')[0] || '',
-      },
-      include: { department: { select: { id: true, name: true, color: true } } },
-    })
-  }
-
   return (
     <SettingsProfileClient
       initialUser={dbUser as any}
-      initialEmployee={employeeData as any}
+      initialEmployee={employee as any}
       departments={departments as any[]}
       role={role}
     />

@@ -20,25 +20,11 @@ export async function GET(request: Request) {
         data.user.user_metadata?.full_name ?? data.user.user_metadata?.name,
       )
 
-      // Auto-create Employee record if missing
+      // Set company slug cookie for middleware rewrite
       const member = await prisma.companyMember.findFirst({
         where: { userId: data.user.id },
-        include: { company: { select: { id: true, slug: true } } },
+        include: { company: { select: { slug: true } } },
       })
-      if (member?.company?.id) {
-        const existingEmployee = await prisma.employee.findUnique({ where: { userId: data.user.id } })
-        if (!existingEmployee) {
-          const fullName = data.user.user_metadata?.full_name ?? data.user.user_metadata?.name ?? ''
-          await prisma.employee.create({
-            data: {
-              companyId: member.company.id,
-              userId: data.user.id,
-              firstName: fullName.split(' ')[0] ?? '',
-              lastName: fullName.split(' ').slice(1).join(' ') || data.user.email?.split('@')[0] || '',
-            },
-          })
-        }
-      }
 
       const response = NextResponse.redirect(`${origin}${next}`)
       if (member?.company?.slug) {
