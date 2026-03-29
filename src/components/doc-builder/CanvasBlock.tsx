@@ -17,6 +17,7 @@ import ImageBlock from './blocks/ImageBlock'
 import SignatureBlock from './blocks/SignatureBlock'
 import DataSnapshotBlock from './blocks/DataSnapshotBlock'
 import SpreadsheetBlock from './blocks/SpreadsheetBlock'
+import MultiColumnBlock from './blocks/MultiColumnBlock'
 
 interface Props {
   block: DocBlock
@@ -125,12 +126,48 @@ export default function CanvasBlock({ block, branding, documentId, estimates, on
             </label>
           </div>
         )
+      case 'multi_column':
+        return (
+          <div className="flex flex-wrap gap-3 p-2 text-[10px] text-ink-muted">
+            <label className="flex items-center gap-2">
+              Columns:
+              <select
+                value={block.data.columns}
+                onChange={e => {
+                  const count = Number(e.target.value)
+                  const next = [...block.data.cells]
+                  while (next.length < count) next.push({ type: 'text', tiptapJson: { type: 'doc', content: [{ type: 'paragraph' }] } })
+                  if (next.length > count) next.length = count
+                  onUpdate(block.id, { ...block.data, columns: count, cells: next })
+                }}
+                className="text-[10px] px-1.5 py-0.5 border border-surface-200 rounded bg-surface-50"
+              >
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+                <option value={4}>4</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2">
+              Gap:
+              <select
+                value={block.data.gap ?? 16}
+                onChange={e => onUpdate(block.id, { ...block.data, gap: Number(e.target.value) })}
+                className="text-[10px] px-1.5 py-0.5 border border-surface-200 rounded bg-surface-50"
+              >
+                <option value={8}>8px</option>
+                <option value={16}>16px</option>
+                <option value={24}>24px</option>
+                <option value={32}>32px</option>
+              </select>
+            </label>
+          </div>
+        )
       default:
         return null
     }
   }
 
-  const hasSettings = ['header', 'signature', 'table', 'footer', 'image'].includes(block.type)
+  const hasSettings = ['header', 'signature', 'table', 'footer', 'image', 'multi_column'].includes(block.type)
   const settingsContent = showSettings ? renderSettings() : null
 
   function renderBlockContent() {
@@ -153,6 +190,8 @@ export default function CanvasBlock({ block, branding, documentId, estimates, on
         return <DataSnapshotBlock block={block} onChange={d => onUpdate(block.id, d)} />
       case 'spreadsheet':
         return <SpreadsheetBlock block={block} onChange={d => onUpdate(block.id, d)} />
+      case 'multi_column':
+        return <MultiColumnBlock block={block} onChange={d => onUpdate(block.id, d)} documentId={documentId} />
       case 'spacer':
         return <div style={{ height: block.data.height }} className="group/spacer relative">
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/spacer:opacity-100 transition-opacity">

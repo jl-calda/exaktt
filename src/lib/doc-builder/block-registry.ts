@@ -159,6 +159,25 @@ export const BLOCK_REGISTRY: BlockMeta[] = [
     }),
   },
 
+  {
+    type: 'multi_column',
+    label: 'Multi Column',
+    icon: 'Columns3',
+    category: 'content',
+    description: 'Side-by-side columns with text or images',
+    createDefault: () => ({
+      type: 'multi_column', id: uid(),
+      data: {
+        columns: 2,
+        cells: [
+          { type: 'text', tiptapJson: { type: 'doc', content: [{ type: 'paragraph' }] } },
+          { type: 'text', tiptapJson: { type: 'doc', content: [{ type: 'paragraph' }] } },
+        ],
+        gap: 16,
+      },
+    }),
+  },
+
   // ── Signature ────────────────────────────────────────
   {
     type: 'signature',
